@@ -1,0 +1,449 @@
+{
+  "src": "/assets/generated/frame-catalog-atlas.png",
+  "columns": 12,
+  "rows": 4,
+  "cellWidth": 256,
+  "cellHeight": 256,
+  "assets": {
+    "scout_frame_5x7_blueprint": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "blueprint",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 0,
+      "row": 0
+    },
+    "scout_frame_5x7_hangar_dark": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "hangar_dark",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 1,
+      "row": 0
+    },
+    "scout_frame_5x7_cell_available": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "cell_available",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 2,
+      "row": 0
+    },
+    "scout_frame_5x7_cell_blocked": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "cell_blocked",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 3,
+      "row": 0
+    },
+    "scout_frame_5x7_cell_selected": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "cell_selected",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 4,
+      "row": 0
+    },
+    "scout_frame_5x7_placement_error": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "placement_error",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 5,
+      "row": 0
+    },
+    "scout_frame_5x7_placement_valid": {
+      "frameId": "scout_frame_5x7",
+      "owner": "player",
+      "variant": "placement_valid",
+      "grid": [
+        5,
+        7
+      ],
+      "col": 6,
+      "row": 0
+    },
+    "raider_frame_7x9_blueprint": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "blueprint",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 7,
+      "row": 0
+    },
+    "raider_frame_7x9_hangar_dark": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "hangar_dark",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 8,
+      "row": 0
+    },
+    "raider_frame_7x9_cell_available": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "cell_available",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 9,
+      "row": 0
+    },
+    "raider_frame_7x9_cell_blocked": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "cell_blocked",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 10,
+      "row": 0
+    },
+    "raider_frame_7x9_cell_selected": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "cell_selected",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 11,
+      "row": 0
+    },
+    "raider_frame_7x9_placement_error": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "placement_error",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 0,
+      "row": 1
+    },
+    "raider_frame_7x9_placement_valid": {
+      "frameId": "raider_frame_7x9",
+      "owner": "player",
+      "variant": "placement_valid",
+      "grid": [
+        7,
+        9
+      ],
+      "col": 1,
+      "row": 1
+    },
+    "frigate_frame_9x11_blueprint": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "blueprint",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 2,
+      "row": 1
+    },
+    "frigate_frame_9x11_hangar_dark": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "hangar_dark",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 3,
+      "row": 1
+    },
+    "frigate_frame_9x11_cell_available": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "cell_available",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 4,
+      "row": 1
+    },
+    "frigate_frame_9x11_cell_blocked": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "cell_blocked",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 5,
+      "row": 1
+    },
+    "frigate_frame_9x11_cell_selected": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "cell_selected",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 6,
+      "row": 1
+    },
+    "frigate_frame_9x11_placement_error": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "placement_error",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 7,
+      "row": 1
+    },
+    "frigate_frame_9x11_placement_valid": {
+      "frameId": "frigate_frame_9x11",
+      "owner": "player",
+      "variant": "placement_valid",
+      "grid": [
+        9,
+        11
+      ],
+      "col": 8,
+      "row": 1
+    },
+    "carrier_frame_11x13_blueprint": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "blueprint",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 9,
+      "row": 1
+    },
+    "carrier_frame_11x13_hangar_dark": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "hangar_dark",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 10,
+      "row": 1
+    },
+    "carrier_frame_11x13_cell_available": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "cell_available",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 11,
+      "row": 1
+    },
+    "carrier_frame_11x13_cell_blocked": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "cell_blocked",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 0,
+      "row": 2
+    },
+    "carrier_frame_11x13_cell_selected": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "cell_selected",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 1,
+      "row": 2
+    },
+    "carrier_frame_11x13_placement_error": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "placement_error",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 2,
+      "row": 2
+    },
+    "carrier_frame_11x13_placement_valid": {
+      "frameId": "carrier_frame_11x13",
+      "owner": "player",
+      "variant": "placement_valid",
+      "grid": [
+        11,
+        13
+      ],
+      "col": 3,
+      "row": 2
+    },
+    "micro_drone_frame_3x3_blueprint": {
+      "frameId": "micro_drone_frame_3x3",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        3,
+        3
+      ],
+      "col": 4,
+      "row": 2
+    },
+    "micro_drone_frame_3x3_hangar_dark": {
+      "frameId": "micro_drone_frame_3x3",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        3,
+        3
+      ],
+      "col": 5,
+      "row": 2
+    },
+    "drone_frame_3x5_blueprint": {
+      "frameId": "drone_frame_3x5",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        3,
+        5
+      ],
+      "col": 6,
+      "row": 2
+    },
+    "drone_frame_3x5_hangar_dark": {
+      "frameId": "drone_frame_3x5",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        3,
+        5
+      ],
+      "col": 7,
+      "row": 2
+    },
+    "light_raider_frame_4x5_blueprint": {
+      "frameId": "light_raider_frame_4x5",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        4,
+        5
+      ],
+      "col": 8,
+      "row": 2
+    },
+    "light_raider_frame_4x5_hangar_dark": {
+      "frameId": "light_raider_frame_4x5",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        4,
+        5
+      ],
+      "col": 9,
+      "row": 2
+    },
+    "bomber_frame_5x5_blueprint": {
+      "frameId": "bomber_frame_5x5",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        5,
+        5
+      ],
+      "col": 10,
+      "row": 2
+    },
+    "bomber_frame_5x5_hangar_dark": {
+      "frameId": "bomber_frame_5x5",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        5,
+        5
+      ],
+      "col": 11,
+      "row": 2
+    },
+    "sniper_frame_3x6_blueprint": {
+      "frameId": "sniper_frame_3x6",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        3,
+        6
+      ],
+      "col": 0,
+      "row": 3
+    },
+    "sniper_frame_3x6_hangar_dark": {
+      "frameId": "sniper_frame_3x6",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        3,
+        6
+      ],
+      "col": 1,
+      "row": 3
+    },
+    "guard_frame_5x6_blueprint": {
+      "frameId": "guard_frame_5x6",
+      "owner": "enemy",
+      "variant": "blueprint",
+      "grid": [
+        5,
+        6
+      ],
+      "col": 2,
+      "row": 3
+    },
+    "guard_frame_5x6_hangar_dark": {
+      "frameId": "guard_frame_5x6",
+      "owner": "enemy",
+      "variant": "hangar_dark",
+      "grid": [
+        5,
+        6
+      ],
+      "col": 3,
+      "row": 3
+    }
+  }
+}

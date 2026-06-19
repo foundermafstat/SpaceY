@@ -11,7 +11,7 @@ import {
   getModule,
   getTransformedCells
 } from "@/game/ship/build";
-import { getHoverSpriteStyle, getModuleSpriteStyle } from "@/game/assets/moduleSprites";
+import { getAiModuleSpriteStyle, getHoverSpriteStyle } from "@/game/assets/moduleSprites";
 import type { GridCell, ModuleType } from "@/game/types";
 
 const labels: Record<ModuleType, string> = {
@@ -107,7 +107,7 @@ export default function HangarPage() {
                         {module && (
                           <>
                             <span className="cell-hover" style={getHoverSpriteStyle("ring")} />
-                            <span className="cell-sprite" style={getModuleSpriteStyle(module)} />
+                            <span className="cell-sprite ai-module-sprite" style={getAiModuleSpriteStyle(module)} />
                           </>
                         )}
                       </button>
@@ -141,7 +141,7 @@ export default function HangarPage() {
                   className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}
                   onClick={() => selectModule(module.id)}
                 >
-                  <span className="module-thumb" style={getModuleSpriteStyle(module)} />
+                  <span className="module-thumb ai-module-thumb" style={getAiModuleSpriteStyle(module)} />
                   <strong>{module.name}</strong>
                   <span>
                     {labels[module.type]} · {module.shape.cells.length} cell · mass {module.mass}

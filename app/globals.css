@@ -301,6 +301,10 @@ button {
   z-index: 2;
 }
 
+.cell-sprite.ai-module-sprite {
+  inset: -14px;
+}
+
 .cell-hover {
   position: absolute;
   inset: -12px;
@@ -366,6 +370,12 @@ button {
   transform: translateY(-50%);
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 8px rgba(73, 215, 255, 0.22));
+}
+
+.module-thumb.ai-module-thumb {
+  left: 7px;
+  width: 40px;
+  height: 40px;
 }
 
 .panel {

@@ -62,6 +62,12 @@ export const moduleAtlas = {
   } satisfies Record<ModuleSpriteKey, { col: number; row: number }>
 };
 
+export const moduleStateAtlas = {
+  ...moduleAtlas,
+  src: "/assets/modules/module-states-atlas.png",
+  rows: moduleAtlas.rows * 4
+};
+
 export const weaponAtlas = {
   src: "/assets/weapons/weapon-parts-atlas.png",
   columns: 4,
@@ -78,6 +84,48 @@ export const weaponAtlas = {
     plasmaTurret: { col: 2, row: 1 },
     missileTurret: { col: 3, row: 1 }
   } satisfies Record<WeaponSpriteKey, { col: number; row: number }>
+};
+
+export const weaponStateAtlas = {
+  ...weaponAtlas,
+  src: "/assets/weapons/weapon-states-atlas.png",
+  rows: weaponAtlas.rows * 4
+};
+
+export type AiModuleSpriteKey =
+  | "core"
+  | "hull"
+  | "hullBridge"
+  | "armor"
+  | "ionEngine"
+  | "plasmaThruster"
+  | "sideThruster"
+  | "reactor"
+  | "autocannon"
+  | "laser"
+  | "plasma"
+  | "missile"
+  | "shield";
+
+export const aiModuleAtlas = {
+  src: "/assets/generated/ai/module-ai-normalized-atlas.png",
+  columns: 12,
+  rows: 9,
+  cells: {
+    core: { col: 7, row: 0 },
+    hull: { col: 1, row: 0 },
+    hullBridge: { col: 10, row: 1 },
+    armor: { col: 4, row: 3 },
+    ionEngine: { col: 9, row: 4 },
+    plasmaThruster: { col: 7, row: 4 },
+    sideThruster: { col: 0, row: 5 },
+    reactor: { col: 7, row: 5 },
+    autocannon: { col: 2, row: 7 },
+    laser: { col: 8, row: 7 },
+    plasma: { col: 1, row: 8 },
+    missile: { col: 10, row: 6 },
+    shield: { col: 2, row: 4 }
+  } satisfies Record<AiModuleSpriteKey, { col: number; row: number }>
 };
 
 export const hoverAtlas = {
@@ -135,6 +183,10 @@ export function getModuleSpriteStyle(module: ModuleDef) {
   return getAtlasStyle(moduleAtlas, key);
 }
 
+export function getAiModuleSpriteStyle(module: ModuleDef) {
+  return getAtlasStyle(aiModuleAtlas, getAiModuleSpriteKey(module));
+}
+
 export function getHoverSpriteStyle(key: HoverSpriteKey = "ring") {
   return getAtlasStyle(hoverAtlas, key);
 }
@@ -157,4 +209,20 @@ function getAtlasStyle<T extends string>(
     backgroundSize: `${atlas.columns * 100}% ${atlas.rows * 100}%`,
     backgroundPosition: `${x}% ${y}%`
   };
+}
+
+function getAiModuleSpriteKey(module: ModuleDef): AiModuleSpriteKey {
+  if (module.type === "core") return "core";
+  if (module.id === "hull_bridge_2x1") return "hullBridge";
+  if (module.type === "armor") return "armor";
+  if (module.id === "plasma_thruster") return "plasmaThruster";
+  if (module.id === "side_thruster") return "sideThruster";
+  if (module.type === "engine") return "ionEngine";
+  if (module.id === "autocannon") return "autocannon";
+  if (module.id === "laser_turret") return "laser";
+  if (module.id === "plasma_cannon") return "plasma";
+  if (module.id === "missile_pod") return "missile";
+  if (module.type === "reactor" || module.type === "battery") return "reactor";
+  if (module.type === "shield") return "shield";
+  return "hull";
 }

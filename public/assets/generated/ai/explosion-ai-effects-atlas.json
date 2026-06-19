@@ -1,0 +1,499 @@
+{
+  "src": "/assets/generated/ai/explosion-ai-effects-atlas.png",
+  "columns": 9,
+  "rows": 6,
+  "cellWidth": 256,
+  "cellHeight": 256,
+  "animations": {
+    "small": {
+      "row": 0,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 0,
+          "sourceBounds": {
+            "left": 29,
+            "top": 415,
+            "width": 82,
+            "height": 50
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 0,
+          "sourceBounds": {
+            "left": 122,
+            "top": 394,
+            "width": 107,
+            "height": 77
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 0,
+          "sourceBounds": {
+            "left": 228,
+            "top": 373,
+            "width": 111,
+            "height": 102
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 0,
+          "sourceBounds": {
+            "left": 333,
+            "top": 373,
+            "width": 123,
+            "height": 110
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 0,
+          "sourceBounds": {
+            "left": 449,
+            "top": 381,
+            "width": 106,
+            "height": 98
+          }
+        }
+      }
+    },
+    "medium": {
+      "row": 1,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 1,
+          "sourceBounds": {
+            "left": 40,
+            "top": 518,
+            "width": 63,
+            "height": 50
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 1,
+          "sourceBounds": {
+            "left": 104,
+            "top": 498,
+            "width": 96,
+            "height": 78
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 1,
+          "sourceBounds": {
+            "left": 197,
+            "top": 491,
+            "width": 115,
+            "height": 92
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 1,
+          "sourceBounds": {
+            "left": 306,
+            "top": 476,
+            "width": 124,
+            "height": 111
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 1,
+          "sourceBounds": {
+            "left": 421,
+            "top": 477,
+            "width": 126,
+            "height": 115
+          }
+        },
+        "frame_05": {
+          "col": 5,
+          "row": 1,
+          "sourceBounds": {
+            "left": 538,
+            "top": 483,
+            "width": 147,
+            "height": 114
+          }
+        },
+        "frame_06": {
+          "col": 6,
+          "row": 1,
+          "sourceBounds": {
+            "left": 684,
+            "top": 491,
+            "width": 118,
+            "height": 108
+          }
+        },
+        "frame_07": {
+          "col": 7,
+          "row": 1,
+          "sourceBounds": {
+            "left": 809,
+            "top": 500,
+            "width": 119,
+            "height": 99
+          }
+        },
+        "frame_08": {
+          "col": 8,
+          "row": 1,
+          "sourceBounds": {
+            "left": 945,
+            "top": 503,
+            "width": 115,
+            "height": 97
+          }
+        }
+      }
+    },
+    "large": {
+      "row": 2,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 2,
+          "sourceBounds": {
+            "left": 43,
+            "top": 620,
+            "width": 61,
+            "height": 49
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 2,
+          "sourceBounds": {
+            "left": 105,
+            "top": 604,
+            "width": 87,
+            "height": 75
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 2,
+          "sourceBounds": {
+            "left": 186,
+            "top": 594,
+            "width": 111,
+            "height": 95
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 2,
+          "sourceBounds": {
+            "left": 298,
+            "top": 583,
+            "width": 127,
+            "height": 114
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 2,
+          "sourceBounds": {
+            "left": 421,
+            "top": 581,
+            "width": 128,
+            "height": 120
+          }
+        },
+        "frame_05": {
+          "col": 5,
+          "row": 2,
+          "sourceBounds": {
+            "left": 701,
+            "top": 588,
+            "width": 139,
+            "height": 119
+          }
+        },
+        "frame_06": {
+          "col": 6,
+          "row": 2,
+          "sourceBounds": {
+            "left": 839,
+            "top": 591,
+            "width": 129,
+            "height": 113
+          }
+        },
+        "frame_07": {
+          "col": 7,
+          "row": 2,
+          "sourceBounds": {
+            "left": 983,
+            "top": 599,
+            "width": 122,
+            "height": 104
+          }
+        }
+      }
+    },
+    "plasma": {
+      "row": 3,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 3,
+          "sourceBounds": {
+            "left": 43,
+            "top": 723,
+            "width": 62,
+            "height": 59
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 3,
+          "sourceBounds": {
+            "left": 104,
+            "top": 714,
+            "width": 88,
+            "height": 81
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 3,
+          "sourceBounds": {
+            "left": 191,
+            "top": 696,
+            "width": 109,
+            "height": 111
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 3,
+          "sourceBounds": {
+            "left": 289,
+            "top": 691,
+            "width": 132,
+            "height": 122
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 3,
+          "sourceBounds": {
+            "left": 413,
+            "top": 687,
+            "width": 146,
+            "height": 131
+          }
+        },
+        "frame_05": {
+          "col": 5,
+          "row": 3,
+          "sourceBounds": {
+            "left": 544,
+            "top": 582,
+            "width": 158,
+            "height": 239
+          }
+        },
+        "frame_06": {
+          "col": 6,
+          "row": 3,
+          "sourceBounds": {
+            "left": 696,
+            "top": 713,
+            "width": 112,
+            "height": 95
+          }
+        },
+        "frame_07": {
+          "col": 7,
+          "row": 3,
+          "sourceBounds": {
+            "left": 802,
+            "top": 699,
+            "width": 112,
+            "height": 108
+          }
+        },
+        "frame_08": {
+          "col": 8,
+          "row": 3,
+          "sourceBounds": {
+            "left": 910,
+            "top": 699,
+            "width": 115,
+            "height": 108
+          }
+        }
+      }
+    },
+    "smoke": {
+      "row": 4,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 4,
+          "sourceBounds": {
+            "left": 855,
+            "top": 809,
+            "width": 109,
+            "height": 90
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 4,
+          "sourceBounds": {
+            "left": 963,
+            "top": 795,
+            "width": 139,
+            "height": 109
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 4,
+          "sourceBounds": {
+            "left": 1096,
+            "top": 799,
+            "width": 120,
+            "height": 105
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 4,
+          "sourceBounds": {
+            "left": 1220,
+            "top": 798,
+            "width": 119,
+            "height": 106
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 4,
+          "sourceBounds": {
+            "left": 1338,
+            "top": 797,
+            "width": 111,
+            "height": 106
+          }
+        },
+        "frame_05": {
+          "col": 5,
+          "row": 4,
+          "sourceBounds": {
+            "left": 1445,
+            "top": 803,
+            "width": 70,
+            "height": 85
+          }
+        }
+      }
+    },
+    "reactor": {
+      "row": 5,
+      "frames": {
+        "frame_00": {
+          "col": 0,
+          "row": 5,
+          "sourceBounds": {
+            "left": 289,
+            "top": 691,
+            "width": 132,
+            "height": 122
+          }
+        },
+        "frame_01": {
+          "col": 1,
+          "row": 5,
+          "sourceBounds": {
+            "left": 298,
+            "top": 583,
+            "width": 127,
+            "height": 114
+          }
+        },
+        "frame_02": {
+          "col": 2,
+          "row": 5,
+          "sourceBounds": {
+            "left": 306,
+            "top": 476,
+            "width": 124,
+            "height": 111
+          }
+        },
+        "frame_03": {
+          "col": 3,
+          "row": 5,
+          "sourceBounds": {
+            "left": 421,
+            "top": 477,
+            "width": 126,
+            "height": 115
+          }
+        },
+        "frame_04": {
+          "col": 4,
+          "row": 5,
+          "sourceBounds": {
+            "left": 421,
+            "top": 581,
+            "width": 128,
+            "height": 120
+          }
+        },
+        "frame_05": {
+          "col": 5,
+          "row": 5,
+          "sourceBounds": {
+            "left": 413,
+            "top": 687,
+            "width": 146,
+            "height": 131
+          }
+        },
+        "frame_06": {
+          "col": 6,
+          "row": 5,
+          "sourceBounds": {
+            "left": 538,
+            "top": 483,
+            "width": 147,
+            "height": 114
+          }
+        },
+        "frame_07": {
+          "col": 7,
+          "row": 5,
+          "sourceBounds": {
+            "left": 544,
+            "top": 582,
+            "width": 158,
+            "height": 239
+          }
+        },
+        "frame_08": {
+          "col": 8,
+          "row": 5,
+          "sourceBounds": {
+            "left": 684,
+            "top": 491,
+            "width": 118,
+            "height": 108
+          }
+        }
+      }
+    }
+  }
+}

@@ -10,13 +10,15 @@ import {
   getModuleSpriteKey,
   hoverAtlas,
   moduleAtlas,
+  moduleStateAtlas,
   weaponAtlas,
+  weaponStateAtlas,
   type BattleVfxSpriteKey,
   type HoverSpriteKey,
   type ModuleSpriteKey,
   type WeaponSpriteKey
 } from "@/game/assets/moduleSprites";
-import type { ShipBuild, WeaponDef } from "@/game/types";
+import type { ModuleDef, ShipBuild, WeaponDef } from "@/game/types";
 
 const BACKGROUND_SCENE = { width: 2400, height: 3600 };
 
@@ -39,6 +41,7 @@ type Enemy = {
   turnRate: number;
   radius: number;
   body: Container;
+  visual: ShipVisual;
   weapons: WeaponState[];
   engineMounts: Vec[];
 };
@@ -46,6 +49,7 @@ type Projectile = {
   pos: Vec;
   vel: Vec;
   owner: "player" | "enemy";
+  damageType: WeaponDef["damageType"];
   damage: number;
   radius: number;
   life: number;
@@ -55,6 +59,41 @@ type Projectile = {
   previous: Vec;
   trail: Graphics;
 };
+
+type BattleSoundKey =
+  | "autocannon"
+  | "laser"
+  | "plasma"
+  | "missile"
+  | "thruster"
+  | "impactKinetic"
+  | "impactEnergy"
+  | "impactPlasma"
+  | "impactExplosive";
+type ExplosionAnimationKey = "small" | "medium" | "large" | "plasma" | "smoke" | "reactor";
+
+const EXPLOSION_ANIMATION_ROWS: Record<ExplosionAnimationKey, { row: number; frames: number }> = {
+  small: { row: 0, frames: 5 },
+  medium: { row: 1, frames: 9 },
+  large: { row: 2, frames: 8 },
+  plasma: { row: 3, frames: 9 },
+  smoke: { row: 4, frames: 6 },
+  reactor: { row: 5, frames: 9 }
+};
+
+const BATTLE_AUDIO = {
+  engineIdle: "/assets/audio/engine-idle-loop.mp3",
+  engineThrust: "/assets/audio/engine-thrust-loop.mp3",
+  thruster: "/assets/audio/thruster-burst.mp3",
+  autocannon: "/assets/audio/weapon-autocannon-shot.mp3",
+  laser: "/assets/audio/weapon-laser-shot.mp3",
+  plasma: "/assets/audio/weapon-plasma-shot.mp3",
+  missile: "/assets/audio/weapon-missile-launch.mp3",
+  impactKinetic: "/assets/audio/impact-kinetic-hull.mp3",
+  impactEnergy: "/assets/audio/impact-energy-shield.mp3",
+  impactPlasma: "/assets/audio/impact-plasma-armor.mp3",
+  impactExplosive: "/assets/audio/impact-missile-explosion.mp3"
+} as const;
 type Particle = {
   pos: Vec;
   vel: Vec;
@@ -85,16 +124,29 @@ type EnemyMarker = {
 type AtlasTextures = {
   background: Texture;
   planets: Texture;
-  modules: Record<ModuleSpriteKey, Texture>;
-  weapons: Record<WeaponSpriteKey, Texture>;
+  modules: StateTextureMap<ModuleSpriteKey>;
+  weapons: StateTextureMap<WeaponSpriteKey>;
   hover: Record<HoverSpriteKey, Texture>;
   battleVfx: Record<BattleVfxSpriteKey, Texture>;
+  aiExplosionAnimations: Record<ExplosionAnimationKey, Texture[]>;
+};
+
+type ModuleDamageState = "ideal" | "lightDamage" | "heavyDamage" | "debris";
+type StateTextureMap<T extends string> = Record<ModuleDamageState, Record<T, Texture>>;
+type ShipVisualPart = {
+  module: ModuleDef;
+  sprite: Sprite;
+  weaponBaseKey?: WeaponSpriteKey;
+  turret?: Sprite;
+  weaponTurretKey?: WeaponSpriteKey;
 };
 
 type ShipVisual = {
   container: Container;
   turrets: Map<string, Sprite>;
   engineMounts: Vec[];
+  parts: ShipVisualPart[];
+  damageState: ModuleDamageState;
 };
 
 export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
@@ -106,6 +158,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
     let destroyed = false;
     let initialized = false;
+    let battleAudio: ReturnType<typeof createBattleAudio> | null = null;
     const app = new Application();
     const host = hostRef.current;
     const stats = calculateShipStats(build);
@@ -136,21 +189,71 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         width: app.screen.width,
         height: app.screen.height
       });
-      const planetsLayer = new Container();
-      const dustLayer = new Container();
-      const engineLayer = new Container();
-      const world = new Container();
-      const projectilesLayer = new Container();
-      const enemiesLayer = new Container();
-      const effectsLayer = new Container();
-      const markerLayer = new Container();
+      const layers = {
+        background: new Container(),
+        farParticles: new Container(),
+        debris: new Container(),
+        ships: new Container(),
+        engineVfx: new Container(),
+        projectiles: new Container(),
+        impactVfx: new Container(),
+        explosions: new Container(),
+        uiWorld: new Container(),
+        screenVfx: new Container(),
+        hud: new Container()
+      };
+      const backgroundLayers = {
+        deep_space_background_dark: new Container(),
+        nebula_layer_blue: new Container(),
+        nebula_layer_purple: new Container(),
+        far_stars_layer: new Container(),
+        close_stars_layer: new Container(),
+        asteroid_debris_layer: new Container(),
+        dust_particles_layer: new Container(),
+        battlefield_grid_subtle: new Container(),
+        space_clouds_soft: new Container(),
+        distant_planet_silhouette: new Container()
+      };
       const damageFlash = new Graphics();
-      app.stage.addChild(spaceTile, planetsLayer, dustLayer, engineLayer, world, enemiesLayer, projectilesLayer, effectsLayer);
-      seedPlanets(planetsLayer, textures.planets);
-      seedParallax(dustLayer);
+      backgroundLayers.deep_space_background_dark.addChild(spaceTile);
+      layers.background.addChild(
+        backgroundLayers.deep_space_background_dark,
+        backgroundLayers.nebula_layer_blue,
+        backgroundLayers.nebula_layer_purple,
+        backgroundLayers.far_stars_layer,
+        backgroundLayers.close_stars_layer,
+        backgroundLayers.asteroid_debris_layer,
+        backgroundLayers.dust_particles_layer,
+        backgroundLayers.battlefield_grid_subtle,
+        backgroundLayers.space_clouds_soft,
+        backgroundLayers.distant_planet_silhouette
+      );
+      layers.screenVfx.addChild(damageFlash);
+      app.stage.addChild(
+        layers.background,
+        layers.farParticles,
+        layers.debris,
+        layers.engineVfx,
+        layers.ships,
+        layers.projectiles,
+        layers.impactVfx,
+        layers.explosions,
+        layers.uiWorld,
+        layers.screenVfx,
+        layers.hud
+      );
+      seedNebulaLayer(backgroundLayers.nebula_layer_blue, 0x1a5f9f, 0.08);
+      seedNebulaLayer(backgroundLayers.nebula_layer_purple, 0x5c3b8f, 0.06);
+      seedStarLayer(backgroundLayers.far_stars_layer, 140, 0.08, 1.2);
+      seedStarLayer(backgroundLayers.close_stars_layer, 65, 0.12, 1.7);
+      seedAsteroidDebris(backgroundLayers.asteroid_debris_layer);
+      seedDustParticles(backgroundLayers.dust_particles_layer);
+      seedBattlefieldGrid(backgroundLayers.battlefield_grid_subtle);
+      seedSpaceClouds(backgroundLayers.space_clouds_soft);
+      seedDistantPlanetSilhouette(backgroundLayers.distant_planet_silhouette);
 
       const ship = buildShipGraphic(build, textures);
-      world.addChild(ship.container);
+      layers.ships.addChild(ship.container);
 
       const player = {
         build,
@@ -170,15 +273,15 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         makeEnemy("raider", 250, -460, textures),
         makeEnemy("bomber", -260, -540, textures)
       ];
-      enemies.forEach((enemy) => enemiesLayer.addChild(enemy.body));
-      app.stage.addChild(markerLayer);
+      enemies.forEach((enemy) => layers.ships.addChild(enemy.body));
       const enemyMarkers = enemies.map((enemy) => makeEnemyMarker(enemy));
-      enemyMarkers.forEach((marker) => markerLayer.addChild(marker.root));
-      app.stage.addChild(damageFlash);
+      enemyMarkers.forEach((marker) => layers.uiWorld.addChild(marker.root));
 
       const projectiles: Projectile[] = [];
       const particles: Particle[] = [];
       const weapons = collectWeapons(build, ship.turrets);
+      const audio = createBattleAudio();
+      battleAudio = audio;
       let screenShake = 0;
       let damagePulse = 0;
       let previousPlayerHp = player.hp;
@@ -192,11 +295,13 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         .fill({ color: 0x49d7ff, alpha: 0.45 });
       joystickBase.visible = false;
       joystickKnob.visible = false;
-      app.stage.addChild(joystickBase, joystickKnob);
+      layers.hud.addChild(joystickBase, joystickKnob);
 
       app.stage.eventMode = "static";
       app.stage.hitArea = app.screen;
       app.stage.on("pointerdown", (event) => {
+        audio.unlock();
+        audio.play("thruster");
         joystick.active = true;
         joystick.origin = { x: event.global.x, y: event.global.y };
         joystick.value = { x: 0, y: 0 };
@@ -249,10 +354,12 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         const inputPower = Math.min(1, Math.hypot(joystick.value.x, joystick.value.y));
         if (inputPower > 0.05) {
           applyShipPhysics(player, Math.atan2(joystick.value.y, joystick.value.x), inputPower, dt);
-          spawnEngineGlows(engineLayer, player.pos, player.rotation, ship.engineMounts, inputPower);
+          spawnEngineGlows(layers.engineVfx, player.pos, player.rotation, ship.engineMounts, inputPower);
         } else {
           applyShipPhysics(player, player.rotation, 0, dt);
         }
+        audio.setEnginePower(inputPower);
+        applyShipDamageState(ship, textures, getShipDamageState(player.hp, player.maxHp));
 
         ship.container.position.set(player.pos.x, player.pos.y);
         ship.container.rotation = player.rotation + Math.PI / 2;
@@ -266,10 +373,12 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           rotateTurretToTarget(weaponState, ship.container.rotation, player.pos, target.pos);
           weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
           const origin = getWorldMount(player.pos, player.rotation, weaponState.mount);
+          audio.play(getWeaponSoundKey(weaponState.weapon.damageType));
 
           if (weaponState.weapon.damageType === "energy") {
             target.hp -= weaponState.weapon.damage;
-            spawnBeam(effectsLayer, particles, textures.battleVfx, origin, target.pos);
+            spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, target.pos);
+            audio.play("impactEnergy");
             screenShake = 0.08;
             return;
           }
@@ -285,25 +394,28 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             origin.y,
             (dx / dist) * speed,
             (dy / dist) * speed,
+            weaponState.weapon.damageType,
             weaponState.weapon.damage,
             weaponState.weapon.damageType === "explosive" ? 7 : 4,
             weaponState.weapon.damageType === "plasma" ? 0x8b5cff : 0x49d7ff,
             weaponState.weapon.damageType === "explosive"
           );
           if (weaponState.weapon.damageType === "kinetic") {
-            spawnShellCasing(effectsLayer, textures.battleVfx.shellCasing, origin, player.rotation);
+            spawnShellCasing(layers.debris, textures.battleVfx.shellCasing, origin, player.rotation);
           }
           projectiles.push(projectile);
-          projectilesLayer.addChild(projectile.trail, projectile.body);
+          layers.projectiles.addChild(projectile.trail, projectile.body);
         });
       }
 
       function updateEnemies(dt: number) {
         enemies.forEach((enemy) => {
           if (enemy.hp <= 0) {
-            enemy.body.visible = false;
+            applyShipDamageState(enemy.visual, textures, "debris");
+            enemy.body.alpha = 0.46;
             return;
           }
+          applyShipDamageState(enemy.visual, textures, getShipDamageState(enemy.hp, enemy.maxHp));
           const dx = player.pos.x - enemy.pos.x;
           const dy = player.pos.y - enemy.pos.y;
           const dist = Math.max(1, Math.hypot(dx, dy));
@@ -311,7 +423,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           const desired = Math.atan2(dy, dx) + (dist < ideal ? Math.PI : 0);
           const inputPower = dist > ideal ? 0.9 : 0.45;
           applyShipPhysics(enemy, desired, inputPower, dt);
-          spawnEngineGlows(engineLayer, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower);
+          spawnEngineGlows(layers.engineVfx, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower);
           enemy.body.position.set(enemy.pos.x, enemy.pos.y);
           enemy.body.rotation = enemy.rotation + Math.PI / 2;
         });
@@ -329,10 +441,12 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             rotateTurretToTarget(weaponState, enemy.body.rotation, enemy.pos, player.pos);
             weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
             const origin = getWorldMount(enemy.pos, enemy.rotation, weaponState.mount);
+            audio.play(getWeaponSoundKey(weaponState.weapon.damageType), 0.58);
 
-          if (weaponState.weapon.damageType === "energy") {
-            player.hp -= weaponState.weapon.damage;
-              spawnBeam(effectsLayer, particles, textures.battleVfx, origin, player.pos);
+            if (weaponState.weapon.damageType === "energy") {
+              player.hp -= weaponState.weapon.damage;
+              spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, player.pos);
+              audio.play("impactEnergy", 0.7);
               screenShake = 0.08;
               return;
             }
@@ -345,16 +459,17 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
               origin.y,
               (dx / dist) * speed,
               (dy / dist) * speed,
+              weaponState.weapon.damageType,
               weaponState.weapon.damage,
               weaponState.weapon.damageType === "explosive" ? 6 : 4,
               0xff596a,
               weaponState.weapon.damageType === "explosive"
             );
             if (weaponState.weapon.damageType === "kinetic") {
-              spawnShellCasing(effectsLayer, textures.battleVfx.shellCasing, origin, enemy.rotation);
+              spawnShellCasing(layers.debris, textures.battleVfx.shellCasing, origin, enemy.rotation);
             }
             projectiles.push(projectile);
-            projectilesLayer.addChild(projectile.trail, projectile.body);
+            layers.projectiles.addChild(projectile.trail, projectile.body);
           });
         });
       }
@@ -370,7 +485,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           projectile.body.rotation = Math.atan2(projectile.vel.y, projectile.vel.x);
           drawProjectileTrail(projectile);
           if (projectile.smoke && Math.random() < 0.7) {
-            spawnSmoke(particles, effectsLayer, projectile.previous, 0.55);
+            spawnSmoke(particles, layers.debris, projectile.previous, 0.55);
           }
 
           let hit = false;
@@ -381,7 +496,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
               projectileHitsShip(projectile, enemy.build, enemy.pos, enemy.rotation)
             ) {
               enemy.hp -= projectile.damage;
-              spawnImpact(particles, effectsLayer, textures.battleVfx, projectile.pos, projectile.color);
+              spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, projectile.color);
+              audio.play(getImpactSoundKey(projectile.damageType));
               hit = true;
             }
           });
@@ -391,7 +507,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             projectileHitsShip(projectile, player.build, player.pos, player.rotation)
           ) {
             player.hp -= projectile.damage;
-            spawnImpact(particles, effectsLayer, textures.battleVfx, projectile.pos, 0xff596a);
+            spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, 0xff596a);
+            audio.play(getImpactSoundKey(projectile.damageType), 0.76);
             screenShake = 0.12;
             hit = true;
           }
@@ -400,8 +517,10 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             if (hit) {
               spawnExplosion(
                 particles,
-                effectsLayer,
+                layers.explosions,
                 textures.battleVfx,
+                textures.aiExplosionAnimations,
+                getExplosionAnimationKey(projectile.damageType, projectile.smoke),
                 projectile.pos,
                 projectile.smoke ? 34 : 22
               );
@@ -435,16 +554,24 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         const shakeY = screenShake > 0 ? (Math.random() - 0.5) * 10 : 0;
         const cx = app.screen.width / 2 - player.pos.x + shakeX;
         const cy = app.screen.height / 2 - player.pos.y + shakeY;
-        world.position.set(cx, cy);
-        engineLayer.position.set(cx, cy);
-        enemiesLayer.position.set(cx, cy);
-        projectilesLayer.position.set(cx, cy);
-        effectsLayer.position.set(cx, cy);
+        layers.debris.position.set(cx, cy);
+        layers.ships.position.set(cx, cy);
+        layers.engineVfx.position.set(cx, cy);
+        layers.projectiles.position.set(cx, cy);
+        layers.impactVfx.position.set(cx, cy);
+        layers.explosions.position.set(cx, cy);
         spaceTile.width = app.screen.width;
         spaceTile.height = app.screen.height;
         spaceTile.tilePosition.set(player.pos.x * -0.025, player.pos.y * -0.025);
-        planetsLayer.position.set(cx * 0.09, cy * 0.09);
-        dustLayer.position.set(cx * 0.26, cy * 0.26);
+        setParallax(backgroundLayers.nebula_layer_blue, cx, cy, 0.035);
+        setParallax(backgroundLayers.nebula_layer_purple, cx, cy, 0.055);
+        setParallax(backgroundLayers.far_stars_layer, cx, cy, 0.08);
+        setParallax(backgroundLayers.close_stars_layer, cx, cy, 0.16);
+        setParallax(backgroundLayers.asteroid_debris_layer, cx, cy, 0.22);
+        setParallax(backgroundLayers.dust_particles_layer, cx, cy, 0.28);
+        setParallax(backgroundLayers.battlefield_grid_subtle, cx, cy, 0.38);
+        setParallax(backgroundLayers.space_clouds_soft, cx, cy, 0.05);
+        setParallax(backgroundLayers.distant_planet_silhouette, cx, cy, 0.025);
       }
 
       function updateEnemyMarkers() {
@@ -454,8 +581,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           if (!marker.root.visible) return;
 
           const distance = Math.hypot(enemy.pos.x - player.pos.x, enemy.pos.y - player.pos.y);
-          const sx = enemiesLayer.position.x + enemy.pos.x;
-          const sy = enemiesLayer.position.y + enemy.pos.y;
+          const sx = layers.ships.position.x + enemy.pos.x;
+          const sy = layers.ships.position.y + enemy.pos.y;
           const padding = 20;
           const isVisible = sx >= padding && sx <= app.screen.width - padding && sy >= padding && sy <= app.screen.height - padding;
           const hpPercent = Math.max(0, Math.ceil((enemy.hp / enemy.maxHp) * 100));
@@ -505,7 +632,17 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       function finish(result: "victory" | "defeat") {
         if (resultRef.current) return;
         resultRef.current = true;
-        spawnExplosion(particles, effectsLayer, textures.battleVfx, player.pos, result === "defeat" ? 70 : 30);
+        audio.setEnginePower(0);
+        audio.play("impactExplosive");
+        spawnExplosion(
+          particles,
+          layers.explosions,
+          textures.battleVfx,
+          textures.aiExplosionAnimations,
+          result === "defeat" ? "reactor" : "large",
+          player.pos,
+          result === "defeat" ? 70 : 30
+        );
         onResult(result);
       }
     }
@@ -516,6 +653,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       destroyed = true;
       resultRef.current = false;
       window.removeEventListener("resize", resize);
+      battleAudio?.destroy();
       if (initialized) app.destroy();
     };
   }, [build, onResult]);
@@ -524,33 +662,70 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 }
 
 async function loadAtlasTextures(): Promise<AtlasTextures> {
-  const [background, planets, moduleBase, weaponBase, hoverBase, battleVfxBase] = await Promise.all([
+  const [background, planets, moduleStateBase, weaponStateBase, hoverBase, battleVfxBase, explosionBase] = await Promise.all([
     Assets.load<Texture>("/assets/backgrounds/space-tile.png"),
     Assets.load<Texture>("/assets/backgrounds/planet-atlas.png"),
-    Assets.load<Texture>(moduleAtlas.src),
-    Assets.load<Texture>(weaponAtlas.src),
+    Assets.load<Texture>(moduleStateAtlas.src),
+    Assets.load<Texture>(weaponStateAtlas.src),
     Assets.load<Texture>(hoverAtlas.src),
-    Assets.load<Texture>(battleVfxAtlas.src)
+    Assets.load<Texture>(battleVfxAtlas.src),
+    Assets.load<Texture>("/assets/generated/ai/explosion-ai-effects-atlas.png")
   ]);
 
   return {
     background,
     planets,
-    modules: sliceAtlas(moduleBase, moduleAtlas),
-    weapons: sliceAtlas(weaponBase, weaponAtlas),
+    modules: sliceStateAtlas(moduleStateBase, moduleAtlas),
+    weapons: sliceStateAtlas(weaponStateBase, weaponAtlas),
     hover: sliceAtlas(hoverBase, hoverAtlas),
-    battleVfx: sliceAtlas(battleVfxBase, battleVfxAtlas, 18)
+    battleVfx: sliceAtlas(battleVfxBase, battleVfxAtlas, 18),
+    aiExplosionAnimations: sliceExplosionAnimations(explosionBase)
+  };
+}
+
+function sliceExplosionAnimations(base: Texture): Record<ExplosionAnimationKey, Texture[]> {
+  const frameWidth = 256;
+  const frameHeight = 256;
+  return Object.fromEntries(
+    Object.entries(EXPLOSION_ANIMATION_ROWS).map(([key, animation]) => [
+      key,
+      Array.from({ length: animation.frames }, (_, col) =>
+        new Texture({
+          source: base.source,
+          frame: new Rectangle(col * frameWidth, animation.row * frameHeight, frameWidth, frameHeight)
+        })
+      )
+    ])
+  ) as Record<ExplosionAnimationKey, Texture[]>;
+}
+
+function sliceStateAtlas<T extends string>(
+  base: Texture,
+  atlas: {
+    rows: number;
+    frameWidth: number;
+    frameHeight: number;
+    cells: Record<T, { col: number; row: number }>;
+  }
+): StateTextureMap<T> {
+  return {
+    ideal: sliceAtlas(base, atlas, 0, 0),
+    lightDamage: sliceAtlas(base, atlas, 0, 1),
+    heavyDamage: sliceAtlas(base, atlas, 0, 2),
+    debris: sliceAtlas(base, atlas, 0, 3)
   };
 }
 
 function sliceAtlas<T extends string>(
   base: Texture,
   atlas: {
+    rows: number;
     frameWidth: number;
     frameHeight: number;
     cells: Record<T, { col: number; row: number }>;
   },
-  inset = 0
+  inset = 0,
+  stateRowOffset = 0
 ) {
   const textures = {} as Record<T, Texture>;
   (Object.keys(atlas.cells) as T[]).forEach((key) => {
@@ -559,7 +734,7 @@ function sliceAtlas<T extends string>(
       source: base.source,
       frame: new Rectangle(
         cell.col * atlas.frameWidth + inset,
-        cell.row * atlas.frameHeight + inset,
+        (cell.row + stateRowOffset * atlas.rows) * atlas.frameHeight + inset,
         atlas.frameWidth - inset * 2,
         atlas.frameHeight - inset * 2
       )
@@ -572,6 +747,7 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
   const container = new Container();
   const turrets = new Map<string, Sprite>();
   const engineMounts: Vec[] = [];
+  const parts: ShipVisualPart[] = [];
   const frame = getFrame(build.frameId);
   const cell = 26;
   const centerX = (frame.size.width - 1) / 2;
@@ -589,10 +765,9 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
       hover.position.set(x, y + 2);
       container.addChild(hover);
 
+      const weaponBaseKey = module.type === "weapon" ? getWeaponBaseKey(module.id) : undefined;
       const sprite = new Sprite(
-        module.type === "weapon"
-          ? textures.weapons[getWeaponBaseKey(module.id)]
-          : textures.modules[getModuleSpriteKey(module)]
+        weaponBaseKey ? textures.weapons.ideal[weaponBaseKey] : textures.modules.ideal[getModuleSpriteKey(module)]
       );
       sprite.anchor.set(0.5);
       sprite.width = module.type === "weapon" ? cell * 1.72 : cell * 1.82;
@@ -604,7 +779,8 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
       if (module.type === "engine") engineMounts.push({ x, y });
 
       if (module.type === "weapon") {
-        const turret = new Sprite(textures.weapons[getWeaponTurretKey(module.id)]);
+        const weaponTurretKey = getWeaponTurretKey(module.id);
+        const turret = new Sprite(textures.weapons.ideal[weaponTurretKey]);
         turret.anchor.set(0.5);
         turret.width = cell * 1.52;
         turret.height = cell * 1.52;
@@ -614,10 +790,36 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
         if (module.id === "missile_pod") turret.tint = 0xffd080;
         container.addChild(turret);
         turrets.set(installed.instanceId, turret);
+        parts.push({ module, sprite, weaponBaseKey, turret, weaponTurretKey });
+      } else {
+        parts.push({ module, sprite });
       }
     });
   });
-  return { container, turrets, engineMounts };
+  return { container, turrets, engineMounts, parts, damageState: "ideal" };
+}
+
+function getShipDamageState(hp: number, maxHp: number): ModuleDamageState {
+  const ratio = maxHp > 0 ? hp / maxHp : 0;
+  if (ratio <= 0) return "debris";
+  if (ratio < 0.34) return "heavyDamage";
+  if (ratio < 0.68) return "lightDamage";
+  return "ideal";
+}
+
+function applyShipDamageState(visual: ShipVisual, textures: AtlasTextures, state: ModuleDamageState) {
+  if (visual.damageState === state) return;
+  visual.parts.forEach((part) => {
+    if (part.weaponBaseKey) {
+      part.sprite.texture = textures.weapons[state][part.weaponBaseKey];
+      if (part.turret && part.weaponTurretKey) {
+        part.turret.texture = textures.weapons[state][part.weaponTurretKey];
+      }
+      return;
+    }
+    part.sprite.texture = textures.modules[state][getModuleSpriteKey(part.module)];
+  });
+  visual.damageState = state;
 }
 
 function collectWeapons(build: ShipBuild, turrets: Map<string, Sprite>): WeaponState[] {
@@ -689,6 +891,7 @@ function makeEnemy(
     turnRate: Math.max(1.5, stats.turnRate),
     radius,
     body,
+    visual,
     weapons: collectWeapons(build, visual.turrets),
     engineMounts: visual.engineMounts
   };
@@ -851,6 +1054,7 @@ function makeProjectile(
   y: number,
   vx: number,
   vy: number,
+  damageType: WeaponDef["damageType"],
   damage: number,
   radius: number,
   color = 0x49d7ff,
@@ -868,6 +1072,7 @@ function makeProjectile(
     pos: { x, y },
     vel: { x: vx, y: vy },
     owner,
+    damageType,
     damage,
     radius,
     life: 2.6,
@@ -887,6 +1092,13 @@ function getProjectileSpriteKey(damageType: WeaponDef["damageType"]): BattleVfxS
   return "kineticProjectile";
 }
 
+function getExplosionAnimationKey(damageType: WeaponDef["damageType"], smoke: boolean): ExplosionAnimationKey {
+  if (smoke || damageType === "explosive") return "medium";
+  if (damageType === "plasma" || damageType === "emp" || damageType === "thermal") return "plasma";
+  if (damageType === "kinetic") return "small";
+  return "small";
+}
+
 function spawnShellCasing(layer: Container, texture: Texture, origin: Vec, rotation: number) {
   const casing = new Sprite(texture);
   casing.anchor.set(0.5);
@@ -898,58 +1110,102 @@ function spawnShellCasing(layer: Container, texture: Texture, origin: Vec, rotat
   setTimeout(() => casing.destroy(), 420);
 }
 
-function seedPlanets(layer: Container, atlas: Texture) {
-  const frameWidth = atlas.width / 2;
-  const frameHeight = atlas.height / 2;
-  const planetCells = [
-    { col: 0, row: 0 },
-    { col: 1, row: 0 },
-    { col: 0, row: 1 },
-    { col: 1, row: 1 }
-  ].sort(() => Math.random() - 0.5);
-  const anchors = [
-    { x: -560, y: -180 },
-    { x: 560, y: 220 },
-    { x: -520, y: 980 },
-    { x: 520, y: 1220 }
-  ].sort(() => Math.random() - 0.5);
-  const count = 2 + Math.floor(Math.random() * 2);
+function setParallax(layer: Container, cx: number, cy: number, amount: number) {
+  layer.position.set(cx * amount, cy * amount);
+}
 
-  for (let i = 0; i < count; i += 1) {
-    const cell = planetCells[i];
-    const anchor = anchors[i];
-    const size = 440 + Math.random() * 360;
-    const texture = new Texture({
-      source: atlas.source,
-      frame: new Rectangle(
-        cell.col * frameWidth + 10,
-        cell.row * frameHeight + 10,
-        frameWidth - 20,
-        frameHeight - 20
-      )
-    });
-    const sprite = new Sprite(texture);
-    sprite.anchor.set(0.5);
-    sprite.width = size;
-    sprite.height = size;
-    sprite.alpha = 0.62 + Math.random() * 0.22;
-    sprite.rotation = Math.random() * Math.PI * 2;
-    sprite.position.set(anchor.x + Math.random() * 220 - 110, anchor.y + Math.random() * 300 - 150);
-    layer.addChild(sprite);
+function seedNebulaLayer(layer: Container, color: number, alpha: number) {
+  for (let i = 0; i < 6; i += 1) {
+    const cloud = new Graphics()
+      .ellipse(0, 0, 280 + Math.random() * 360, 120 + Math.random() * 190)
+      .fill({ color, alpha: alpha * (0.55 + Math.random() * 0.45) });
+    cloud.position.set(
+      Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
+      Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
+    );
+    cloud.rotation = Math.random() * Math.PI;
+    layer.addChild(cloud);
   }
 }
 
-function seedParallax(dustLayer: Container) {
-  for (let i = 0; i < 90; i += 1) {
+function seedStarLayer(layer: Container, count: number, alpha: number, maxSize: number) {
+  for (let i = 0; i < count; i += 1) {
+    const star = new Graphics()
+      .circle(0, 0, 0.35 + Math.random() * maxSize)
+      .fill({ color: 0xc9d7e8, alpha: alpha * (0.35 + Math.random() * 0.65) });
+    star.position.set(
+      Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
+      Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
+    );
+    layer.addChild(star);
+  }
+}
+
+function seedAsteroidDebris(layer: Container) {
+  for (let i = 0; i < 22; i += 1) {
+    const size = 1.5 + Math.random() * 4;
+    const rock = new Graphics()
+      .poly([0, -size, size * 0.8, -size * 0.2, size * 0.35, size, -size * 0.9, size * 0.45])
+      .fill({ color: 0x6f7885, alpha: 0.11 + Math.random() * 0.08 });
+    rock.position.set(
+      Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
+      Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
+    );
+    rock.rotation = Math.random() * Math.PI * 2;
+    layer.addChild(rock);
+  }
+}
+
+function seedDustParticles(layer: Container) {
+  for (let i = 0; i < 95; i += 1) {
     const dot = new Graphics()
-      .circle(0, 0, Math.random() * 2 + 0.45)
-      .fill({ color: 0x8fa4b8, alpha: Math.random() * 0.12 + 0.035 });
+      .circle(0, 0, Math.random() * 1.8 + 0.35)
+      .fill({ color: 0x8fa4b8, alpha: Math.random() * 0.08 + 0.025 });
     dot.position.set(
       Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
       Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
     );
-    dustLayer.addChild(dot);
+    layer.addChild(dot);
   }
+}
+
+function seedBattlefieldGrid(layer: Container) {
+  const grid = new Graphics();
+  const step = 96;
+  const width = BACKGROUND_SCENE.width;
+  const height = BACKGROUND_SCENE.height;
+  for (let x = -width / 2; x <= width / 2; x += step) {
+    grid.moveTo(x, -height / 2).lineTo(x, height / 2);
+  }
+  for (let y = -height / 2; y <= height / 2; y += step) {
+    grid.moveTo(-width / 2, y).lineTo(width / 2, y);
+  }
+  grid.stroke({ color: 0x5d7fa8, alpha: 0.035, width: 1 });
+  layer.addChild(grid);
+}
+
+function seedSpaceClouds(layer: Container) {
+  for (let i = 0; i < 5; i += 1) {
+    const cloud = new Graphics()
+      .ellipse(0, 0, 360 + Math.random() * 420, 70 + Math.random() * 130)
+      .fill({ color: 0x9ab6d5, alpha: 0.025 + Math.random() * 0.02 });
+    cloud.position.set(
+      Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
+      Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
+    );
+    cloud.rotation = Math.random() * Math.PI;
+    layer.addChild(cloud);
+  }
+}
+
+function seedDistantPlanetSilhouette(layer: Container) {
+  const planet = new Graphics()
+    .circle(0, 0, 340)
+    .fill({ color: 0x101a2b, alpha: 0.46 })
+    .circle(-95, -100, 345)
+    .fill({ color: 0x03050c, alpha: 0.62 });
+  planet.position.set(720, 250);
+  layer.addChild(planet);
 }
 
 function drawProjectileTrail(projectile: Projectile) {
@@ -1195,12 +1451,22 @@ function spawnExplosion(
   particles: Particle[],
   layer: Container,
   textures: Record<BattleVfxSpriteKey, Texture>,
+  animations: Record<ExplosionAnimationKey, Texture[]>,
+  animationKey: ExplosionAnimationKey,
   pos: Vec,
   size: number
 ) {
   const explosionTexture =
     size > 52 ? textures.largeExplosion : size > 28 ? textures.mediumExplosion : textures.smallExplosion;
-  spawnVfxSprite(layer, explosionTexture, pos, size * 2.2, 0.34);
+  const animatedFrames = animations[animationKey] ?? animations.medium;
+  if (animatedFrames.length > 0) {
+    spawnAnimatedVfxSprite(layer, animatedFrames, pos, size * 2.7, 0.48);
+    if (animationKey === "medium" && animations.smoke.length > 0) {
+      spawnAnimatedVfxSprite(layer, animations.smoke, pos, size * 2.2, 0.62);
+    }
+  } else {
+    spawnVfxSprite(layer, explosionTexture, pos, size * 2.2, 0.34);
+  }
   spawnVfxSprite(layer, textures.debrisCluster, pos, size * 1.45, 0.32, 0xffffff, 0.7);
   addParticle(particles, layer, {
     pos: { ...pos },
@@ -1235,6 +1501,36 @@ function spawnExplosion(
       0.28
     );
   }
+}
+
+function spawnAnimatedVfxSprite(
+  layer: Container,
+  frames: Texture[],
+  pos: Vec,
+  size: number,
+  lifetime: number
+) {
+  const sprite = new Sprite(frames[0]);
+  sprite.anchor.set(0.5);
+  sprite.width = size;
+  sprite.height = size;
+  sprite.position.set(pos.x, pos.y);
+  sprite.rotation = Math.random() * Math.PI * 2;
+  layer.addChild(sprite);
+
+  let frameIndex = 0;
+  const intervalMs = Math.max(34, (lifetime * 1000) / frames.length);
+  const timer = window.setInterval(() => {
+    frameIndex += 1;
+    if (frameIndex >= frames.length) {
+      window.clearInterval(timer);
+      sprite.destroy();
+      return;
+    }
+    sprite.texture = frames[frameIndex];
+    sprite.width = size;
+    sprite.height = size;
+  }, intervalMs);
 }
 
 function spawnVfxSprite(
@@ -1284,4 +1580,103 @@ function addParticle(
   body.position.set(input.pos.x, input.pos.y);
   layer.addChild(body);
   particles.push({ ...input, maxLife: input.life, body });
+}
+
+function getWeaponSoundKey(damageType: WeaponDef["damageType"]): BattleSoundKey {
+  if (damageType === "energy") return "laser";
+  if (damageType === "plasma" || damageType === "emp") return "plasma";
+  if (damageType === "explosive") return "missile";
+  return "autocannon";
+}
+
+function getImpactSoundKey(damageType: WeaponDef["damageType"]): BattleSoundKey {
+  if (damageType === "energy" || damageType === "emp") return "impactEnergy";
+  if (damageType === "plasma" || damageType === "thermal") return "impactPlasma";
+  if (damageType === "explosive") return "impactExplosive";
+  return "impactKinetic";
+}
+
+function createBattleAudio() {
+  const emptyAudio = {
+    unlock: () => {},
+    play: (_key: BattleSoundKey, _volume = 1) => {},
+    setEnginePower: (_power: number) => {},
+    destroy: () => {}
+  };
+  if (typeof Audio === "undefined") return emptyAudio;
+
+  let unlocked = false;
+  const lastPlayed = new Map<BattleSoundKey, number>();
+  const oneShots = new Map<BattleSoundKey, HTMLAudioElement[]>();
+  const idle = new Audio(BATTLE_AUDIO.engineIdle);
+  const thrust = new Audio(BATTLE_AUDIO.engineThrust);
+
+  idle.loop = true;
+  thrust.loop = true;
+  idle.volume = 0;
+  thrust.volume = 0;
+  idle.preload = "auto";
+  thrust.preload = "auto";
+
+  const makeOneShot = (src: string) => {
+    const audio = new Audio(src);
+    audio.preload = "auto";
+    return audio;
+  };
+
+  const sources: Record<BattleSoundKey, string> = {
+    autocannon: BATTLE_AUDIO.autocannon,
+    laser: BATTLE_AUDIO.laser,
+    plasma: BATTLE_AUDIO.plasma,
+    missile: BATTLE_AUDIO.missile,
+    thruster: BATTLE_AUDIO.thruster,
+    impactKinetic: BATTLE_AUDIO.impactKinetic,
+    impactEnergy: BATTLE_AUDIO.impactEnergy,
+    impactPlasma: BATTLE_AUDIO.impactPlasma,
+    impactExplosive: BATTLE_AUDIO.impactExplosive
+  };
+
+  (Object.keys(sources) as BattleSoundKey[]).forEach((key) => {
+    oneShots.set(key, [makeOneShot(sources[key]), makeOneShot(sources[key])]);
+  });
+
+  function startLoop(audio: HTMLAudioElement) {
+    audio.play().catch(() => {});
+  }
+
+  return {
+    unlock: () => {
+      if (unlocked) return;
+      unlocked = true;
+      startLoop(idle);
+      startLoop(thrust);
+    },
+    play: (key: BattleSoundKey, volume = 1) => {
+      if (!unlocked) return;
+      const now = performance.now();
+      const minGap = key === "autocannon" || key === "laser" ? 70 : 120;
+      if (now - (lastPlayed.get(key) ?? 0) < minGap) return;
+      lastPlayed.set(key, now);
+
+      const pool = oneShots.get(key);
+      const audio = pool?.find((item) => item.paused || item.ended) ?? pool?.[0];
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+      audio.volume = Math.min(1, volume);
+      audio.play().catch(() => {});
+    },
+    setEnginePower: (power: number) => {
+      if (!unlocked) return;
+      const amount = Math.max(0, Math.min(1, power));
+      idle.volume = 0.16 * (1 - amount * 0.35);
+      thrust.volume = 0.42 * amount;
+    },
+    destroy: () => {
+      [idle, thrust, ...Array.from(oneShots.values()).flat()].forEach((audio) => {
+        audio.pause();
+        audio.currentTime = 0;
+      });
+    }
+  };
 }

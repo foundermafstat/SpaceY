@@ -1,0 +1,99 @@
+{
+  "src": "/assets/generated/ai/explosion-ai-normalized-atlas.png",
+  "columns": 9,
+  "rows": 1,
+  "cellWidth": 256,
+  "cellHeight": 256,
+  "frames": {
+    "explosion_00": {
+      "col": 0,
+      "row": 0,
+      "sourceBounds": {
+        "left": 40,
+        "top": 518,
+        "width": 63,
+        "height": 50
+      }
+    },
+    "explosion_01": {
+      "col": 1,
+      "row": 0,
+      "sourceBounds": {
+        "left": 104,
+        "top": 498,
+        "width": 96,
+        "height": 78
+      }
+    },
+    "explosion_02": {
+      "col": 2,
+      "row": 0,
+      "sourceBounds": {
+        "left": 197,
+        "top": 491,
+        "width": 115,
+        "height": 92
+      }
+    },
+    "explosion_03": {
+      "col": 3,
+      "row": 0,
+      "sourceBounds": {
+        "left": 306,
+        "top": 476,
+        "width": 124,
+        "height": 111
+      }
+    },
+    "explosion_04": {
+      "col": 4,
+      "row": 0,
+      "sourceBounds": {
+        "left": 421,
+        "top": 477,
+        "width": 126,
+        "height": 115
+      }
+    },
+    "explosion_05": {
+      "col": 5,
+      "row": 0,
+      "sourceBounds": {
+        "left": 538,
+        "top": 483,
+        "width": 147,
+        "height": 114
+      }
+    },
+    "explosion_06": {
+      "col": 6,
+      "row": 0,
+      "sourceBounds": {
+        "left": 684,
+        "top": 491,
+        "width": 118,
+        "height": 108
+      }
+    },
+    "explosion_07": {
+      "col": 7,
+      "row": 0,
+      "sourceBounds": {
+        "left": 809,
+        "top": 500,
+        "width": 119,
+        "height": 99
+      }
+    },
+    "explosion_08": {
+      "col": 8,
+      "row": 0,
+      "sourceBounds": {
+        "left": 945,
+        "top": 503,
+        "width": 115,
+        "height": 97
+      }
+    }
+  }
+}

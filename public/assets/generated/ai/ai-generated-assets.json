@@ -1,0 +1,30 @@
+{
+  "mode": "imagegen",
+  "styleReference": [
+    "/assets/modules/modules-atlas-v2.png",
+    "/assets/weapons/weapon-parts-atlas.png"
+  ],
+  "sheets": {
+    "modules": {
+      "source": "/assets/generated/ai/module-ai-sheet-source.png",
+      "alpha": "/assets/generated/ai/module-ai-sheet.png",
+      "normalizedAtlas": "/assets/generated/ai/module-ai-normalized-atlas.png",
+      "normalizedManifest": "/assets/generated/ai/module-ai-normalized-atlas.json",
+      "description": "AI-generated top-down modular spaceship component sprite sheet"
+    },
+    "frames": {
+      "source": "/assets/generated/ai/frame-ai-sheet-source.png",
+      "alpha": "/assets/generated/ai/frame-ai-sheet.png",
+      "description": "AI-generated ship frame and editor overlay sprite sheet"
+    },
+    "vfx": {
+      "source": "/assets/generated/ai/vfx-ai-sheet-source.png",
+      "alpha": "/assets/generated/ai/vfx-ai-sheet.png",
+      "explosionNormalizedAtlas": "/assets/generated/ai/explosion-ai-normalized-atlas.png",
+      "explosionNormalizedManifest": "/assets/generated/ai/explosion-ai-normalized-atlas.json",
+      "explosionEffectsAtlas": "/assets/generated/ai/explosion-ai-effects-atlas.png",
+      "explosionEffectsManifest": "/assets/generated/ai/explosion-ai-effects-atlas.json",
+      "description": "AI-generated combat VFX sprite sheet"
+    }
+  }
+}

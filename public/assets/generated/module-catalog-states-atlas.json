@@ -1,0 +1,2565 @@
+{
+  "src": "/assets/generated/module-catalog-states-atlas.png",
+  "columns": 12,
+  "rows": 32,
+  "cellWidth": 192,
+  "cellHeight": 192,
+  "states": [
+    "ideal",
+    "light_damage",
+    "heavy_damage",
+    "debris"
+  ],
+  "assets": {
+    "hull_block_1x1_center": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 0,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 16
+        },
+        "debris": {
+          "col": 0,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_edge_top": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 1,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 16
+        },
+        "debris": {
+          "col": 1,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_edge_bottom": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 2,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 16
+        },
+        "debris": {
+          "col": 2,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_edge_left": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 3,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 16
+        },
+        "debris": {
+          "col": 3,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_edge_right": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 16
+        },
+        "debris": {
+          "col": 4,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_corner_top_left": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 16
+        },
+        "debris": {
+          "col": 5,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_corner_top_right": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 16
+        },
+        "debris": {
+          "col": 6,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_corner_bottom_left": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 7,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 16
+        },
+        "debris": {
+          "col": 7,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x1_corner_bottom_right": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 8,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 16
+        },
+        "debris": {
+          "col": 8,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_1x2_bridge": {
+      "category": "hull",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 9,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 16
+        },
+        "debris": {
+          "col": 9,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_2x1_bridge": {
+      "category": "hull",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 10,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 16
+        },
+        "debris": {
+          "col": 10,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_2x2_core_plate": {
+      "category": "hull",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 11,
+      "row": 0,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 0
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 8
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 16
+        },
+        "debris": {
+          "col": 11,
+          "row": 24
+        }
+      }
+    },
+    "hull_block_3x1_spine": {
+      "category": "hull",
+      "grid": [
+        3,
+        1
+      ],
+      "col": 0,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 17
+        },
+        "debris": {
+          "col": 0,
+          "row": 25
+        }
+      }
+    },
+    "hull_block_1x3_spine": {
+      "category": "hull",
+      "grid": [
+        1,
+        3
+      ],
+      "col": 1,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 17
+        },
+        "debris": {
+          "col": 1,
+          "row": 25
+        }
+      }
+    },
+    "hull_nose_1x1": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 2,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 17
+        },
+        "debris": {
+          "col": 2,
+          "row": 25
+        }
+      }
+    },
+    "hull_nose_2x1": {
+      "category": "hull",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 3,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 17
+        },
+        "debris": {
+          "col": 3,
+          "row": 25
+        }
+      }
+    },
+    "hull_tail_1x1": {
+      "category": "hull",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 17
+        },
+        "debris": {
+          "col": 4,
+          "row": 25
+        }
+      }
+    },
+    "hull_tail_2x1": {
+      "category": "hull",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 5,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 17
+        },
+        "debris": {
+          "col": 5,
+          "row": 25
+        }
+      }
+    },
+    "hull_wing_left_1x2": {
+      "category": "hull",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 6,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 17
+        },
+        "debris": {
+          "col": 6,
+          "row": 25
+        }
+      }
+    },
+    "hull_wing_right_1x2": {
+      "category": "hull",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 7,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 17
+        },
+        "debris": {
+          "col": 7,
+          "row": 25
+        }
+      }
+    },
+    "hull_wing_left_2x2": {
+      "category": "hull",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 8,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 17
+        },
+        "debris": {
+          "col": 8,
+          "row": 25
+        }
+      }
+    },
+    "hull_wing_right_2x2": {
+      "category": "hull",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 9,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 17
+        },
+        "debris": {
+          "col": 9,
+          "row": 25
+        }
+      }
+    },
+    "armor_light_plate_1x1": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 10,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 17
+        },
+        "debris": {
+          "col": 10,
+          "row": 25
+        }
+      }
+    },
+    "armor_medium_plate_1x1": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 11,
+      "row": 1,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 1
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 9
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 17
+        },
+        "debris": {
+          "col": 11,
+          "row": 25
+        }
+      }
+    },
+    "armor_heavy_plate_1x1": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 0,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 18
+        },
+        "debris": {
+          "col": 0,
+          "row": 26
+        }
+      }
+    },
+    "armor_heavy_plate_2x1": {
+      "category": "armor",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 1,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 18
+        },
+        "debris": {
+          "col": 1,
+          "row": 26
+        }
+      }
+    },
+    "armor_heavy_plate_1x2": {
+      "category": "armor",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 2,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 18
+        },
+        "debris": {
+          "col": 2,
+          "row": 26
+        }
+      }
+    },
+    "armor_corner_plate_left": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 3,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 18
+        },
+        "debris": {
+          "col": 3,
+          "row": 26
+        }
+      }
+    },
+    "armor_corner_plate_right": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 18
+        },
+        "debris": {
+          "col": 4,
+          "row": 26
+        }
+      }
+    },
+    "armor_front_shield_plate": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 18
+        },
+        "debris": {
+          "col": 5,
+          "row": 26
+        }
+      }
+    },
+    "armor_reactive_plate": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 18
+        },
+        "debris": {
+          "col": 6,
+          "row": 26
+        }
+      }
+    },
+    "armor_anti_laser_plate": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 7,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 18
+        },
+        "debris": {
+          "col": 7,
+          "row": 26
+        }
+      }
+    },
+    "armor_heat_resistant_plate": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 8,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 18
+        },
+        "debris": {
+          "col": 8,
+          "row": 26
+        }
+      }
+    },
+    "armor_damaged_variant": {
+      "category": "armor",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 9,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 18
+        },
+        "debris": {
+          "col": 9,
+          "row": 26
+        }
+      }
+    },
+    "engine_ion_light_1x1": {
+      "category": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 10,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 18
+        },
+        "debris": {
+          "col": 10,
+          "row": 26
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "blue",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_ion_light_1x2": {
+      "category": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 11,
+      "row": 2,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 2
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 10
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 18
+        },
+        "debris": {
+          "col": 11,
+          "row": 26
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "blue",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_plasma_medium_1x2": {
+      "category": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 0,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 19
+        },
+        "debris": {
+          "col": 0,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "purple",
+        "plumeSize": "medium",
+        "ignitionStrength": 0.72
+      }
+    },
+    "engine_plasma_medium_2x1": {
+      "category": "engine",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 1,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 19
+        },
+        "debris": {
+          "col": 1,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "purple",
+        "plumeSize": "medium",
+        "ignitionStrength": 0.72
+      }
+    },
+    "engine_fusion_heavy_2x2": {
+      "category": "engine",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 2,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 19
+        },
+        "debris": {
+          "col": 2,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "orange",
+        "plumeSize": "large",
+        "ignitionStrength": 0.95
+      }
+    },
+    "engine_fusion_heavy_3x2": {
+      "category": "engine",
+      "grid": [
+        3,
+        2
+      ],
+      "col": 3,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 19
+        },
+        "debris": {
+          "col": 3,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "orange",
+        "plumeSize": "large",
+        "ignitionStrength": 0.95
+      }
+    },
+    "engine_side_thruster_left_1x1": {
+      "category": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 19
+        },
+        "debris": {
+          "col": 4,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.18,
+          0.5
+        ],
+        "flameDirection": "left",
+        "glowColor": "orange",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_side_thruster_right_1x1": {
+      "category": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 19
+        },
+        "debris": {
+          "col": 5,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.82,
+          0.5
+        ],
+        "flameDirection": "right",
+        "glowColor": "orange",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_reverse_thruster_1x1": {
+      "category": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 19
+        },
+        "debris": {
+          "col": 6,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.18
+        ],
+        "flameDirection": "front",
+        "glowColor": "blue",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_dark_matter_2x2": {
+      "category": "engine",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 7,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 19
+        },
+        "debris": {
+          "col": 7,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "purple",
+        "plumeSize": "large",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_alien_1x2": {
+      "category": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 8,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 19
+        },
+        "debris": {
+          "col": 8,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "green",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "engine_damaged_variant": {
+      "category": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 9,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 19
+        },
+        "debris": {
+          "col": 9,
+          "row": 27
+        }
+      },
+      "engineVfx": {
+        "nozzle": [
+          0.5,
+          0.82
+        ],
+        "flameDirection": "rear",
+        "glowColor": "orange",
+        "plumeSize": "small",
+        "ignitionStrength": 0.48
+      }
+    },
+    "weapon_autocannon_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 10,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 19
+        },
+        "debris": {
+          "col": 10,
+          "row": 27
+        }
+      }
+    },
+    "weapon_autocannon_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 11,
+      "row": 3,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 3
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 11
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 19
+        },
+        "debris": {
+          "col": 11,
+          "row": 27
+        }
+      }
+    },
+    "weapon_dual_autocannon_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 0,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 20
+        },
+        "debris": {
+          "col": 0,
+          "row": 28
+        }
+      }
+    },
+    "weapon_dual_autocannon_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 1,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 20
+        },
+        "debris": {
+          "col": 1,
+          "row": 28
+        }
+      }
+    },
+    "weapon_railgun_1x2_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 2,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 20
+        },
+        "debris": {
+          "col": 2,
+          "row": 28
+        }
+      }
+    },
+    "weapon_railgun_1x2_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 3,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 20
+        },
+        "debris": {
+          "col": 3,
+          "row": 28
+        }
+      }
+    },
+    "weapon_heavy_railgun_2x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 4,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 20
+        },
+        "debris": {
+          "col": 4,
+          "row": 28
+        }
+      }
+    },
+    "weapon_heavy_railgun_2x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        2,
+        1
+      ],
+      "col": 5,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 20
+        },
+        "debris": {
+          "col": 5,
+          "row": 28
+        }
+      }
+    },
+    "weapon_laser_turret_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 20
+        },
+        "debris": {
+          "col": 6,
+          "row": 28
+        }
+      }
+    },
+    "weapon_laser_turret_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 7,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 20
+        },
+        "debris": {
+          "col": 7,
+          "row": 28
+        }
+      }
+    },
+    "weapon_plasma_cannon_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 8,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 20
+        },
+        "debris": {
+          "col": 8,
+          "row": 28
+        }
+      }
+    },
+    "weapon_plasma_cannon_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 9,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 20
+        },
+        "debris": {
+          "col": 9,
+          "row": 28
+        }
+      }
+    },
+    "weapon_heavy_plasma_cannon_2x2_base": {
+      "category": "weapon_base",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 10,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 20
+        },
+        "debris": {
+          "col": 10,
+          "row": 28
+        }
+      }
+    },
+    "weapon_heavy_plasma_cannon_2x2_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 11,
+      "row": 4,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 4
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 12
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 20
+        },
+        "debris": {
+          "col": 11,
+          "row": 28
+        }
+      }
+    },
+    "weapon_missile_pod_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 0,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 21
+        },
+        "debris": {
+          "col": 0,
+          "row": 29
+        }
+      }
+    },
+    "weapon_missile_pod_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 1,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 21
+        },
+        "debris": {
+          "col": 1,
+          "row": 29
+        }
+      }
+    },
+    "weapon_missile_pod_1x2_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 2,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 21
+        },
+        "debris": {
+          "col": 2,
+          "row": 29
+        }
+      }
+    },
+    "weapon_missile_pod_1x2_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 3,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 21
+        },
+        "debris": {
+          "col": 3,
+          "row": 29
+        }
+      }
+    },
+    "weapon_flak_turret_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 21
+        },
+        "debris": {
+          "col": 4,
+          "row": 29
+        }
+      }
+    },
+    "weapon_flak_turret_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 21
+        },
+        "debris": {
+          "col": 5,
+          "row": 29
+        }
+      }
+    },
+    "weapon_emp_emitter_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 21
+        },
+        "debris": {
+          "col": 6,
+          "row": 29
+        }
+      }
+    },
+    "weapon_emp_emitter_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 7,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 21
+        },
+        "debris": {
+          "col": 7,
+          "row": 29
+        }
+      }
+    },
+    "weapon_arc_lightning_emitter_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 8,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 21
+        },
+        "debris": {
+          "col": 8,
+          "row": 29
+        }
+      }
+    },
+    "weapon_arc_lightning_emitter_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 9,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 21
+        },
+        "debris": {
+          "col": 9,
+          "row": 29
+        }
+      }
+    },
+    "weapon_point_defense_1x1_base": {
+      "category": "weapon_base",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 10,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 21
+        },
+        "debris": {
+          "col": 10,
+          "row": 29
+        }
+      }
+    },
+    "weapon_point_defense_1x1_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 11,
+      "row": 5,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 5
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 13
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 21
+        },
+        "debris": {
+          "col": 11,
+          "row": 29
+        }
+      }
+    },
+    "weapon_drone_bay_2x2_base": {
+      "category": "weapon_base",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 0,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 22
+        },
+        "debris": {
+          "col": 0,
+          "row": 30
+        }
+      }
+    },
+    "weapon_drone_bay_2x2_turret": {
+      "category": "weapon_turret",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 1,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 22
+        },
+        "debris": {
+          "col": 1,
+          "row": 30
+        }
+      }
+    },
+    "reactor_small_1x1": {
+      "category": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 2,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 22
+        },
+        "debris": {
+          "col": 2,
+          "row": 30
+        }
+      }
+    },
+    "reactor_medium_2x2": {
+      "category": "energy",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 3,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 22
+        },
+        "debris": {
+          "col": 3,
+          "row": 30
+        }
+      }
+    },
+    "reactor_heavy_2x2": {
+      "category": "energy",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 4,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 22
+        },
+        "debris": {
+          "col": 4,
+          "row": 30
+        }
+      }
+    },
+    "battery_pack_1x1": {
+      "category": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 22
+        },
+        "debris": {
+          "col": 5,
+          "row": 30
+        }
+      }
+    },
+    "capacitor_1x1": {
+      "category": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 6,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 6,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 6,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 6,
+          "row": 22
+        },
+        "debris": {
+          "col": 6,
+          "row": 30
+        }
+      }
+    },
+    "energy_stabilizer_1x2": {
+      "category": "energy",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 7,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 7,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 7,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 7,
+          "row": 22
+        },
+        "debris": {
+          "col": 7,
+          "row": 30
+        }
+      }
+    },
+    "heat_sink_1x1": {
+      "category": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 8,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 8,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 8,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 8,
+          "row": 22
+        },
+        "debris": {
+          "col": 8,
+          "row": 30
+        }
+      }
+    },
+    "radiator_panel_1x2": {
+      "category": "energy",
+      "grid": [
+        1,
+        2
+      ],
+      "col": 9,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 9,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 9,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 9,
+          "row": 22
+        },
+        "debris": {
+          "col": 9,
+          "row": 30
+        }
+      }
+    },
+    "emergency_generator_1x1": {
+      "category": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 10,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 10,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 10,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 10,
+          "row": 22
+        },
+        "debris": {
+          "col": 10,
+          "row": 30
+        }
+      }
+    },
+    "shield_generator_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 11,
+      "row": 6,
+      "states": {
+        "ideal": {
+          "col": 11,
+          "row": 6
+        },
+        "light_damage": {
+          "col": 11,
+          "row": 14
+        },
+        "heavy_damage": {
+          "col": 11,
+          "row": 22
+        },
+        "debris": {
+          "col": 11,
+          "row": 30
+        }
+      }
+    },
+    "shield_generator_2x2": {
+      "category": "shield",
+      "grid": [
+        2,
+        2
+      ],
+      "col": 0,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 0,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 0,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 0,
+          "row": 23
+        },
+        "debris": {
+          "col": 0,
+          "row": 31
+        }
+      }
+    },
+    "point_defense_module_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 1,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 1,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 1,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 1,
+          "row": 23
+        },
+        "debris": {
+          "col": 1,
+          "row": 31
+        }
+      }
+    },
+    "repair_nanobay_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 2,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 2,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 2,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 2,
+          "row": 23
+        },
+        "debris": {
+          "col": 2,
+          "row": 31
+        }
+      }
+    },
+    "decoy_launcher_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 3,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 3,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 3,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 3,
+          "row": 23
+        },
+        "debris": {
+          "col": 3,
+          "row": 31
+        }
+      }
+    },
+    "armor_field_projector_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 4,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 4,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 4,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 4,
+          "row": 23
+        },
+        "debris": {
+          "col": 4,
+          "row": 31
+        }
+      }
+    },
+    "emergency_barrier_module_1x1": {
+      "category": "shield",
+      "grid": [
+        1,
+        1
+      ],
+      "col": 5,
+      "row": 7,
+      "states": {
+        "ideal": {
+          "col": 5,
+          "row": 7
+        },
+        "light_damage": {
+          "col": 5,
+          "row": 15
+        },
+        "heavy_damage": {
+          "col": 5,
+          "row": 23
+        },
+        "debris": {
+          "col": 5,
+          "row": 31
+        }
+      }
+    }
+  }
+}
