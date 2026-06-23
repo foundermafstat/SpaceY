@@ -1,0 +1,17 @@
+{
+  "sheet": "/assets/spacey/topview/spacey-modular-animated-parts-sheet-normalized.png",
+  "columns": 4,
+  "rows": 8,
+  "frameWidth": 223,
+  "frameHeight": 161,
+  "animations": [
+    { "id": "reactor-core", "row": 0, "frames": 4 },
+    { "id": "turbine-ring", "row": 1, "frames": 4 },
+    { "id": "engine-vent", "row": 2, "frames": 4 },
+    { "id": "shield-panel", "row": 3, "frames": 4 },
+    { "id": "radar-sweep", "row": 4, "frames": 4 },
+    { "id": "armor-piston", "row": 5, "frames": 4 },
+    { "id": "turret-swivel", "row": 6, "frames": 4 },
+    { "id": "battery-pulse", "row": 7, "frames": 4 }
+  ]
+}

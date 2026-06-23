@@ -1,4 +1,4 @@
-import type { ModuleDef } from "@/game/types";
+import type { ModuleDef, PanelDef, PanelState } from "@/game/types";
 
 export type ModuleSpriteKey =
   | "core"
@@ -164,6 +164,19 @@ export const battleVfxAtlas = {
   } satisfies Record<BattleVfxSpriteKey, { col: number; row: number }>
 };
 
+export const panelAtlas = {
+  src: "/assets/panels/panel-states-atlas.png",
+  columns: 25,
+  rows: 4
+};
+
+const panelStateRows: Record<PanelState, number> = {
+  ideal: 0,
+  damaged: 1,
+  critical: 2,
+  debris: 3
+};
+
 export function getModuleSpriteKey(module: ModuleDef): ModuleSpriteKey {
   if (module.type === "core") return "core";
   if (module.type === "armor") return "armor";
@@ -189,6 +202,16 @@ export function getAiModuleSpriteStyle(module: ModuleDef) {
 
 export function getHoverSpriteStyle(key: HoverSpriteKey = "ring") {
   return getAtlasStyle(hoverAtlas, key);
+}
+
+export function getPanelSpriteStyle(panel: PanelDef, state: PanelState = "ideal") {
+  const x = panel.spriteIndex / (panelAtlas.columns - 1) * 100;
+  const y = panelStateRows[state] / (panelAtlas.rows - 1) * 100;
+  return {
+    backgroundImage: `url(${panelAtlas.src})`,
+    backgroundSize: `${panelAtlas.columns * 100}% ${panelAtlas.rows * 100}%`,
+    backgroundPosition: `${x}% ${y}%`
+  };
 }
 
 function getAtlasStyle<T extends string>(

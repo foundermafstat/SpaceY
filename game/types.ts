@@ -20,6 +20,9 @@ export type DamageType =
 
 export type SocketType = "none" | "hard" | "power" | "weapon" | "engine" | "utility";
 export type Rotation = 0 | 90 | 180 | 270;
+export type BuildMode = "panels" | "modules";
+export type PanelState = "ideal" | "damaged" | "critical" | "debris";
+export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
 
 export interface GridCell {
   x: number;
@@ -28,6 +31,24 @@ export interface GridCell {
 
 export interface ModuleShape {
   cells: GridCell[];
+}
+
+export interface PanelConnector {
+  cell: GridCell;
+  side: PanelConnectorSide;
+  id: string;
+}
+
+export interface PanelDef {
+  id: string;
+  name: string;
+  shape: ModuleShape;
+  connectors: PanelConnector[];
+  mass: number;
+  hp: number;
+  spriteId: string;
+  spriteIndex: number;
+  tags: string[];
 }
 
 export interface ModuleSockets {
@@ -109,10 +130,19 @@ export interface InstalledModule {
   rotation: Rotation;
 }
 
+export interface InstalledPanel {
+  instanceId: string;
+  panelId: string;
+  position: GridCell;
+  rotation: Rotation;
+  state: PanelState;
+}
+
 export interface ShipBuild {
   id: string;
   name: string;
   frameId: string;
+  panels: InstalledPanel[];
   modules: InstalledModule[];
 }
 

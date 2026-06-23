@@ -1003,6 +1003,7 @@ function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
       id: "enemy-drone",
       name: "Drone",
       frameId: "enemy_drone_frame",
+      panels: [],
       modules: [
         { instanceId: "d-core", moduleId: "core_mk1", position: { x: 1, y: 1 }, rotation: 0 },
         { instanceId: "d-reactor", moduleId: "small_reactor", position: { x: 0, y: 1 }, rotation: 0 },
@@ -1018,6 +1019,7 @@ function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
       id: "enemy-raider",
       name: "Raider",
       frameId: "enemy_raider_frame",
+      panels: [],
       modules: [
         { instanceId: "r-core", moduleId: "core_mk1", position: { x: 1, y: 2 }, rotation: 0 },
         { instanceId: "r-reactor", moduleId: "small_reactor", position: { x: 2, y: 2 }, rotation: 0 },
@@ -1034,6 +1036,7 @@ function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
     id: "enemy-bomber",
     name: "Bomber",
     frameId: "enemy_bomber_frame",
+    panels: [],
     modules: [
       { instanceId: "b-core", moduleId: "core_mk1", position: { x: 2, y: 2 }, rotation: 0 },
       { instanceId: "b-reactor", moduleId: "small_reactor", position: { x: 2, y: 3 }, rotation: 0 },

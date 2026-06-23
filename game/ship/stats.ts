@@ -1,11 +1,18 @@
-import { getFrame, getModule } from "@/game/ship/build";
+import { getFrame, getModule, getPanel } from "@/game/ship/build";
 import type { ShipBuild, ShipStats } from "@/game/types";
 
 export function calculateShipStats(build: ShipBuild): ShipStats {
   const frame = getFrame(build.frameId);
+  const panels = (build.panels ?? []).map((installed) => getPanel(installed.panelId));
   const modules = build.modules.map((installed) => getModule(installed.moduleId));
-  const mass = frame.baseMass + modules.reduce((sum, module) => sum + module.mass, 0);
-  const hp = frame.baseHp + modules.reduce((sum, module) => sum + module.hp, 0);
+  const mass =
+    frame.baseMass +
+    panels.reduce((sum, panel) => sum + panel.mass, 0) +
+    modules.reduce((sum, module) => sum + module.mass, 0);
+  const hp =
+    frame.baseHp +
+    panels.reduce((sum, panel) => sum + panel.hp, 0) +
+    modules.reduce((sum, module) => sum + module.hp, 0);
   const thrust = modules.reduce((sum, module) => sum + (module.thrust ?? 0), 0);
   const maneuverThrust = modules.reduce((sum, module) => sum + (module.maneuverThrust ?? 0), 0);
   const energyProduction = modules.reduce(
