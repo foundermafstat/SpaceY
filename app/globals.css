@@ -1,4 +1,39 @@
+@layer base {
+  @font-face {
+    font-family: "Monitorica";
+    src: url("/assets/fonts/monitorica/Monitorica-Rg.woff") format("woff");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Monitorica";
+    src: url("/assets/fonts/monitorica/Monitorica-It.woff") format("woff");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Monitorica";
+    src: url("/assets/fonts/monitorica/Monitorica-Bd.woff") format("woff");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: "Monitorica";
+    src: url("/assets/fonts/monitorica/Monitorica-BdIt.woff") format("woff");
+    font-weight: 700;
+    font-style: italic;
+    font-display: swap;
+  }
+}
+
 :root {
+  --font-monitorica: "Monitorica";
   --bg: #050712;
   --panel: rgba(12, 18, 34, 0.78);
   --panel-strong: rgba(17, 27, 49, 0.92);
@@ -22,7 +57,7 @@ body {
   min-height: 100%;
   background: radial-gradient(circle at 50% 10%, #16203a 0%, #080b18 42%, #03040a 100%);
   color: var(--text);
-  font-family: var(--font-play), Arial, Helvetica, sans-serif;
+  font-family: var(--font-monitorica), Arial, Helvetica, sans-serif;
 }
 
 body {
@@ -197,6 +232,47 @@ button {
   gap: 14px;
   margin-top: auto;
   margin-bottom: auto;
+}
+
+.home-scene-frame {
+  background: linear-gradient(180deg, #000000 0%, #020814 48%, #04142b 100%);
+}
+
+.home-scene-host {
+  position: relative;
+  min-height: calc(100vh - 38px);
+  overflow: hidden;
+  background: linear-gradient(180deg, #000000 0%, #020814 48%, #04142b 100%);
+}
+
+.home-scene-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.home-scene-canvas canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.home-scene-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(3, 5, 12, 0) 55%, rgba(3, 5, 12, 0.74) 100%);
+}
+
+.home-scene-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(100%, 260px);
+  pointer-events: auto;
 }
 
 .hero-title {
@@ -657,7 +733,8 @@ button {
   }
 
   .screen,
-  .battle-host {
+  .battle-host,
+  .home-scene-host {
     min-height: 100vh;
   }
 
