@@ -108,7 +108,7 @@ button {
   min-height: 0;
   overflow: hidden;
   padding: 10px;
-  background: url("/assets/hangar/hangar-bg.png") center / cover no-repeat;
+  background: #020610;
 }
 
 .topbar,
@@ -321,17 +321,22 @@ button {
 }
 
 .ship-grid-wrap {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 0;
   padding: 0;
+  pointer-events: none;
 }
 
 .ship-grid {
   display: grid;
   gap: 3px;
-  touch-action: manipulation;
+  touch-action: none;
+  pointer-events: auto;
 }
 
 .cell {
@@ -382,6 +387,17 @@ button {
 
 .cell.occupied {
   background: rgba(10, 16, 30, 0.18);
+}
+
+.cell.draggable-cell {
+  cursor: grab;
+}
+
+.cell.dragging,
+.module-card.dragging {
+  z-index: 30;
+  cursor: grabbing;
+  filter: drop-shadow(0 0 14px rgba(73, 215, 255, 0.34));
 }
 
 .cell-panel-sprite {
@@ -542,13 +558,27 @@ button {
 
 .hangar-stage {
   position: relative;
-  display: grid;
-  align-items: center;
   min-height: 0;
   border: 1px solid rgba(128, 204, 255, 0.12);
   border-radius: 0;
   background: rgba(3, 7, 14, 0.1);
   overflow: hidden;
+  touch-action: none;
+}
+
+.hangar-world {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.hangar-pan-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: url("/assets/hangar/hangar-bg.png") center / cover no-repeat;
+  cursor: grab;
 }
 
 .hangar-actions {
@@ -564,6 +594,30 @@ button {
   padding: 0 10px;
   border-radius: 0;
   font-size: 11px;
+}
+
+.hangar-zoom-controls {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hangar-zoom-controls .button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 0;
+}
+
+.hangar-zoom-controls span {
+  min-width: 42px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
 }
 
 .hangar-bottom-nav {

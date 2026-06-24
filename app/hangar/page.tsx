@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import Link from "next/link";
+import { createDraggable, type Draggable } from "animejs";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
 import { useShipStore } from "@/game/store/shipStore";
@@ -33,6 +35,10 @@ const labels: Record<ModuleType, string> = {
   utility: "Utility"
 };
 
+const zoomSteps = [1, 1.15, 1.3, 1.5, 1.75];
+const fallbackGridPitch = 41;
+const initialScenePosition = { x: 0, y: 0 };
+
 export default function HangarPage() {
   const {
     build,
@@ -45,16 +51,114 @@ export default function HangarPage() {
     selectPanel,
     rotateSelected,
     installModule,
+    moveModule,
     removeModule,
     installPanel,
+    movePanel,
     removePanel,
     resetBuild
   } = useShipStore();
+  const stageRef = useRef<HTMLElement>(null);
+  const worldRef = useRef<HTMLDivElement>(null);
+  const panRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const panGestureRef = useRef<{
+    pointerId: number | "mouse";
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+  const [zoomIndex, setZoomIndex] = useState(0);
+  const [scenePosition, setScenePosition] = useState(initialScenePosition);
   const frame = getFrame(build.frameId);
   const selectedModule = selectedModuleId ? getModule(selectedModuleId) : null;
   const selectedPanel = selectedPanelId ? getPanel(selectedPanelId) : null;
   const stats = calculateShipStats(build);
   const panelCellKeys = getBuildableCellKeys(build);
+  const zoom = zoomSteps[zoomIndex];
+
+  function clampScenePosition(x: number, y: number, nextZoom = zoom) {
+    const stage = stageRef.current;
+    if (!stage) return initialScenePosition;
+    const rect = stage.getBoundingClientRect();
+    const minX = Math.min(0, rect.width - rect.width * nextZoom);
+    const minY = Math.min(0, rect.height - rect.height * nextZoom);
+    return {
+      x: Math.min(0, Math.max(minX, x)),
+      y: Math.min(0, Math.max(minY, y))
+    };
+  }
+
+  function setClampedScenePosition(x: number, y: number, nextZoom = zoom) {
+    setScenePosition(clampScenePosition(x, y, nextZoom));
+  }
+
+  function beginPan(clientX: number, clientY: number, pointerId: number | "mouse") {
+    panGestureRef.current = {
+      pointerId,
+      startX: clientX,
+      startY: clientY,
+      originX: scenePosition.x,
+      originY: scenePosition.y
+    };
+  }
+
+  function movePan(clientX: number, clientY: number, pointerId: number | "mouse") {
+    const gesture = panGestureRef.current;
+    if (!gesture || gesture.pointerId !== pointerId) return;
+    setClampedScenePosition(
+      gesture.originX + clientX - gesture.startX,
+      gesture.originY + clientY - gesture.startY
+    );
+  }
+
+  function handlePanPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    beginPan(event.clientX, event.clientY, event.pointerId);
+  }
+
+  function handlePanPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (panGestureRef.current?.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    movePan(event.clientX, event.clientY, event.pointerId);
+  }
+
+  function handlePanPointerUp(event: PointerEvent<HTMLDivElement>) {
+    if (panGestureRef.current?.pointerId !== event.pointerId) return;
+    panGestureRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function handleWindowMouseMove(event: MouseEvent) {
+    movePan(event.clientX, event.clientY, "mouse");
+  }
+
+  function handleWindowMouseUp() {
+    panGestureRef.current = null;
+    window.removeEventListener("mousemove", handleWindowMouseMove);
+  }
+
+  function handlePanMouseDown(event: ReactMouseEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    beginPan(event.clientX, event.clientY, "mouse");
+    window.addEventListener("mousemove", handleWindowMouseMove);
+    window.addEventListener("mouseup", handleWindowMouseUp, { once: true });
+  }
+
+  function handleGridPanPointerDown(event: PointerEvent<HTMLDivElement>) {
+    const cell = (event.target as HTMLElement).closest(".cell");
+    if (cell && !cell.classList.contains("inactive")) return;
+    handlePanPointerDown(event);
+  }
+
+  function handleGridPanMouseDown(event: ReactMouseEvent<HTMLDivElement>) {
+    const cell = (event.target as HTMLElement).closest(".cell");
+    if (cell && !cell.classList.contains("inactive")) return;
+    handlePanMouseDown(event);
+  }
 
   function previewClass(cell: GridCell) {
     if (buildMode === "panels") {
@@ -92,6 +196,138 @@ export default function HangarPage() {
     if (selectedModule) installModule(selectedModule.id, cell, rotation);
   }
 
+  function getGridPitch() {
+    const grid = gridRef.current;
+    const firstCell = grid?.querySelector<HTMLElement>("[data-grid-cell]");
+    if (!grid || !firstCell) return fallbackGridPitch;
+    const styles = window.getComputedStyle(grid);
+    return firstCell.offsetWidth + (Number.parseFloat(styles.columnGap) || 0);
+  }
+
+  function getDropCell(clientX: number, clientY: number, ignoredCell?: HTMLElement) {
+    const grid = gridRef.current;
+    if (!grid) return null;
+    const directCell = document
+      .elementFromPoint(clientX, clientY)
+      ?.closest<HTMLElement>("[data-grid-cell]");
+    if (
+      directCell &&
+      grid.contains(directCell) &&
+      directCell !== ignoredCell &&
+      !directCell.classList.contains("dragging")
+    ) {
+      return parseGridCell(directCell.dataset.gridCell);
+    }
+
+    const rect = grid.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+      return null;
+    }
+    const x = Math.floor(((clientX - rect.left) / rect.width) * frame.size.width);
+    const y = Math.floor(((clientY - rect.top) / rect.height) * frame.size.height);
+    if (x < 0 || y < 0 || x >= frame.size.width || y >= frame.size.height) return null;
+    return { x, y };
+  }
+
+  function getPointerDropCell(draggable: Draggable, ignoredCell?: HTMLElement) {
+    const [clientX, clientY] = draggable.pointer;
+    if (!clientX && !clientY) return null;
+    return getDropCell(clientX, clientY, ignoredCell);
+  }
+
+  useEffect(() => {
+    setScenePosition((current) => clampScenePosition(current.x, current.y, zoom));
+    const handleResize = () => {
+      setScenePosition((current) => clampScenePosition(current.x, current.y, zoom));
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [zoom]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    const drawer = drawerRef.current;
+    if (!grid || !drawer) return;
+
+    const draggables: Draggable[] = [];
+
+    grid.querySelectorAll<HTMLElement>("[data-drag-kind]").forEach((element) => {
+      const draggable = createDraggable(element, {
+        container: grid,
+        snap: () => getGridPitch(),
+        dragThreshold: { mouse: 3, touch: 5 },
+        releaseEase: "out(3)",
+        cursor: { onHover: "grab", onGrab: "grabbing" },
+        onGrab: () => element.classList.add("dragging"),
+        onRelease: (drag) => {
+          const sourceCell = parseGridCell(element.dataset.gridCell);
+          const pitch = getGridPitch();
+          const snappedCell = sourceCell
+            ? {
+                x: sourceCell.x + Math.round(drag.x / pitch),
+                y: sourceCell.y + Math.round(drag.y / pitch)
+              }
+            : null;
+          const targetCell = getPointerDropCell(drag, element) ?? snappedCell;
+          element.classList.remove("dragging");
+          const instanceId = element.dataset.dragInstanceId;
+          const kind = element.dataset.dragKind;
+          if (targetCell && instanceId && kind) {
+            const offsetX = Number(element.dataset.dragOffsetX ?? 0);
+            const offsetY = Number(element.dataset.dragOffsetY ?? 0);
+            const position = { x: targetCell.x - offsetX, y: targetCell.y - offsetY };
+            if (kind === "module") moveModule(instanceId, position);
+            if (kind === "panel") movePanel(instanceId, position);
+          }
+          drag.reset();
+        }
+      });
+      draggables.push(draggable);
+    });
+
+    drawer.querySelectorAll<HTMLElement>("[data-palette-kind]").forEach((element) => {
+      const draggable = createDraggable(element, {
+        snap: () => getGridPitch(),
+        dragThreshold: { mouse: 3, touch: 5 },
+        releaseEase: "out(3)",
+        cursor: { onHover: "grab", onGrab: "grabbing" },
+        onGrab: () => {
+          element.classList.add("dragging");
+          const itemId = element.dataset.paletteId;
+          if (element.dataset.paletteKind === "panel" && itemId) selectPanel(itemId);
+          if (element.dataset.paletteKind === "module" && itemId) selectModule(itemId);
+        },
+        onRelease: (drag) => {
+          element.classList.remove("dragging");
+          const targetCell = getPointerDropCell(drag);
+          const itemId = element.dataset.paletteId;
+          if (targetCell && itemId) {
+            if (element.dataset.paletteKind === "panel") installPanel(itemId, targetCell, rotation);
+            if (element.dataset.paletteKind === "module") installModule(itemId, targetCell, rotation);
+          }
+          drag.reset();
+        }
+      });
+      draggables.push(draggable);
+    });
+
+    return () => {
+      draggables.forEach((draggable) => draggable.revert());
+    };
+  }, [
+    build,
+    buildMode,
+    frame.size.height,
+    frame.size.width,
+    installModule,
+    installPanel,
+    moveModule,
+    movePanel,
+    rotation,
+    selectModule,
+    selectPanel
+  ]);
+
   return (
     <main className="app-shell">
       <section className="mobile-frame">
@@ -112,65 +348,109 @@ export default function HangarPage() {
             </Link>
           </header>
 
-          <section className="hangar-stage" aria-label="Assembly Grid">
-            <div className="ship-grid-wrap">
+          <section className="hangar-stage" ref={stageRef} aria-label="Assembly Grid">
+            <div
+              className="hangar-world"
+              ref={worldRef}
+              style={{
+                transform: `translate3d(${scenePosition.x}px, ${scenePosition.y}px, 0) scale(${zoom})`
+              }}
+            >
               <div
-                className="ship-grid"
-                style={{ gridTemplateColumns: `repeat(${frame.size.width}, 1fr)` }}
-              >
-                {Array.from({ length: frame.size.height }).flatMap((_, y) =>
-                  Array.from({ length: frame.size.width }).map((__, x) => {
-                    const cell = { x, y };
-                    const panelOccupant = getPanelCellOccupant(build, cell);
-                    const panel = panelOccupant ? getPanel(panelOccupant.panelId) : null;
-                    const panelConnectors = panelOccupant
-                      ? getInstalledPanelConnectors(panelOccupant).filter(
-                          (connector) => connector.cell.x === x && connector.cell.y === y
-                        )
-                      : [];
-                    const active = buildMode === "panels" || panelCellKeys.has(cellKey(cell));
-                    const occupant = getCellOccupant(build, cell);
-                    const module = occupant ? getModule(occupant.moduleId) : null;
-                    return (
-                      <button
-                        key={`${x}:${y}`}
-                        className={[
-                          "cell",
-                          active ? "" : "inactive",
-                          panel ? `has-panel panel-${panelOccupant?.state}` : "",
-                          module ? `occupied ${module.type}` : "",
-                          previewClass(cell)
-                        ].join(" ")}
-                        onClick={() => handleCell(cell)}
-                        aria-label={`cell ${x} ${y}`}
-                      >
-                        {panel && panelOccupant && (
-                          <>
-                            <span
-                              className="cell-panel-sprite"
-                              style={getPanelSpriteStyle(panel, panelOccupant.state)}
-                            />
-                            {panelConnectors.map((connector) => (
+                className="hangar-pan-surface"
+                ref={panRef}
+                onPointerDown={handlePanPointerDown}
+                onPointerMove={handlePanPointerMove}
+                onPointerUp={handlePanPointerUp}
+                onPointerCancel={handlePanPointerUp}
+                onMouseDown={handlePanMouseDown}
+              />
+              <div className="ship-grid-wrap">
+                <div
+                  className="ship-grid"
+                  ref={gridRef}
+                  style={{ gridTemplateColumns: `repeat(${frame.size.width}, 1fr)` }}
+                  onPointerDown={handleGridPanPointerDown}
+                  onPointerMove={handlePanPointerMove}
+                  onPointerUp={handlePanPointerUp}
+                  onPointerCancel={handlePanPointerUp}
+                  onMouseDown={handleGridPanMouseDown}
+                >
+                  {Array.from({ length: frame.size.height }).flatMap((_, y) =>
+                    Array.from({ length: frame.size.width }).map((__, x) => {
+                      const cell = { x, y };
+                      const panelOccupant = getPanelCellOccupant(build, cell);
+                      const panel = panelOccupant ? getPanel(panelOccupant.panelId) : null;
+                      const panelConnectors = panelOccupant
+                        ? getInstalledPanelConnectors(panelOccupant).filter(
+                            (connector) => connector.cell.x === x && connector.cell.y === y
+                          )
+                        : [];
+                      const active = buildMode === "panels" || panelCellKeys.has(cellKey(cell));
+                      const occupant = getCellOccupant(build, cell);
+                      const module = occupant ? getModule(occupant.moduleId) : null;
+                      const dragKind = buildMode === "panels" && panelOccupant
+                        ? "panel"
+                        : buildMode === "modules" && occupant
+                          ? "module"
+                          : undefined;
+                      const dragInstance = dragKind === "panel" ? panelOccupant : occupant;
+                      return (
+                        <button
+                          key={`${x}:${y}`}
+                          className={[
+                            "cell",
+                            dragKind ? "draggable-cell" : "",
+                            active ? "" : "inactive",
+                            panel ? `has-panel panel-${panelOccupant?.state}` : "",
+                            module ? `occupied ${module.type}` : "",
+                            previewClass(cell)
+                          ].join(" ")}
+                          data-grid-cell={`${x}:${y}`}
+                          data-drag-kind={dragKind}
+                          data-drag-instance-id={dragInstance?.instanceId}
+                          data-drag-offset-x={dragInstance ? x - dragInstance.position.x : undefined}
+                          data-drag-offset-y={dragInstance ? y - dragInstance.position.y : undefined}
+                          onClick={() => handleCell(cell)}
+                          aria-label={`cell ${x} ${y}`}
+                        >
+                          {panel && panelOccupant && (
+                            <>
                               <span
-                                key={`${connector.side}:${connector.id}`}
-                                className={`cell-connector ${connector.side}`}
-                              >
-                                {shortConnectorLabel(connector.id, connector.side)}
-                              </span>
-                            ))}
-                          </>
-                        )}
-                        {module && (
-                          <>
-                            <span className="cell-hover" style={getHoverSpriteStyle("ring")} />
-                            <span className="cell-sprite ai-module-sprite" style={getAiModuleSpriteStyle(module)} />
-                          </>
-                        )}
-                      </button>
-                    );
-                  })
-                )}
+                                className="cell-panel-sprite"
+                                style={getPanelSpriteStyle(panel, panelOccupant.state)}
+                              />
+                              {panelConnectors.map((connector) => (
+                                <span
+                                  key={`${connector.side}:${connector.id}`}
+                                  className={`cell-connector ${connector.side}`}
+                                >
+                                  {shortConnectorLabel(connector.id, connector.side)}
+                                </span>
+                              ))}
+                            </>
+                          )}
+                          {module && (
+                            <>
+                              <span className="cell-hover" style={getHoverSpriteStyle("ring")} />
+                              <span className="cell-sprite ai-module-sprite" style={getAiModuleSpriteStyle(module)} />
+                            </>
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
               </div>
+            </div>
+            <div className="hangar-zoom-controls" aria-label="Scene zoom">
+              <button className="button" disabled={zoomIndex === 0} onClick={() => setZoomIndex((value) => Math.max(0, value - 1))}>
+                -
+              </button>
+              <span>{Math.round(zoom * 100)}%</span>
+              <button className="button" disabled={zoomIndex === zoomSteps.length - 1} onClick={() => setZoomIndex((value) => Math.min(zoomSteps.length - 1, value + 1))}>
+                +
+              </button>
             </div>
             <div className="hangar-actions">
               <button className="button" onClick={rotateSelected}>
@@ -208,12 +488,14 @@ export default function HangarPage() {
                   Modules
                 </button>
               </div>
-              <div className="module-list">
+              <div className="module-list" ref={drawerRef}>
                 {buildMode === "panels"
                   ? panelDefs.map((panel) => (
                       <button
                         key={panel.id}
                         className={`module-card panel-card ${panel.id === selectedPanelId ? "selected" : ""}`}
+                        data-palette-kind="panel"
+                        data-palette-id={panel.id}
                         onClick={() => selectPanel(panel.id)}
                       >
                         <span className="panel-thumb" style={getPanelSpriteStyle(panel)} />
@@ -227,6 +509,8 @@ export default function HangarPage() {
                       <button
                         key={module.id}
                         className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}
+                        data-palette-kind="module"
+                        data-palette-id={module.id}
                         onClick={() => selectModule(module.id)}
                       >
                         <span className="module-thumb ai-module-thumb" style={getAiModuleSpriteStyle(module)} />
@@ -243,6 +527,13 @@ export default function HangarPage() {
       </section>
     </main>
   );
+}
+
+function parseGridCell(value?: string) {
+  if (!value) return null;
+  const [x, y] = value.split(":").map(Number);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  return { x, y };
 }
 
 function shortConnectorLabel(id: string, side: PanelConnectorSide) {
