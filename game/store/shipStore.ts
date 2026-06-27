@@ -38,6 +38,19 @@ type ShipState = {
   addReward: (scrap: number) => void;
 };
 
+function normalizePersistedState(persisted: unknown, current: ShipState): ShipState {
+  const state = persisted as Partial<ShipState>;
+  return {
+    ...current,
+    ...state,
+    build: migrateShipBuild(state.build),
+    buildMode: state.buildMode ?? "modules",
+    selectedModuleId: state.selectedModuleId ?? "hull_block",
+    selectedPanelId: state.selectedPanelId ?? "node_plate",
+    rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
+  };
+}
+
 export const useShipStore = create<ShipState>()(
   persist(
     (set, get) => ({
@@ -213,9 +226,10 @@ export const useShipStore = create<ShipState>()(
           buildMode: state.buildMode ?? "modules",
           selectedModuleId: state.selectedModuleId ?? "hull_block",
           selectedPanelId: state.selectedPanelId ?? "node_plate",
-          rotation: rotations.includes(state.rotation as Rotation) ? state.rotation : 0
+          rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
         };
-      }
+      },
+      merge: (persisted, current) => normalizePersistedState(persisted, current)
     }
   )
 );

@@ -102,7 +102,7 @@ button {
 
 .hangar-screen {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
   height: calc(100vh - 38px);
   min-height: 0;
@@ -233,6 +233,7 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   padding: 0 8px 8px;
+  min-height: 0;
 }
 
 .status-column {
