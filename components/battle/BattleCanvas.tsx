@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
 import type { TextStyleFontWeight } from "pixi.js";
-import { getFrame, getModule } from "@/game/ship/build";
+import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
 import { calculateShipStats } from "@/game/ship/stats";
 import {
   battleVfxAtlas,
@@ -795,9 +795,9 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
   const centerY = (frame.size.height - 1) / 2;
   build.modules.forEach((installed) => {
     const module = getModule(installed.moduleId);
-    module.shape.cells.forEach((shapeCell) => {
-      const x = (installed.position.x + shapeCell.x - centerX) * cell;
-      const y = (installed.position.y + shapeCell.y - centerY) * cell;
+    getTransformedCells(module, installed.position, installed.rotation).forEach((shipCell) => {
+      const x = (shipCell.x - centerX) * cell;
+      const y = (shipCell.y - centerY) * cell;
       const hover = new Sprite(textures.hover.ring);
       hover.anchor.set(0.5);
       hover.width = cell * 1.82;
@@ -872,12 +872,17 @@ function collectWeapons(build: ShipBuild, turrets: Map<string, Sprite>): WeaponS
   build.modules.forEach((installed) => {
     const module = getModule(installed.moduleId);
     if (!module.weapon) return;
+    const cells = getTransformedCells(module, installed.position, installed.rotation);
+    const mountCell = cells.reduce(
+      (acc, cell) => ({ x: acc.x + cell.x / cells.length, y: acc.y + cell.y / cells.length }),
+      { x: 0, y: 0 }
+    );
     weapons.push({
       weapon: module.weapon,
       cooldown: Math.random() * 0.8,
       mount: {
-        x: (installed.position.x - centerX) * 20,
-        y: (installed.position.y - centerY) * 20
+        x: (mountCell.x - centerX) * 20,
+        y: (mountCell.y - centerY) * 20
       },
       turret: turrets.get(installed.instanceId)
     });
@@ -1431,9 +1436,9 @@ function getCollisionPoints(build: ShipBuild, pos: Vec, rotation: number) {
 
   build.modules.forEach((installed) => {
     const module = getModule(installed.moduleId);
-    module.shape.cells.forEach((shapeCell) => {
-      const lx = (installed.position.x + shapeCell.x - centerX) * cell;
-      const ly = (installed.position.y + shapeCell.y - centerY) * cell;
+    getTransformedCells(module, installed.position, installed.rotation).forEach((shipCell) => {
+      const lx = (shipCell.x - centerX) * cell;
+      const ly = (shipCell.y - centerY) * cell;
       points.push({
         x: pos.x + lx * cos - ly * sin,
         y: pos.y + lx * sin + ly * cos

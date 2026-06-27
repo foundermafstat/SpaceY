@@ -9,6 +9,33 @@ const deltas: Record<PanelConnectorSide, GridCell> = {
 };
 const verticalIds = ["V1", "V2", "V3", "V4", "V5"];
 const horizontalIds = ["H1", "H2", "H3", "H4", "H5"];
+const panelSpriteIds: Record<string, string> = {
+  node_plate: "single_1",
+  rail_2: "bar_2h",
+  rail_3: "bar_3h",
+  rail_4: "bar_4h",
+  rail_5: "bar_4h",
+  spine_2: "bar_2v",
+  spine_3: "bar_3h",
+  spine_4: "bar_4h",
+  block_2x2: "block_2x2",
+  corner_l: "corner_l_2x2",
+  corner_j: "corner_l_2x2",
+  tee_nose: "tee_3x2",
+  tee_tail: "tee_3x2",
+  zig_z: "zig_3x3",
+  zig_s: "zig_3x3",
+  long_l: "long_l_3x3",
+  long_j: "long_l_3x3",
+  step_5: "bar_3h",
+  cross_5: "cross_3x3",
+  u_plate: "bar_3h",
+  arrow_5: "tee_3x2",
+  blade_left: "bar_2h",
+  blade_right: "bar_2h",
+  wide_bridge: "bar_4h",
+  hull_chunk: "bar_3h"
+};
 
 function cells(points: number[][]): GridCell[] {
   return points.map(([x, y]) => ({ x, y }));
@@ -47,7 +74,7 @@ function panel(
     connectors: connectors(shape, spriteIndex),
     mass: Math.max(3, shape.length * 3),
     hp: shape.length * 24,
-    spriteId: id,
+    spriteId: panelSpriteIds[id] ?? "single_1",
     spriteIndex,
     tags
   };

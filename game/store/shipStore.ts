@@ -13,6 +13,8 @@ import {
 } from "@/game/ship/build";
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
+const rotations: Rotation[] = [0, 90, 180, 270];
+
 type ShipState = {
   build: ShipBuild;
   buildMode: BuildMode;
@@ -47,9 +49,11 @@ export const useShipStore = create<ShipState>()(
       selectModule: (moduleId) => set({ selectedModuleId: moduleId }),
       selectPanel: (panelId) => set({ selectedPanelId: panelId }),
       rotateSelected: () =>
-        set((state) => ({
-          rotation: (((state.rotation + 90) % 360) || 0) as Rotation
-        })),
+        set((state) => {
+          const currentIndex = rotations.indexOf(state.rotation);
+          const nextIndex = currentIndex < 0 ? 1 : (currentIndex + 1) % rotations.length;
+          return { rotation: rotations[nextIndex] };
+        }),
       installModule: (moduleId, position, rotation) => {
         const build = get().build;
         const result = canInstallModule(build, moduleId, position, rotation);
@@ -201,10 +205,14 @@ export const useShipStore = create<ShipState>()(
             build: defaultBuild,
             buildMode: "modules",
             selectedModuleId: "hull_block",
-            selectedPanelId: "node_plate"
+            selectedPanelId: "node_plate",
+            rotation: 0
           };
         }
-        return state;
+        return {
+          ...state,
+          rotation: rotations.includes(state.rotation as Rotation) ? state.rotation : 0
+        };
       }
     }
   )

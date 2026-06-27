@@ -165,16 +165,57 @@ export const battleVfxAtlas = {
 };
 
 export const panelAtlas = {
-  src: "/assets/panels/panel-states-atlas.png",
-  columns: 25,
+  src: "/assets/panels-v3/panels",
+  columns: 14,
   rows: 4
 };
 
-const panelStateRows: Record<PanelState, number> = {
-  ideal: 0,
-  damaged: 1,
-  critical: 2,
-  debris: 3
+const panelAssetStates: Record<PanelState, "ideal" | "damaged" | "heavyDamage" | "debris"> = {
+  ideal: "ideal",
+  damaged: "damaged",
+  critical: "heavyDamage",
+  debris: "debris"
+};
+
+const panelSpriteAssets: Record<string, { width: number; height: number }> = {
+  single_1: { width: 1, height: 1 },
+  bar_2h: { width: 2, height: 1 },
+  bar_2v: { width: 1, height: 2 },
+  bar_3h: { width: 3, height: 1 },
+  bar_4h: { width: 4, height: 1 },
+  block_2x2: { width: 2, height: 2 },
+  corner_l_2x2: { width: 2, height: 2 },
+  tee_3x2: { width: 3, height: 2 },
+  cross_3x3: { width: 3, height: 3 },
+  long_l_3x3: { width: 3, height: 3 },
+  zig_3x3: { width: 3, height: 3 },
+  c_2x3: { width: 2, height: 3 },
+  long_corner_2x3: { width: 2, height: 3 },
+  block_tail_2x3: { width: 2, height: 3 }
+};
+
+const panelAssetCellTransforms: Record<
+  string,
+  (
+    cell: { x: number; y: number },
+    source: { width: number; height: number },
+    asset: { width: number; height: number }
+  ) => { x: number; y: number }
+> = {
+  corner_l: (cell, _source, asset) => ({ x: cell.x, y: asset.height - 1 - cell.y }),
+  corner_j: (cell, _source, asset) => ({
+    x: asset.width - 1 - cell.x,
+    y: asset.height - 1 - cell.y
+  }),
+  tee_tail: (cell, _source, asset) => ({ x: cell.x, y: asset.height - 1 - cell.y }),
+  zig_s: (cell, source, asset) => ({
+    x: asset.width - 1 - scaleIndex(cell.x, source.width, asset.width),
+    y: scaleIndex(cell.y, source.height, asset.height)
+  }),
+  long_j: (cell, source, asset) => ({
+    x: asset.width - 1 - scaleIndex(cell.x, source.width, asset.width),
+    y: scaleIndex(cell.y, source.height, asset.height)
+  })
 };
 
 export function getModuleSpriteKey(module: ModuleDef): ModuleSpriteKey {
@@ -205,12 +246,88 @@ export function getHoverSpriteStyle(key: HoverSpriteKey = "ring") {
 }
 
 export function getPanelSpriteStyle(panel: PanelDef, state: PanelState = "ideal") {
-  const x = panel.spriteIndex / (panelAtlas.columns - 1) * 100;
-  const y = panelStateRows[state] / (panelAtlas.rows - 1) * 100;
+  const src = getPanelSpriteSrc(panel, state);
   return {
-    backgroundImage: `url(${panelAtlas.src})`,
-    backgroundSize: `${panelAtlas.columns * 100}% ${panelAtlas.rows * 100}%`,
+    backgroundImage: `url(${src})`,
+    backgroundSize: "contain",
+    backgroundPosition: "center"
+  };
+}
+
+export function getPanelCellSpriteStyle(
+  panel: PanelDef,
+  state: PanelState = "ideal",
+  localCell: { x: number; y: number }
+) {
+  const asset = panelSpriteAssets[panel.spriteId] ?? panelSpriteAssets.single_1;
+  const assetCell = getPanelAssetCell(panel, localCell, asset);
+  const x = asset.width === 1 ? 0 : (assetCell.x / (asset.width - 1)) * 100;
+  const y = asset.height === 1 ? 0 : (assetCell.y / (asset.height - 1)) * 100;
+
+  return {
+    backgroundImage: `url(${getPanelSpriteSrc(panel, state)})`,
+    backgroundSize: `${asset.width * 100}% ${asset.height * 100}%`,
     backgroundPosition: `${x}% ${y}%`
+  };
+}
+
+function getPanelSpriteSrc(panel: PanelDef, state: PanelState) {
+  const assetId = panelSpriteAssets[panel.spriteId] ? panel.spriteId : "single_1";
+  return `${panelAtlas.src}/${panelAssetStates[state]}/${assetId}.webp`;
+}
+
+function getPanelAssetCell(
+  panel: PanelDef,
+  localCell: { x: number; y: number },
+  asset: { width: number; height: number }
+) {
+  const bounds = panel.shape.cells.reduce(
+    (acc, cell) => ({
+      minX: Math.min(acc.minX, cell.x),
+      minY: Math.min(acc.minY, cell.y),
+      maxX: Math.max(acc.maxX, cell.x),
+      maxY: Math.max(acc.maxY, cell.y)
+    }),
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+  );
+  const panelWidth = bounds.maxX - bounds.minX + 1;
+  const panelHeight = bounds.maxY - bounds.minY + 1;
+  const normalized = {
+    x: localCell.x - bounds.minX,
+    y: localCell.y - bounds.minY
+  };
+  const source = { width: panelWidth, height: panelHeight };
+  const transform = panelAssetCellTransforms[panel.id];
+
+  if (transform) {
+    return clampAssetCell(transform(normalized, source, asset), asset);
+  }
+
+  if (asset.width === panelWidth && asset.height === panelHeight) {
+    return clampAssetCell(normalized, asset);
+  }
+  if (asset.width === panelHeight && asset.height === panelWidth) {
+    return clampAssetCell({ x: normalized.y, y: normalized.x }, asset);
+  }
+
+  return clampAssetCell(
+    {
+      x: scaleIndex(normalized.x, panelWidth, asset.width),
+      y: scaleIndex(normalized.y, panelHeight, asset.height)
+    },
+    asset
+  );
+}
+
+function scaleIndex(value: number, sourceSize: number, targetSize: number) {
+  if (sourceSize <= 1 || targetSize <= 1) return 0;
+  return Math.round((value / (sourceSize - 1)) * (targetSize - 1));
+}
+
+function clampAssetCell(cell: { x: number; y: number }, asset: { width: number; height: number }) {
+  return {
+    x: Math.max(0, Math.min(asset.width - 1, cell.x)),
+    y: Math.max(0, Math.min(asset.height - 1, cell.y))
   };
 }
 

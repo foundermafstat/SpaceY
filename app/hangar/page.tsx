@@ -18,10 +18,16 @@ import {
   getModule,
   getPanel,
   getPanelCellOccupant,
-  getTransformedCells
+  getTransformedCells,
+  rotateCell
 } from "@/game/ship/build";
-import { getAiModuleSpriteStyle, getHoverSpriteStyle, getPanelSpriteStyle } from "@/game/assets/moduleSprites";
-import type { GridCell, ModuleType, PanelConnectorSide } from "@/game/types";
+import {
+  getAiModuleSpriteStyle,
+  getHoverSpriteStyle,
+  getPanelCellSpriteStyle,
+  getPanelSpriteStyle
+} from "@/game/assets/moduleSprites";
+import type { GridCell, InstalledPanel, ModuleType, PanelConnectorSide, PanelDef } from "@/game/types";
 
 const labels: Record<ModuleType, string> = {
   core: "Core",
@@ -425,6 +431,9 @@ export default function HangarPage() {
                       const active = buildMode === "panels" || panelCellKeys.has(cellKey(cell));
                       const occupant = getCellOccupant(build, cell);
                       const module = occupant ? getModule(occupant.moduleId) : null;
+                      const panelLocalCell = panel && panelOccupant
+                        ? getPanelLocalCell(panel, panelOccupant, cell)
+                        : null;
                       const dragKind = buildMode === "panels" && panelOccupant
                         ? "panel"
                         : buildMode === "modules" && occupant
@@ -454,7 +463,11 @@ export default function HangarPage() {
                             <>
                               <span
                                 className="cell-panel-sprite"
-                                style={getPanelSpriteStyle(panel, panelOccupant.state)}
+                                style={getPanelCellSpriteStyle(
+                                  panel,
+                                  panelOccupant.state,
+                                  panelLocalCell ?? { x: 0, y: 0 }
+                                )}
                               />
                               {panelConnectors.map((connector) => (
                                 <span
@@ -570,6 +583,17 @@ function parseGridCell(value?: string) {
   const [x, y] = value.split(":").map(Number);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
   return { x, y };
+}
+
+function getPanelLocalCell(panel: PanelDef, installed: InstalledPanel, cell: GridCell) {
+  const offset = {
+    x: cell.x - installed.position.x,
+    y: cell.y - installed.position.y
+  };
+  return panel.shape.cells.find((shapeCell) => {
+    const rotated = rotateCell(shapeCell, installed.rotation);
+    return rotated.x === offset.x && rotated.y === offset.y;
+  });
 }
 
 function shortConnectorLabel(id: string, side: PanelConnectorSide) {

@@ -172,10 +172,14 @@ export function canInstallPanel(
   const panels = build.panels ?? [];
   const targetCells = getTransformedCells(panel, position, rotation);
   const targetCellKeys = new Set(targetCells.map(cellKey));
+  const activeCellKeys = new Set(frame.activeCells.map(cellKey));
 
   for (const cell of targetCells) {
     if (cell.x < 0 || cell.y < 0 || cell.x >= frame.size.width || cell.y >= frame.size.height) {
       return { ok: false, reason: "Outside construction grid" };
+    }
+    if (!activeCellKeys.has(cellKey(cell))) {
+      return { ok: false, reason: "Outside frame shape" };
     }
     if (getPanelCellOccupant(build, cell)) {
       return { ok: false, reason: "Panel overlaps" };
