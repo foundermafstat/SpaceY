@@ -1,5 +1,9 @@
 import { getRuntimePartDamageState, type ShipRuntime } from "@/game/ship/runtime";
 import type { DamageType, RuntimePartDamageState, RuntimePartState } from "@/game/types";
+import {
+  applyPartDetach,
+  type DetachedDebrisEntity
+} from "@/game/battle/systems/PartDetachSystem";
 
 export type RuntimeDamageInput = {
   damageType: DamageType;
@@ -13,6 +17,8 @@ export type RuntimeDamageResult = {
   partState: RuntimePartDamageState | null;
   hullDamage: number;
   destroyedPartId: string | null;
+  detachedPartIds: string[];
+  debris: DetachedDebrisEntity[];
   cabinDestroyed: boolean;
 };
 
@@ -25,6 +31,8 @@ export function applyRuntimeDamage(runtime: ShipRuntime, input: RuntimeDamageInp
       partState: null,
       hullDamage: input.amount,
       destroyedPartId: null,
+      detachedPartIds: [],
+      debris: [],
       cabinDestroyed: false
     };
   }
@@ -51,7 +59,11 @@ export function applyRuntimeDamage(runtime: ShipRuntime, input: RuntimeDamageInp
     };
   });
 
-  const nextRuntime = refreshRuntimeSystems({ ...runtime, parts });
+  const damagedRuntime = { ...runtime, parts };
+  const detachResult = destroyedPartId
+    ? applyPartDetach(damagedRuntime, destroyedPartId)
+    : { runtime: damagedRuntime, detachedPartIds: [], debris: [] };
+  const nextRuntime = refreshRuntimeSystems(detachResult.runtime);
 
   return {
     runtime: nextRuntime,
@@ -59,6 +71,8 @@ export function applyRuntimeDamage(runtime: ShipRuntime, input: RuntimeDamageInp
     partState: nextPartState,
     hullDamage: mitigatedDamage,
     destroyedPartId,
+    detachedPartIds: detachResult.detachedPartIds,
+    debris: detachResult.debris,
     cabinDestroyed
   };
 }
