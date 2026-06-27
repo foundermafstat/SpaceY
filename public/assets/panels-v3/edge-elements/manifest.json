@@ -1,0 +1,782 @@
+{
+  "format": "webp",
+  "quality": 75,
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "sourceMode": "generated large source sheets, chroma-key removed, native-size component crops",
+  "reference": "/assets/panels-v3/edge-elements/reference/edge-elements-reference.png",
+  "sources": {
+    "ideal": {
+      "raw": "/assets/panels-v3/edge-elements/source/ideal-source.png",
+      "alpha": "/assets/panels-v3/edge-elements/source-alpha/ideal-alpha.png"
+    },
+    "damaged": {
+      "raw": "/assets/panels-v3/edge-elements/source/damaged-source.png",
+      "alpha": "/assets/panels-v3/edge-elements/source-alpha/damaged-alpha.png"
+    },
+    "heavyDamage": {
+      "raw": "/assets/panels-v3/edge-elements/source/heavyDamage-source.png",
+      "alpha": "/assets/panels-v3/edge-elements/source-alpha/heavyDamage-alpha.png"
+    },
+    "debris": {
+      "raw": "/assets/panels-v3/edge-elements/source/debris-source.png",
+      "alpha": "/assets/panels-v3/edge-elements/source-alpha/debris-alpha.png"
+    }
+  },
+  "sprites": {
+    "ideal": [
+      {
+        "id": "horizontal_00",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_00.webp",
+        "size": {
+          "width": 1205,
+          "height": 85
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 52,
+          "right": 1237,
+          "bottom": 153
+        }
+      },
+      {
+        "id": "horizontal_01",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_01.webp",
+        "size": {
+          "width": 1207,
+          "height": 85
+        },
+        "sourceBox": {
+          "left": 15,
+          "top": 183,
+          "right": 1238,
+          "bottom": 284
+        }
+      },
+      {
+        "id": "horizontal_02",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_02.webp",
+        "size": {
+          "width": 1207,
+          "height": 86
+        },
+        "sourceBox": {
+          "left": 15,
+          "top": 314,
+          "right": 1238,
+          "bottom": 416
+        }
+      },
+      {
+        "id": "horizontal_03",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_03.webp",
+        "size": {
+          "width": 1207,
+          "height": 90
+        },
+        "sourceBox": {
+          "left": 14,
+          "top": 450,
+          "right": 1237,
+          "bottom": 555
+        }
+      },
+      {
+        "id": "vertical_04",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/vertical_04.webp",
+        "size": {
+          "width": 80,
+          "height": 591
+        },
+        "sourceBox": {
+          "left": 785,
+          "top": 598,
+          "right": 881,
+          "bottom": 1205
+        }
+      },
+      {
+        "id": "vertical_05",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/vertical_05.webp",
+        "size": {
+          "width": 90,
+          "height": 591
+        },
+        "sourceBox": {
+          "left": 940,
+          "top": 598,
+          "right": 1046,
+          "bottom": 1205
+        }
+      },
+      {
+        "id": "vertical_06",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/vertical_06.webp",
+        "size": {
+          "width": 86,
+          "height": 592
+        },
+        "sourceBox": {
+          "left": 1103,
+          "top": 598,
+          "right": 1205,
+          "bottom": 1206
+        }
+      },
+      {
+        "id": "horizontal_07",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_07.webp",
+        "size": {
+          "width": 675,
+          "height": 67
+        },
+        "sourceBox": {
+          "left": 35,
+          "top": 622,
+          "right": 726,
+          "bottom": 703
+        }
+      },
+      {
+        "id": "horizontal_08",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_08.webp",
+        "size": {
+          "width": 675,
+          "height": 65
+        },
+        "sourceBox": {
+          "left": 35,
+          "top": 747,
+          "right": 725,
+          "bottom": 828
+        }
+      },
+      {
+        "id": "horizontal_09",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/horizontal_09.webp",
+        "size": {
+          "width": 679,
+          "height": 63
+        },
+        "sourceBox": {
+          "left": 34,
+          "top": 868,
+          "right": 729,
+          "bottom": 947
+        }
+      },
+      {
+        "id": "module_10",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/module_10.webp",
+        "size": {
+          "width": 191,
+          "height": 190
+        },
+        "sourceBox": {
+          "left": 34,
+          "top": 977,
+          "right": 240,
+          "bottom": 1183
+        }
+      },
+      {
+        "id": "module_11",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/module_11.webp",
+        "size": {
+          "width": 184,
+          "height": 185
+        },
+        "sourceBox": {
+          "left": 268,
+          "top": 978,
+          "right": 468,
+          "bottom": 1179
+        }
+      },
+      {
+        "id": "module_12",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/ideal/module_12.webp",
+        "size": {
+          "width": 212,
+          "height": 203
+        },
+        "sourceBox": {
+          "left": 498,
+          "top": 980,
+          "right": 726,
+          "bottom": 1199
+        }
+      }
+    ],
+    "damaged": [
+      {
+        "id": "horizontal_00",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_00.webp",
+        "size": {
+          "width": 1203,
+          "height": 84
+        },
+        "sourceBox": {
+          "left": 18,
+          "top": 53,
+          "right": 1237,
+          "bottom": 153
+        }
+      },
+      {
+        "id": "horizontal_01",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_01.webp",
+        "size": {
+          "width": 1204,
+          "height": 83
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 193,
+          "right": 1237,
+          "bottom": 292
+        }
+      },
+      {
+        "id": "horizontal_02",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_02.webp",
+        "size": {
+          "width": 1204,
+          "height": 83
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 332,
+          "right": 1237,
+          "bottom": 431
+        }
+      },
+      {
+        "id": "horizontal_03",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_03.webp",
+        "size": {
+          "width": 705,
+          "height": 83
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 476,
+          "right": 738,
+          "bottom": 575
+        }
+      },
+      {
+        "id": "vertical_04",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/vertical_04.webp",
+        "size": {
+          "width": 91,
+          "height": 616
+        },
+        "sourceBox": {
+          "left": 934,
+          "top": 476,
+          "right": 1041,
+          "bottom": 1107
+        }
+      },
+      {
+        "id": "vertical_05",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/vertical_05.webp",
+        "size": {
+          "width": 86,
+          "height": 615
+        },
+        "sourceBox": {
+          "left": 1104,
+          "top": 476,
+          "right": 1206,
+          "bottom": 1107
+        }
+      },
+      {
+        "id": "vertical_06",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/vertical_06.webp",
+        "size": {
+          "width": 83,
+          "height": 615
+        },
+        "sourceBox": {
+          "left": 771,
+          "top": 477,
+          "right": 870,
+          "bottom": 1107
+        }
+      },
+      {
+        "id": "horizontal_07",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_07.webp",
+        "size": {
+          "width": 687,
+          "height": 69
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 622,
+          "right": 719,
+          "bottom": 706
+        }
+      },
+      {
+        "id": "horizontal_08",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/horizontal_08.webp",
+        "size": {
+          "width": 686,
+          "height": 71
+        },
+        "sourceBox": {
+          "left": 17,
+          "top": 752,
+          "right": 719,
+          "bottom": 839
+        }
+      },
+      {
+        "id": "module_09",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/module_09.webp",
+        "size": {
+          "width": 206,
+          "height": 203
+        },
+        "sourceBox": {
+          "left": 20,
+          "top": 886,
+          "right": 242,
+          "bottom": 1105
+        }
+      },
+      {
+        "id": "module_10",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/module_10.webp",
+        "size": {
+          "width": 185,
+          "height": 189
+        },
+        "sourceBox": {
+          "left": 275,
+          "top": 886,
+          "right": 476,
+          "bottom": 1091
+        }
+      },
+      {
+        "id": "module_11",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/damaged/module_11.webp",
+        "size": {
+          "width": 212,
+          "height": 203
+        },
+        "sourceBox": {
+          "left": 502,
+          "top": 887,
+          "right": 730,
+          "bottom": 1106
+        }
+      }
+    ],
+    "heavyDamage": [
+      {
+        "id": "horizontal_00",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_00.webp",
+        "size": {
+          "width": 1211,
+          "height": 81
+        },
+        "sourceBox": {
+          "left": 13,
+          "top": 55,
+          "right": 1240,
+          "bottom": 152
+        }
+      },
+      {
+        "id": "horizontal_01",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_01.webp",
+        "size": {
+          "width": 1211,
+          "height": 86
+        },
+        "sourceBox": {
+          "left": 13,
+          "top": 189,
+          "right": 1240,
+          "bottom": 291
+        }
+      },
+      {
+        "id": "horizontal_02",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_02.webp",
+        "size": {
+          "width": 1209,
+          "height": 89
+        },
+        "sourceBox": {
+          "left": 15,
+          "top": 332,
+          "right": 1240,
+          "bottom": 437
+        }
+      },
+      {
+        "id": "horizontal_03",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_03.webp",
+        "size": {
+          "width": 681,
+          "height": 83
+        },
+        "sourceBox": {
+          "left": 16,
+          "top": 484,
+          "right": 713,
+          "bottom": 582
+        }
+      },
+      {
+        "id": "vertical_04",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/vertical_04.webp",
+        "size": {
+          "width": 76,
+          "height": 651
+        },
+        "sourceBox": {
+          "left": 794,
+          "top": 497,
+          "right": 886,
+          "bottom": 1164
+        }
+      },
+      {
+        "id": "vertical_05",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/vertical_05.webp",
+        "size": {
+          "width": 78,
+          "height": 651
+        },
+        "sourceBox": {
+          "left": 947,
+          "top": 497,
+          "right": 1041,
+          "bottom": 1164
+        }
+      },
+      {
+        "id": "vertical_06",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/vertical_06.webp",
+        "size": {
+          "width": 80,
+          "height": 651
+        },
+        "sourceBox": {
+          "left": 1093,
+          "top": 500,
+          "right": 1189,
+          "bottom": 1167
+        }
+      },
+      {
+        "id": "horizontal_07",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_07.webp",
+        "size": {
+          "width": 684,
+          "height": 78
+        },
+        "sourceBox": {
+          "left": 18,
+          "top": 630,
+          "right": 718,
+          "bottom": 724
+        }
+      },
+      {
+        "id": "horizontal_08",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/horizontal_08.webp",
+        "size": {
+          "width": 686,
+          "height": 76
+        },
+        "sourceBox": {
+          "left": 14,
+          "top": 770,
+          "right": 716,
+          "bottom": 862
+        }
+      },
+      {
+        "id": "module_09",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/module_09.webp",
+        "size": {
+          "width": 206,
+          "height": 204
+        },
+        "sourceBox": {
+          "left": 24,
+          "top": 917,
+          "right": 246,
+          "bottom": 1137
+        }
+      },
+      {
+        "id": "module_10",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/module_10.webp",
+        "size": {
+          "width": 202,
+          "height": 203
+        },
+        "sourceBox": {
+          "left": 529,
+          "top": 917,
+          "right": 747,
+          "bottom": 1136
+        }
+      },
+      {
+        "id": "module_11",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/heavyDamage/module_11.webp",
+        "size": {
+          "width": 194,
+          "height": 195
+        },
+        "sourceBox": {
+          "left": 280,
+          "top": 920,
+          "right": 490,
+          "bottom": 1131
+        }
+      }
+    ],
+    "debris": [
+      {
+        "id": "horizontal_00",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_00.webp",
+        "size": {
+          "width": 1208,
+          "height": 120
+        },
+        "sourceBox": {
+          "left": 16,
+          "top": 34,
+          "right": 1240,
+          "bottom": 170
+        }
+      },
+      {
+        "id": "horizontal_01",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_01.webp",
+        "size": {
+          "width": 1209,
+          "height": 113
+        },
+        "sourceBox": {
+          "left": 16,
+          "top": 190,
+          "right": 1241,
+          "bottom": 319
+        }
+      },
+      {
+        "id": "horizontal_02",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_02.webp",
+        "size": {
+          "width": 1204,
+          "height": 110
+        },
+        "sourceBox": {
+          "left": 18,
+          "top": 345,
+          "right": 1238,
+          "bottom": 469
+        }
+      },
+      {
+        "id": "horizontal_03",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_03.webp",
+        "size": {
+          "width": 681,
+          "height": 102
+        },
+        "sourceBox": {
+          "left": 20,
+          "top": 512,
+          "right": 717,
+          "bottom": 629
+        }
+      },
+      {
+        "id": "vertical_04",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/vertical_04.webp",
+        "size": {
+          "width": 106,
+          "height": 636
+        },
+        "sourceBox": {
+          "left": 752,
+          "top": 516,
+          "right": 874,
+          "bottom": 1167
+        }
+      },
+      {
+        "id": "vertical_05",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/vertical_05.webp",
+        "size": {
+          "width": 103,
+          "height": 635
+        },
+        "sourceBox": {
+          "left": 915,
+          "top": 517,
+          "right": 1034,
+          "bottom": 1168
+        }
+      },
+      {
+        "id": "vertical_06",
+        "kind": "vertical",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/vertical_06.webp",
+        "size": {
+          "width": 103,
+          "height": 632
+        },
+        "sourceBox": {
+          "left": 1082,
+          "top": 521,
+          "right": 1201,
+          "bottom": 1169
+        }
+      },
+      {
+        "id": "horizontal_07",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_07.webp",
+        "size": {
+          "width": 598,
+          "height": 84
+        },
+        "sourceBox": {
+          "left": 21,
+          "top": 678,
+          "right": 635,
+          "bottom": 778
+        }
+      },
+      {
+        "id": "horizontal_08",
+        "kind": "horizontal",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/horizontal_08.webp",
+        "size": {
+          "width": 607,
+          "height": 82
+        },
+        "sourceBox": {
+          "left": 20,
+          "top": 831,
+          "right": 643,
+          "bottom": 929
+        }
+      },
+      {
+        "id": "module_09",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/module_09.webp",
+        "size": {
+          "width": 203,
+          "height": 188
+        },
+        "sourceBox": {
+          "left": 268,
+          "top": 958,
+          "right": 487,
+          "bottom": 1162
+        }
+      },
+      {
+        "id": "module_10",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/module_10.webp",
+        "size": {
+          "width": 193,
+          "height": 195
+        },
+        "sourceBox": {
+          "left": 31,
+          "top": 959,
+          "right": 240,
+          "bottom": 1170
+        }
+      },
+      {
+        "id": "module_11",
+        "kind": "module",
+        "path": "/assets/panels-v3/edge-elements/sprites/debris/module_11.webp",
+        "size": {
+          "width": 206,
+          "height": 191
+        },
+        "sourceBox": {
+          "left": 505,
+          "top": 961,
+          "right": 727,
+          "bottom": 1168
+        }
+      }
+    ]
+  },
+  "contactSheets": {
+    "ideal": "/assets/panels-v3/edge-elements/contact-sheets/ideal.png",
+    "damaged": "/assets/panels-v3/edge-elements/contact-sheets/damaged.png",
+    "heavyDamage": "/assets/panels-v3/edge-elements/contact-sheets/heavyDamage.png",
+    "debris": "/assets/panels-v3/edge-elements/contact-sheets/debris.png",
+    "all": "/assets/panels-v3/edge-elements/contact-sheets/all.png"
+  }
+}

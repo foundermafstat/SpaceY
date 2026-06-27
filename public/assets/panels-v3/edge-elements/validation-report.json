@@ -1,0 +1,50 @@
+{
+  "ok": true,
+  "states": {
+    "ideal": {
+      "state": "ideal",
+      "ok": true,
+      "spriteCount": 13,
+      "kindCounts": {
+        "horizontal": 7,
+        "vertical": 3,
+        "module": 3
+      },
+      "widestHorizontal": 1207
+    },
+    "damaged": {
+      "state": "damaged",
+      "ok": true,
+      "spriteCount": 12,
+      "kindCounts": {
+        "horizontal": 6,
+        "vertical": 3,
+        "module": 3
+      },
+      "widestHorizontal": 1204
+    },
+    "heavyDamage": {
+      "state": "heavyDamage",
+      "ok": true,
+      "spriteCount": 12,
+      "kindCounts": {
+        "horizontal": 6,
+        "vertical": 3,
+        "module": 3
+      },
+      "widestHorizontal": 1211
+    },
+    "debris": {
+      "state": "debris",
+      "ok": true,
+      "spriteCount": 12,
+      "kindCounts": {
+        "horizontal": 6,
+        "vertical": 3,
+        "module": 3
+      },
+      "widestHorizontal": 1209
+    }
+  },
+  "errors": []
+}

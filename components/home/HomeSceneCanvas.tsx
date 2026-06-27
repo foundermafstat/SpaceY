@@ -17,11 +17,16 @@ import {
 import type { ShipBuild, WeaponDef } from "@/game/types";
 
 const LOGO_SRC = "/assets/spacey/spacey-debris-logo.png";
+const SPACE_TILE_SCALE = 0.8;
 const SPACE_TILE_SRCS = [
-  "/assets/backgrounds/space-tile-seamless-1.webp",
-  "/assets/backgrounds/space-tile-seamless-2.webp",
-  "/assets/backgrounds/space-tile-seamless-3.webp",
-  "/assets/backgrounds/space-tile-seamless-4.webp"
+  "/assets/backgrounds/deep-space-tile-01.webp",
+  "/assets/backgrounds/deep-space-tile-02.webp",
+  "/assets/backgrounds/deep-space-tile-03.webp",
+  "/assets/backgrounds/deep-space-tile-04.webp",
+  "/assets/backgrounds/deep-space-tile-05.webp",
+  "/assets/backgrounds/deep-space-tile-06.webp",
+  "/assets/backgrounds/deep-space-tile-07.webp",
+  "/assets/backgrounds/deep-space-tile-08.webp"
 ];
 const PLANET_SRCS = [
   "/assets/backgrounds/planets/planet-ice.webp",
@@ -43,10 +48,17 @@ type Vec = { x: number; y: number };
 type AttackType = "kinetic" | "plasma" | "missile" | "laser";
 type PlanetTexture = { texture: Texture };
 type AlphaBounds = {
+  sourceWidth: number;
+  sourceHeight: number;
   width: number;
   height: number;
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
   offsetX: number;
   offsetY: number;
+  alpha: Uint8ClampedArray;
 };
 type ShipPart = {
   kind: "module" | "weapon";
@@ -146,6 +158,11 @@ type DriftingPiece = {
 };
 
 type RotatingPlanet = Container & {
+  baseX: number;
+  baseY: number;
+  driftAmplitude: number;
+  driftPhase: number;
+  driftSpeed: number;
   baseRotation: number;
   spinSpeed: number;
 };
@@ -223,6 +240,7 @@ export default function HomeSceneCanvas() {
         height: app.screen.height
       });
       spaceTile.alpha = 0.5;
+      spaceTile.tileScale.set(SPACE_TILE_SCALE);
       layers.background.addChild(spaceTile);
 
       seedStars(layers.farStars, 135, 0.15, 1.15, rng);
@@ -303,7 +321,7 @@ export default function HomeSceneCanvas() {
           attackType,
           attackType === "missile" ? 46 : attackType === "plasma" ? 38 : attackType === "laser" ? 26 : 32
         );
-        drawLogoCrack(logoHits, logo, pos, rng);
+        drawLogoCrack(logoHits, logo, textures.logoBounds, pos, rng);
         const pieceCount = attackType === "missile" ? 3 : 2;
         for (let i = 0; i < pieceCount; i += 1) {
           if (pieces.length > 44) removeOldPiece(pieces);
@@ -362,10 +380,17 @@ function layoutLogo(logo: Sprite, width: number, height: number, time: number, b
   logo.scale.set(scale);
   logo.position.set(width / 2, startY + (targetY - startY) * progress);
   logo.rotation = Math.sin(time * 1.2) * 0.006;
+  const cos = Math.cos(logo.rotation);
+  const sin = Math.sin(logo.rotation);
   return {
+    x: logo.position.x,
+    y: logo.position.y,
+    scale,
+    rotation: logo.rotation,
+    mask: bounds,
     center: {
-      x: logo.position.x + bounds.offsetX * scale,
-      y: logo.position.y + bounds.offsetY * scale
+      x: logo.position.x + (bounds.offsetX * cos - bounds.offsetY * sin) * scale,
+      y: logo.position.y + (bounds.offsetX * sin + bounds.offsetY * cos) * scale
     },
     width: bounds.width * scale,
     height: bounds.height * scale,
@@ -390,6 +415,7 @@ function measureImageAlphaBounds(src: string): Promise<AlphaBounds> {
 
       context.drawImage(image, 0, 0);
       const pixels = context.getImageData(0, 0, width, height).data;
+      const alpha = new Uint8ClampedArray(width * height);
       let minX = width;
       let minY = height;
       let maxX = -1;
@@ -397,7 +423,9 @@ function measureImageAlphaBounds(src: string): Promise<AlphaBounds> {
 
       for (let y = 0; y < height; y += 1) {
         for (let x = 0; x < width; x += 1) {
-          if (pixels[(y * width + x) * 4 + 3] <= 10) continue;
+          const alphaValue = pixels[(y * width + x) * 4 + 3];
+          alpha[y * width + x] = alphaValue;
+          if (alphaValue <= 10) continue;
           minX = Math.min(minX, x);
           minY = Math.min(minY, y);
           maxX = Math.max(maxX, x);
@@ -413,10 +441,17 @@ function measureImageAlphaBounds(src: string): Promise<AlphaBounds> {
       const alphaWidth = maxX - minX + 1;
       const alphaHeight = maxY - minY + 1;
       resolve({
+        sourceWidth: width,
+        sourceHeight: height,
         width: alphaWidth,
         height: alphaHeight,
+        minX,
+        minY,
+        maxX,
+        maxY,
         offsetX: minX + alphaWidth / 2 - width / 2,
-        offsetY: minY + alphaHeight / 2 - height / 2
+        offsetY: minY + alphaHeight / 2 - height / 2,
+        alpha
       });
     };
     image.onerror = () => resolve(fullAlphaBounds(1, 1));
@@ -425,7 +460,19 @@ function measureImageAlphaBounds(src: string): Promise<AlphaBounds> {
 }
 
 function fullAlphaBounds(width: number, height: number): AlphaBounds {
-  return { width, height, offsetX: 0, offsetY: 0 };
+  return {
+    sourceWidth: width,
+    sourceHeight: height,
+    width,
+    height,
+    minX: 0,
+    minY: 0,
+    maxX: width - 1,
+    maxY: height - 1,
+    offsetX: 0,
+    offsetY: 0,
+    alpha: new Uint8ClampedArray(width * height).fill(255)
+  };
 }
 
 function updateBackground(
@@ -442,6 +489,12 @@ function updateBackground(
   layers.planets.position.set(Math.sin(time * 0.018) * 28, Math.cos(time * 0.014) * 18);
   layers.planets.children.forEach((child) => {
     const planet = child as RotatingPlanet;
+    if (typeof planet.driftSpeed === "number") {
+      planet.position.set(
+        planet.baseX + Math.sin(time * planet.driftSpeed + planet.driftPhase) * planet.driftAmplitude,
+        planet.baseY
+      );
+    }
     if (typeof planet.spinSpeed === "number") {
       planet.rotation = planet.baseRotation + time * planet.spinSpeed;
     }
@@ -802,13 +855,14 @@ function updateProjectiles(
         ? segmentPointDistance(projectile.previous, projectile.pos, projectile.targetShip.pos) <
           projectile.radius + projectile.targetShip.radius * 0.62
         : distance(projectile.pos, projectile.targetShip.pos) < projectile.radius + projectile.targetShip.radius * 0.62);
-    const insideLogo = !projectile.targetShip && segmentHitsLogo(projectile.previous, projectile.pos, logo);
+    const logoHitPoint = !projectile.targetShip ? segmentLogoHitPoint(projectile.previous, projectile.pos, logo) : undefined;
+    const reachedLogoTarget = !projectile.targetShip && reachedTarget && pointInsideLogo(projectile.target, logo);
     const outOfScene = isOutsideScene(projectile.pos, screenWidth, screenHeight, projectile.attackType === "missile" ? 180 : 120);
-    if (reachedTarget || hitTargetShip || insideLogo || outOfScene || projectile.life <= 0) {
+    if (reachedTarget || hitTargetShip || logoHitPoint || outOfScene || projectile.life <= 0) {
       if (projectile.life > 0 && hitTargetShip && projectile.targetShip) {
         hitShip(projectile.targetShip, projectile.previous, projectile.pos, projectile.attackType, particles, tempSprites, layers, textures);
-      } else if (projectile.life > 0 && !projectile.targetShip && (insideLogo || reachedTarget)) {
-        onLogoHit(insideLogo ? projectile.pos : projectile.target, projectile.attackType);
+      } else if (projectile.life > 0 && !projectile.targetShip && (logoHitPoint || reachedLogoTarget)) {
+        onLogoHit(logoHitPoint ?? projectile.target, projectile.attackType);
       }
       projectile.body.destroy();
       projectile.trail.destroy();
@@ -1299,7 +1353,7 @@ function removeOldPiece(pieces: DriftingPiece[]) {
   old?.sprite.destroy();
 }
 
-function drawLogoCrack(container: Container, logo: Sprite, pos: Vec, rng: () => number) {
+function drawLogoCrack(container: Container, logo: Sprite, logoMask: AlphaBounds, pos: Vec, rng: () => number) {
   const crack = new Graphics();
   const localX = pos.x - logo.x;
   const localY = pos.y - logo.y;
@@ -1308,9 +1362,20 @@ function drawLogoCrack(container: Container, logo: Sprite, pos: Vec, rng: () => 
   for (let i = 0; i < 3; i += 1) {
     const angle = rng() * Math.PI * 2;
     const length = 12 + rng() * 24;
+    const steps = Math.max(2, Math.ceil(length / 4));
+    let end = pos;
+    for (let step = 1; step <= steps; step += 1) {
+      const next = {
+        x: pos.x + Math.cos(angle) * length * (step / steps),
+        y: pos.y + Math.sin(angle) * length * (step / steps)
+      };
+      if (!pointInsideLogoSprite(next, logo, logoMask)) break;
+      end = next;
+    }
+    if (distance(pos, end) < 3) continue;
     crack
       .moveTo(localX, localY)
-      .lineTo(localX + Math.cos(angle) * length, localY + Math.sin(angle) * length)
+      .lineTo(end.x - logo.x, end.y - logo.y)
       .stroke({ color: 0xcfefff, alpha: 0.36, width: 1 });
   }
   container.addChild(crack);
@@ -1320,35 +1385,91 @@ function drawLogoCrack(container: Container, logo: Sprite, pos: Vec, rng: () => 
 }
 
 function randomLogoBoundaryPoint(logo: ReturnType<typeof layoutLogo>, rng: () => number): Vec {
-  const halfWidth = logo.width * 0.44;
-  const halfHeight = logo.height * 0.35;
-  const side = Math.floor(rng() * 4);
-  if (side === 0) {
-    return { x: logo.center.x - halfWidth, y: logo.center.y + (rng() - 0.5) * halfHeight * 1.55 };
+  const mask = logo.mask;
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const side = Math.floor(rng() * 4);
+    if (side === 0 || side === 1) {
+      const y = Math.floor(mask.minY + rng() * Math.max(1, mask.height));
+      const startX = side === 0 ? mask.minX : mask.maxX;
+      const endX = side === 0 ? mask.maxX : mask.minX;
+      const step = side === 0 ? 1 : -1;
+      for (let x = startX; side === 0 ? x <= endX : x >= endX; x += step) {
+        if (isMaskOpaque(mask, x, y)) return logoImageToWorldPoint(logo, x, y);
+      }
+      continue;
+    }
+
+    const x = Math.floor(mask.minX + rng() * Math.max(1, mask.width));
+    const startY = side === 2 ? mask.minY : mask.maxY;
+    const endY = side === 2 ? mask.maxY : mask.minY;
+    const step = side === 2 ? 1 : -1;
+    for (let y = startY; side === 2 ? y <= endY : y >= endY; y += step) {
+      if (isMaskOpaque(mask, x, y)) return logoImageToWorldPoint(logo, x, y);
+    }
   }
-  if (side === 1) {
-    return { x: logo.center.x + halfWidth, y: logo.center.y + (rng() - 0.5) * halfHeight * 1.55 };
-  }
-  if (side === 2) {
-    return { x: logo.center.x + (rng() - 0.5) * halfWidth * 1.65, y: logo.center.y - halfHeight };
-  }
-  return { x: logo.center.x + (rng() - 0.5) * halfWidth * 1.65, y: logo.center.y + halfHeight };
+
+  return logo.center;
 }
 
 function pointInsideLogo(point: Vec, logo: ReturnType<typeof layoutLogo>) {
-  const dx = (point.x - logo.center.x) / (logo.width * 0.44);
-  const dy = (point.y - logo.center.y) / (logo.height * 0.38);
-  return dx * dx + dy * dy <= 1;
+  const imagePoint = logoWorldToImagePoint(point, logo);
+  return isMaskOpaque(logo.mask, imagePoint.x, imagePoint.y);
 }
 
-function segmentHitsLogo(from: Vec, to: Vec, logo: ReturnType<typeof layoutLogo>) {
+function segmentLogoHitPoint(from: Vec, to: Vec, logo: ReturnType<typeof layoutLogo>) {
   const length = distance(from, to);
-  const steps = Math.max(1, Math.ceil(length / 18));
+  const steps = Math.max(1, Math.ceil(length / 6));
   for (let i = 0; i <= steps; i += 1) {
     const t = i / steps;
-    if (pointInsideLogo({ x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t }, logo)) return true;
+    const point = { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+    if (pointInsideLogo(point, logo)) return point;
   }
-  return false;
+  return undefined;
+}
+
+function pointInsideLogoSprite(point: Vec, logo: Sprite, mask: AlphaBounds) {
+  const imagePoint = logoSpriteWorldToImagePoint(point, logo, mask);
+  return isMaskOpaque(mask, imagePoint.x, imagePoint.y);
+}
+
+function isMaskOpaque(mask: AlphaBounds, x: number, y: number) {
+  const px = Math.round(x);
+  const py = Math.round(y);
+  if (px < 0 || py < 0 || px >= mask.sourceWidth || py >= mask.sourceHeight) return false;
+  return mask.alpha[py * mask.sourceWidth + px] > 32;
+}
+
+function logoWorldToImagePoint(point: Vec, logo: ReturnType<typeof layoutLogo>): Vec {
+  const dx = point.x - logo.x;
+  const dy = point.y - logo.y;
+  const cos = Math.cos(logo.rotation);
+  const sin = Math.sin(logo.rotation);
+  return {
+    x: (dx * cos + dy * sin) / logo.scale + logo.mask.sourceWidth / 2,
+    y: (-dx * sin + dy * cos) / logo.scale + logo.mask.sourceHeight / 2
+  };
+}
+
+function logoSpriteWorldToImagePoint(point: Vec, logo: Sprite, mask: AlphaBounds): Vec {
+  const dx = point.x - logo.x;
+  const dy = point.y - logo.y;
+  const cos = Math.cos(logo.rotation);
+  const sin = Math.sin(logo.rotation);
+  return {
+    x: (dx * cos + dy * sin) / logo.scale.x + mask.sourceWidth / 2,
+    y: (-dx * sin + dy * cos) / logo.scale.y + mask.sourceHeight / 2
+  };
+}
+
+function logoImageToWorldPoint(logo: ReturnType<typeof layoutLogo>, x: number, y: number): Vec {
+  const localX = (x - logo.mask.sourceWidth / 2) * logo.scale;
+  const localY = (y - logo.mask.sourceHeight / 2) * logo.scale;
+  const cos = Math.cos(logo.rotation);
+  const sin = Math.sin(logo.rotation);
+  return {
+    x: logo.x + localX * cos - localY * sin,
+    y: logo.y + localX * sin + localY * cos
+  };
 }
 
 function segmentPointDistance(from: Vec, to: Vec, point: Vec) {
@@ -1419,7 +1540,12 @@ function seedPlanet(layer: Container, planets: PlanetTexture[], width: number, h
   root.spinSpeed = (rng() < 0.5 ? -1 : 1) * (0.0012 + rng() * 0.0018);
   root.rotation = root.baseRotation;
   const side = rng() < 0.5 ? -1 : 1;
-  root.position.set(width * 0.5 + side * width * (0.18 + rng() * 0.16), height - planetHeight * (0.03 + rng() * 0.09));
+  root.baseX = width * 0.5 + side * width * (0.18 + rng() * 0.16);
+  root.baseY = height - planetHeight * (0.03 + rng() * 0.09);
+  root.driftAmplitude = width * (0.028 + rng() * 0.025);
+  root.driftSpeed = 0.006 + rng() * 0.006;
+  root.driftPhase = rng() * Math.PI * 2;
+  root.position.set(root.baseX, root.baseY);
   layer.addChild(root);
 }
 

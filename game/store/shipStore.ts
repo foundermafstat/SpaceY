@@ -24,10 +24,10 @@ type ShipState = {
   selectModule: (moduleId: string) => void;
   selectPanel: (panelId: string) => void;
   rotateSelected: () => void;
-  installModule: (moduleId: string, position: { x: number; y: number }, rotation: Rotation) => void;
+  installModule: (moduleId: string, position: { x: number; y: number }, rotation: Rotation) => boolean;
   moveModule: (instanceId: string, position: { x: number; y: number }, rotation?: Rotation) => boolean;
   removeModule: (instanceId: string) => void;
-  installPanel: (panelId: string, position: { x: number; y: number }, rotation: Rotation) => void;
+  installPanel: (panelId: string, position: { x: number; y: number }, rotation: Rotation) => boolean;
   movePanel: (instanceId: string, position: { x: number; y: number }, rotation?: Rotation) => boolean;
   removePanel: (instanceId: string) => void;
   resetBuild: () => void;
@@ -53,7 +53,7 @@ export const useShipStore = create<ShipState>()(
       installModule: (moduleId, position, rotation) => {
         const build = get().build;
         const result = canInstallModule(build, moduleId, position, rotation);
-        if (!result.ok) return;
+        if (!result.ok) return false;
         set({
           build: {
             ...build,
@@ -68,6 +68,7 @@ export const useShipStore = create<ShipState>()(
             ]
           }
         });
+        return true;
       },
       moveModule: (instanceId, position, rotation) => {
         const build = get().build;
@@ -95,7 +96,7 @@ export const useShipStore = create<ShipState>()(
       installPanel: (panelId, position, rotation) => {
         const build = get().build;
         const result = canInstallPanel(build, panelId, position, rotation);
-        if (!result.ok) return;
+        if (!result.ok) return false;
         set({
           build: {
             ...build,
@@ -111,6 +112,7 @@ export const useShipStore = create<ShipState>()(
             ]
           }
         });
+        return true;
       },
       movePanel: (instanceId, position, rotation) => {
         const build = get().build;

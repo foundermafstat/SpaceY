@@ -1,0 +1,627 @@
+{
+  "format": "webp",
+  "quality": 75,
+  "cellSize": 256,
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "exactPanelDimensions": true,
+  "panelAssemblyMode": "deterministic pattern mask over generated material",
+  "geometrySource": "+/- pattern mask, not image generation",
+  "seamlessPanels": true,
+  "perspective": "top-down orthographic",
+  "edgeElements": {
+    "sourceManifest": "/assets/panels-v3/edge-elements/reference-complete/manifest.json",
+    "piecesContactSheet": "/assets/panels-v3/edge-kit/edge-pieces-contact-sheet.png",
+    "pieceCountByState": {
+      "ideal": 141,
+      "damaged": 141,
+      "heavyDamage": 141,
+      "debris": 141
+    },
+    "pieceKindsByState": {
+      "ideal": {
+        "horizontal": 17,
+        "vertical": 4,
+        "corner": 1,
+        "small": 119
+      },
+      "damaged": {
+        "horizontal": 17,
+        "vertical": 4,
+        "corner": 1,
+        "small": 119
+      },
+      "heavyDamage": {
+        "horizontal": 17,
+        "vertical": 4,
+        "corner": 1,
+        "small": 119
+      },
+      "debris": {
+        "horizontal": 17,
+        "vertical": 4,
+        "corner": 1,
+        "small": 119
+      }
+    },
+    "pieceRolesByState": {
+      "ideal": {
+        "long_horizontal": 17,
+        "long_vertical": 1,
+        "corner": 31,
+        "vertical": 14,
+        "module": 65,
+        "horizontal": 13
+      },
+      "damaged": {
+        "long_horizontal": 17,
+        "long_vertical": 1,
+        "corner": 31,
+        "vertical": 14,
+        "module": 65,
+        "horizontal": 13
+      },
+      "heavyDamage": {
+        "long_horizontal": 17,
+        "long_vertical": 1,
+        "corner": 31,
+        "vertical": 14,
+        "module": 65,
+        "horizontal": 13
+      },
+      "debris": {
+        "long_horizontal": 17,
+        "long_vertical": 1,
+        "corner": 31,
+        "vertical": 14,
+        "module": 65,
+        "horizontal": 13
+      }
+    },
+    "usage": "complete reference edge elements placed flush to panel borders by role: long pieces on long edges, vertical pieces on vertical edges, corner/square pieces on convex and concave corners; source aspect ratios are preserved"
+  },
+  "materials": {
+    "ideal": {
+      "source": "/assets/panels-v3/source/materials/ideal-source.png",
+      "webp": "/assets/panels-v3/materials/ideal.webp"
+    },
+    "damaged": {
+      "source": "/assets/panels-v3/source/materials/damaged-source.png",
+      "webp": "/assets/panels-v3/materials/damaged.webp"
+    },
+    "heavyDamage": {
+      "source": "/assets/panels-v3/source/materials/heavyDamage-source.png",
+      "webp": "/assets/panels-v3/materials/heavyDamage.webp"
+    },
+    "debris": {
+      "source": "/assets/panels-v3/source/materials/debris-source.png",
+      "webp": "/assets/panels-v3/materials/debris.webp"
+    }
+  },
+  "panels": {
+    "single_1": {
+      "pattern": [
+        "+"
+      ],
+      "gridSize": {
+        "width": 1,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/single_1.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/single_1.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/single_1.webp",
+        "debris": "/assets/panels-v3/panels/debris/single_1.webp"
+      }
+    },
+    "bar_2h": {
+      "pattern": [
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/bar_2h.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/bar_2h.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/bar_2h.webp",
+        "debris": "/assets/panels-v3/panels/debris/bar_2h.webp"
+      }
+    },
+    "bar_2v": {
+      "pattern": [
+        "+",
+        "+"
+      ],
+      "gridSize": {
+        "width": 1,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 512
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/bar_2v.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/bar_2v.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/bar_2v.webp",
+        "debris": "/assets/panels-v3/panels/debris/bar_2v.webp"
+      }
+    },
+    "bar_3h": {
+      "pattern": [
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/bar_3h.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/bar_3h.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/bar_3h.webp",
+        "debris": "/assets/panels-v3/panels/debris/bar_3h.webp"
+      }
+    },
+    "block_2x2": {
+      "pattern": [
+        "++",
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 512
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/block_2x2.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/block_2x2.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/block_2x2.webp",
+        "debris": "/assets/panels-v3/panels/debris/block_2x2.webp"
+      }
+    },
+    "corner_l_2x2": {
+      "pattern": [
+        "++",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 512
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/corner_l_2x2.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/corner_l_2x2.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/corner_l_2x2.webp",
+        "debris": "/assets/panels-v3/panels/debris/corner_l_2x2.webp"
+      }
+    },
+    "tee_3x2": {
+      "pattern": [
+        "-+-",
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 512
+      },
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/tee_3x2.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/tee_3x2.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/tee_3x2.webp",
+        "debris": "/assets/panels-v3/panels/debris/tee_3x2.webp"
+      }
+    },
+    "cross_3x3": {
+      "pattern": [
+        "-+-",
+        "+++",
+        "-+-"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 2,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/cross_3x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/cross_3x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/cross_3x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/cross_3x3.webp"
+      }
+    },
+    "long_l_3x3": {
+      "pattern": [
+        "+--",
+        "+--",
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/long_l_3x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/long_l_3x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/long_l_3x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/long_l_3x3.webp"
+      }
+    },
+    "zig_3x3": {
+      "pattern": [
+        "++-",
+        "-+-",
+        "-++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 2
+        },
+        {
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/zig_3x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/zig_3x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/zig_3x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/zig_3x3.webp"
+      }
+    },
+    "c_2x3": {
+      "pattern": [
+        "++",
+        "+-",
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        },
+        {
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/c_2x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/c_2x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/c_2x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/c_2x3.webp"
+      }
+    },
+    "long_corner_2x3": {
+      "pattern": [
+        "++",
+        "+-",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/long_corner_2x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/long_corner_2x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/long_corner_2x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/long_corner_2x3.webp"
+      }
+    },
+    "block_tail_2x3": {
+      "pattern": [
+        "++",
+        "++",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        },
+        {
+          "x": 1,
+          "y": 1
+        },
+        {
+          "x": 0,
+          "y": 2
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/block_tail_2x3.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/block_tail_2x3.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/block_tail_2x3.webp",
+        "debris": "/assets/panels-v3/panels/debris/block_tail_2x3.webp"
+      }
+    },
+    "bar_4h": {
+      "pattern": [
+        "++++"
+      ],
+      "gridSize": {
+        "width": 4,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        },
+        {
+          "x": 2,
+          "y": 0
+        },
+        {
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/panels-v3/panels/ideal/bar_4h.webp",
+        "damaged": "/assets/panels-v3/panels/damaged/bar_4h.webp",
+        "heavyDamage": "/assets/panels-v3/panels/heavyDamage/bar_4h.webp",
+        "debris": "/assets/panels-v3/panels/debris/bar_4h.webp"
+      }
+    }
+  },
+  "contactSheet": "/assets/panels-v3/panel-contact-sheet.png",
+  "validationReport": "/assets/panels-v3/validation-report.json"
+}

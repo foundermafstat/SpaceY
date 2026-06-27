@@ -1,0 +1,1018 @@
+{
+  "ok": true,
+  "cellSize": 256,
+  "panelCount": 14,
+  "stateCount": 4,
+  "assetCount": 56,
+  "errors": [],
+  "results": [
+    {
+      "panelId": "single_1",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/single_1.webp",
+      "size": {
+        "width": 256,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 1.0,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "single_1",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/single_1.webp",
+      "size": {
+        "width": 256,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9957,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "single_1",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/single_1.webp",
+      "size": {
+        "width": 256,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9279,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "single_1",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/single_1.webp",
+      "size": {
+        "width": 256,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.8888,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2h",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/bar_2h.webp",
+      "size": {
+        "width": 512,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9872,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2h",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/bar_2h.webp",
+      "size": {
+        "width": 512,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9912,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2h",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/bar_2h.webp",
+      "size": {
+        "width": 512,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.91,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2h",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/bar_2h.webp",
+      "size": {
+        "width": 512,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7689,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2v",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/bar_2v.webp",
+      "size": {
+        "width": 256,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9961,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2v",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/bar_2v.webp",
+      "size": {
+        "width": 256,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 1.0,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2v",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/bar_2v.webp",
+      "size": {
+        "width": 256,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9003,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_2v",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/bar_2v.webp",
+      "size": {
+        "width": 256,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.6571,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_3h",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/bar_3h.webp",
+      "size": {
+        "width": 768,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9955,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_3h",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/bar_3h.webp",
+      "size": {
+        "width": 768,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9983,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_3h",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/bar_3h.webp",
+      "size": {
+        "width": 768,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9316,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_3h",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/bar_3h.webp",
+      "size": {
+        "width": 768,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7828,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_2x2",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/block_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9946,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_2x2",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/block_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9972,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_2x2",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/block_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.8768,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_2x2",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/block_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.6897,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "corner_l_2x2",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/corner_l_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9967,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "corner_l_2x2",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/corner_l_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.998,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "corner_l_2x2",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/corner_l_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9092,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "corner_l_2x2",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/corner_l_2x2.webp",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.6783,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "tee_3x2",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/tee_3x2.webp",
+      "size": {
+        "width": 768,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 1.0,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "tee_3x2",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/tee_3x2.webp",
+      "size": {
+        "width": 768,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9919,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "tee_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/tee_3x2.webp",
+      "size": {
+        "width": 768,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.8925,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "tee_3x2",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/tee_3x2.webp",
+      "size": {
+        "width": 768,
+        "height": 512
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.703,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "cross_3x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/cross_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9945,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "cross_3x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/cross_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9958,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "cross_3x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/cross_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9196,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "cross_3x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/cross_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.6432,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_l_3x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/long_l_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9951,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_l_3x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/long_l_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 1.0,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_l_3x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/long_l_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9358,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_l_3x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/long_l_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7402,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "zig_3x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/zig_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9968,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "zig_3x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/zig_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9953,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "zig_3x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/zig_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9138,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "zig_3x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/zig_3x3.webp",
+      "size": {
+        "width": 768,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7575,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "c_2x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/c_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9947,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "c_2x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/c_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9964,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "c_2x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/c_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.8729,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "c_2x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/c_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7366,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_corner_2x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/long_corner_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9955,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_corner_2x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/long_corner_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9973,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_corner_2x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/long_corner_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9019,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "long_corner_2x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/long_corner_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7746,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_tail_2x3",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/block_tail_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9965,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_tail_2x3",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/block_tail_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9918,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_tail_2x3",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/block_tail_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.8752,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "block_tail_2x3",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/block_tail_2x3.webp",
+      "size": {
+        "width": 512,
+        "height": 768
+      },
+      "expectedSize": {
+        "width": 512,
+        "height": 768
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7406,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_4h",
+      "state": "ideal",
+      "path": "/assets/panels-v3/panels/ideal/bar_4h.webp",
+      "size": {
+        "width": 1024,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 1.0,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_4h",
+      "state": "damaged",
+      "path": "/assets/panels-v3/panels/damaged/bar_4h.webp",
+      "size": {
+        "width": 1024,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9942,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_4h",
+      "state": "heavyDamage",
+      "path": "/assets/panels-v3/panels/heavyDamage/bar_4h.webp",
+      "size": {
+        "width": 1024,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.9056,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    },
+    {
+      "panelId": "bar_4h",
+      "state": "debris",
+      "path": "/assets/panels-v3/panels/debris/bar_4h.webp",
+      "size": {
+        "width": 1024,
+        "height": 256
+      },
+      "expectedSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "sizeOk": true,
+      "minusCellsTransparent": true,
+      "plusCellsCoverage": 0.7163,
+      "plusCellsCoverageOk": true,
+      "ok": true
+    }
+  ]
+}

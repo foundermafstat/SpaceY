@@ -1,0 +1,443 @@
+{
+  "generatedFrom": {
+    "panelSheet": "/assets/panels-v2/source/panel-sheet-source.png",
+    "elementMountSheet": "/assets/panels-v2/source/element-mount-sheet-source.png",
+    "drillMountSheet": "/assets/panels-v2/source/drill-mount-sheet-source.png",
+    "interpanelConnectorSheet": "/assets/panels-v2/source/interpanel-connector-sheet-source.png"
+  },
+  "format": "webp",
+  "quality": 75,
+  "states": [
+    "ideal",
+    "damaged",
+    "critical",
+    "debris"
+  ],
+  "spriteSize": 256,
+  "connectorSize": 192,
+  "panels": {
+    "single_1": {
+      "pattern": [
+        "+"
+      ],
+      "gridSize": {
+        "width": 1,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 256
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/single_1.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/single_1.webp",
+        "critical": "/assets/panels-v2/panels/critical/single_1.webp",
+        "debris": "/assets/panels-v2/panels/debris/single_1.webp"
+      }
+    },
+    "bar_2h": {
+      "pattern": [
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 256
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/bar_2h.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/bar_2h.webp",
+        "critical": "/assets/panels-v2/panels/critical/bar_2h.webp",
+        "debris": "/assets/panels-v2/panels/debris/bar_2h.webp"
+      }
+    },
+    "bar_2v": {
+      "pattern": [
+        "+",
+        "+"
+      ],
+      "gridSize": {
+        "width": 1,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 512
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/bar_2v.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/bar_2v.webp",
+        "critical": "/assets/panels-v2/panels/critical/bar_2v.webp",
+        "debris": "/assets/panels-v2/panels/debris/bar_2v.webp"
+      }
+    },
+    "bar_3h": {
+      "pattern": [
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 256
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/bar_3h.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/bar_3h.webp",
+        "critical": "/assets/panels-v2/panels/critical/bar_3h.webp",
+        "debris": "/assets/panels-v2/panels/debris/bar_3h.webp"
+      }
+    },
+    "block_2x2": {
+      "pattern": [
+        "++",
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 512
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/block_2x2.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/block_2x2.webp",
+        "critical": "/assets/panels-v2/panels/critical/block_2x2.webp",
+        "debris": "/assets/panels-v2/panels/debris/block_2x2.webp"
+      }
+    },
+    "corner_l_2x2": {
+      "pattern": [
+        "++",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 512
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/corner_l_2x2.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/corner_l_2x2.webp",
+        "critical": "/assets/panels-v2/panels/critical/corner_l_2x2.webp",
+        "debris": "/assets/panels-v2/panels/debris/corner_l_2x2.webp"
+      }
+    },
+    "tee_3x2": {
+      "pattern": [
+        "-+-",
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 512
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/tee_3x2.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/tee_3x2.webp",
+        "critical": "/assets/panels-v2/panels/critical/tee_3x2.webp",
+        "debris": "/assets/panels-v2/panels/debris/tee_3x2.webp"
+      }
+    },
+    "cross_3x3": {
+      "pattern": [
+        "-+-",
+        "+++",
+        "-+-"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/cross_3x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/cross_3x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/cross_3x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/cross_3x3.webp"
+      }
+    },
+    "long_l_3x3": {
+      "pattern": [
+        "+--",
+        "+--",
+        "+++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/long_l_3x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/long_l_3x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/long_l_3x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/long_l_3x3.webp"
+      }
+    },
+    "zig_3x3": {
+      "pattern": [
+        "++-",
+        "-+-",
+        "-++"
+      ],
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 768,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/zig_3x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/zig_3x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/zig_3x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/zig_3x3.webp"
+      }
+    },
+    "c_2x3": {
+      "pattern": [
+        "++",
+        "+-",
+        "++"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/c_2x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/c_2x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/c_2x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/c_2x3.webp"
+      }
+    },
+    "long_corner_2x3": {
+      "pattern": [
+        "++",
+        "+-",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/long_corner_2x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/long_corner_2x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/long_corner_2x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/long_corner_2x3.webp"
+      }
+    },
+    "block_tail_2x3": {
+      "pattern": [
+        "++",
+        "++",
+        "+-"
+      ],
+      "gridSize": {
+        "width": 2,
+        "height": 3
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 768
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/block_tail_2x3.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/block_tail_2x3.webp",
+        "critical": "/assets/panels-v2/panels/critical/block_tail_2x3.webp",
+        "debris": "/assets/panels-v2/panels/debris/block_tail_2x3.webp"
+      }
+    },
+    "bar_4h": {
+      "pattern": [
+        "++++"
+      ],
+      "gridSize": {
+        "width": 4,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 1024,
+        "height": 256
+      },
+      "states": {
+        "ideal": "/assets/panels-v2/panels/ideal/bar_4h.webp",
+        "damaged": "/assets/panels-v2/panels/damaged/bar_4h.webp",
+        "critical": "/assets/panels-v2/panels/critical/bar_4h.webp",
+        "debris": "/assets/panels-v2/panels/debris/bar_4h.webp"
+      }
+    }
+  },
+  "elementMounts": {
+    "engine": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/engine.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/engine.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/engine.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/engine.webp"
+      }
+    },
+    "maneuver_thruster": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/maneuver_thruster.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/maneuver_thruster.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/maneuver_thruster.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/maneuver_thruster.webp"
+      }
+    },
+    "weapon": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/weapon.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/weapon.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/weapon.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/weapon.webp"
+      }
+    },
+    "reactor": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/reactor.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/reactor.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/reactor.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/reactor.webp"
+      }
+    },
+    "battery": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/battery.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/battery.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/battery.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/battery.webp"
+      }
+    },
+    "shield": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/shield.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/shield.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/shield.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/shield.webp"
+      }
+    },
+    "radiator": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/radiator.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/radiator.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/radiator.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/radiator.webp"
+      }
+    },
+    "cargo": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/cargo.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/cargo.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/cargo.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/cargo.webp"
+      }
+    },
+    "scanner": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/scanner.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/scanner.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/scanner.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/scanner.webp"
+      }
+    },
+    "utility": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/utility.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/utility.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/utility.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/utility.webp"
+      }
+    },
+    "drill": {
+      "states": {
+        "ideal": "/assets/panels-v2/element-mounts/ideal/drill.webp",
+        "damaged": "/assets/panels-v2/element-mounts/damaged/drill.webp",
+        "critical": "/assets/panels-v2/element-mounts/critical/drill.webp",
+        "debris": "/assets/panels-v2/element-mounts/debris/drill.webp"
+      }
+    }
+  },
+  "interpanelConnectors": {
+    "mechanical": {
+      "states": {
+        "ideal": "/assets/panels-v2/interpanel-connectors/ideal/mechanical.webp",
+        "damaged": "/assets/panels-v2/interpanel-connectors/damaged/mechanical.webp",
+        "critical": "/assets/panels-v2/interpanel-connectors/critical/mechanical.webp",
+        "debris": "/assets/panels-v2/interpanel-connectors/debris/mechanical.webp"
+      }
+    },
+    "power": {
+      "states": {
+        "ideal": "/assets/panels-v2/interpanel-connectors/ideal/power.webp",
+        "damaged": "/assets/panels-v2/interpanel-connectors/damaged/power.webp",
+        "critical": "/assets/panels-v2/interpanel-connectors/critical/power.webp",
+        "debris": "/assets/panels-v2/interpanel-connectors/debris/power.webp"
+      }
+    },
+    "crew": {
+      "states": {
+        "ideal": "/assets/panels-v2/interpanel-connectors/ideal/crew.webp",
+        "damaged": "/assets/panels-v2/interpanel-connectors/damaged/crew.webp",
+        "critical": "/assets/panels-v2/interpanel-connectors/critical/crew.webp",
+        "debris": "/assets/panels-v2/interpanel-connectors/debris/crew.webp"
+      }
+    },
+    "shield": {
+      "states": {
+        "ideal": "/assets/panels-v2/interpanel-connectors/ideal/shield.webp",
+        "damaged": "/assets/panels-v2/interpanel-connectors/damaged/shield.webp",
+        "critical": "/assets/panels-v2/interpanel-connectors/critical/shield.webp",
+        "debris": "/assets/panels-v2/interpanel-connectors/debris/shield.webp"
+      }
+    }
+  },
+  "legacyPanelAtlas": "/assets/panels/panel-states-atlas.png",
+  "cellSize": 256,
+  "exactPanelDimensions": true,
+  "panelCellSources": {
+    "ideal": "/assets/panels-v2/source/panel-cells/ideal-source.png",
+    "damaged": "/assets/panels-v2/source/panel-cells/damaged-source.png",
+    "critical": "/assets/panels-v2/source/panel-cells/critical-source.png",
+    "debris": "/assets/panels-v2/source/panel-cells/debris-source.png"
+  },
+  "seamlessPanels": true,
+  "panelAssemblyMode": "whole generated tetris shapes",
+  "panelSeamlessSources": {
+    "ideal": "/assets/panels-v2/source/panel-seamless/ideal-source.png",
+    "damaged": "/assets/panels-v2/source/panel-seamless/damaged-source.png",
+    "critical": "/assets/panels-v2/source/panel-seamless/critical-source.png",
+    "debris": "/assets/panels-v2/source/panel-seamless/debris-source.png"
+  }
+}

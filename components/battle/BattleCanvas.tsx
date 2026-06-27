@@ -21,11 +21,16 @@ import {
 import type { ModuleDef, ShipBuild, WeaponDef } from "@/game/types";
 
 const BACKGROUND_SCENE = { width: 2400, height: 3600 };
+const SPACE_TILE_SCALE = 0.8;
 const SPACE_TILE_SRCS = [
-  "/assets/backgrounds/space-tile-seamless-1.webp",
-  "/assets/backgrounds/space-tile-seamless-2.webp",
-  "/assets/backgrounds/space-tile-seamless-3.webp",
-  "/assets/backgrounds/space-tile-seamless-4.webp"
+  "/assets/backgrounds/deep-space-tile-01.webp",
+  "/assets/backgrounds/deep-space-tile-02.webp",
+  "/assets/backgrounds/deep-space-tile-03.webp",
+  "/assets/backgrounds/deep-space-tile-04.webp",
+  "/assets/backgrounds/deep-space-tile-05.webp",
+  "/assets/backgrounds/deep-space-tile-06.webp",
+  "/assets/backgrounds/deep-space-tile-07.webp",
+  "/assets/backgrounds/deep-space-tile-08.webp"
 ];
 const PLANET_SRCS = [
   "/assets/backgrounds/planets/planet-ice.webp",
@@ -206,6 +211,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         height: app.screen.height
       });
       spaceTile.alpha = 0.5;
+      spaceTile.tileScale.set(SPACE_TILE_SCALE);
       const layers = {
         background: new Container(),
         farParticles: new Container(),

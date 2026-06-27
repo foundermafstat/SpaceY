@@ -38,6 +38,24 @@ const labels: Record<ModuleType, string> = {
 const zoomSteps = [1, 1.15, 1.3, 1.5, 1.75];
 const fallbackGridPitch = 41;
 const initialScenePosition = { x: 0, y: 0 };
+const installSounds = {
+  module: [
+    "/assets/audio/hangar-module-install-01.mp3",
+    "/assets/audio/hangar-module-install-02.mp3",
+    "/assets/audio/hangar-module-install-03.mp3",
+    "/assets/audio/hangar-module-install-04.mp3",
+    "/assets/audio/hangar-module-install-05.mp3",
+    "/assets/audio/hangar-module-install-06.mp3"
+  ],
+  panel: [
+    "/assets/audio/hangar-panel-install-01.mp3",
+    "/assets/audio/hangar-panel-install-02.mp3",
+    "/assets/audio/hangar-panel-install-03.mp3",
+    "/assets/audio/hangar-panel-install-04.mp3",
+    "/assets/audio/hangar-panel-install-05.mp3",
+    "/assets/audio/hangar-panel-install-06.mp3"
+  ]
+};
 
 export default function HangarPage() {
   const {
@@ -63,6 +81,7 @@ export default function HangarPage() {
   const panRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const installSoundIndexRef = useRef({ module: 0, panel: 0 });
   const panGestureRef = useRef<{
     pointerId: number | "mouse";
     startX: number;
@@ -78,6 +97,15 @@ export default function HangarPage() {
   const stats = calculateShipStats(build);
   const panelCellKeys = getBuildableCellKeys(build);
   const zoom = zoomSteps[zoomIndex];
+
+  function playInstallSound(kind: keyof typeof installSounds) {
+    const soundList = installSounds[kind];
+    const index = installSoundIndexRef.current[kind];
+    installSoundIndexRef.current[kind] = (index + 1) % soundList.length;
+    const audio = new Audio(soundList[index]);
+    audio.volume = 0.55;
+    void audio.play().catch(() => {});
+  }
 
   function clampScenePosition(x: number, y: number, nextZoom = zoom) {
     const stage = stageRef.current;
@@ -183,7 +211,9 @@ export default function HangarPage() {
         removePanel(panelOccupant.instanceId);
         return;
       }
-      if (selectedPanel) installPanel(selectedPanel.id, cell, rotation);
+      if (selectedPanel && installPanel(selectedPanel.id, cell, rotation)) {
+        playInstallSound("panel");
+      }
       return;
     }
 
@@ -193,7 +223,9 @@ export default function HangarPage() {
       removeModule(occupant.instanceId);
       return;
     }
-    if (selectedModule) installModule(selectedModule.id, cell, rotation);
+    if (selectedModule && installModule(selectedModule.id, cell, rotation)) {
+      playInstallSound("module");
+    }
   }
 
   function getGridPitch() {
@@ -302,8 +334,12 @@ export default function HangarPage() {
           const targetCell = getPointerDropCell(drag);
           const itemId = element.dataset.paletteId;
           if (targetCell && itemId) {
-            if (element.dataset.paletteKind === "panel") installPanel(itemId, targetCell, rotation);
-            if (element.dataset.paletteKind === "module") installModule(itemId, targetCell, rotation);
+            if (element.dataset.paletteKind === "panel" && installPanel(itemId, targetCell, rotation)) {
+              playInstallSound("panel");
+            }
+            if (element.dataset.paletteKind === "module" && installModule(itemId, targetCell, rotation)) {
+              playInstallSound("module");
+            }
           }
           drag.reset();
         }

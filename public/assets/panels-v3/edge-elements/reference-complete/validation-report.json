@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "componentCountPerState": 141,
+  "totalSpriteCount": 564,
+  "statesOk": true,
+  "alphaErrors": [],
+  "kindCounts": {
+    "ideal": {
+      "horizontal": 17,
+      "small": 119,
+      "vertical": 4,
+      "corner": 1
+    },
+    "damaged": {
+      "horizontal": 17,
+      "small": 119,
+      "vertical": 4,
+      "corner": 1
+    },
+    "heavyDamage": {
+      "horizontal": 17,
+      "small": 119,
+      "vertical": 4,
+      "corner": 1
+    },
+    "debris": {
+      "horizontal": 17,
+      "small": 119,
+      "vertical": 4,
+      "corner": 1
+    }
+  }
+}
