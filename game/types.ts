@@ -271,6 +271,23 @@ export interface ShipStats {
 export interface ShipStatsV2 extends ShipStats {
   structureHp: number;
   centerOfMass: GridCell;
+  momentOfInertia: number;
+  mainThrust: number;
+  reverseThrust: number;
+  lateralThrust: number;
+  torque: number;
+  brakingPower: number;
+  driftFactor: number;
+  stability: number;
+  powerOutput: number;
+  powerStorage: number;
+  powerDemand: number;
+  heatGeneration: number;
+  heatDissipation: number;
+  shieldCapacity: number;
+  shieldRegen: number;
+  weaponDpsByType: Partial<Record<DamageType, number>>;
+  disabledPartsImpact: number;
   networkCapacity: Record<NetworkType, number>;
   disconnectedParts: number;
 }
