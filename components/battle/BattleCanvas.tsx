@@ -10,6 +10,14 @@ import { applyShipPhysicsInput } from "@/game/battle/shipPhysics";
 import { projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
 import { collectWeapons, rotateTurretToTarget, type WeaponState } from "@/game/battle/weapons";
 import {
+  createEnergySystem,
+  getEnergyEfficiency,
+  getEngineEnergyLoad,
+  trySpendEnergy,
+  updateEnergySystem,
+  type EnergySystemState
+} from "@/game/battle/systems/EnergySystem";
+import {
   battleVfxAtlas,
   getModuleSpriteKey,
   hoverAtlas,
@@ -64,6 +72,7 @@ type Enemy = {
   acceleration: number;
   maxSpeed: number;
   turnRate: number;
+  energy: EnergySystemState;
   mass: number;
   momentOfInertia: number;
   engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
@@ -74,6 +83,7 @@ type Enemy = {
   visual: ShipVisual;
   weapons: WeaponState[];
   engineMounts: Vec[];
+  stats: ReturnType<typeof calculateShipStatsV2>;
 };
 type Projectile = {
   pos: Vec;
@@ -302,6 +312,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         maxSpeed: stats.maxSpeed,
         acceleration: Math.max(35, stats.acceleration * 70),
         turnRate: Math.max(1.8, stats.turnRate),
+        energy: createEnergySystem(stats),
         mass: stats.mass,
         momentOfInertia: stats.momentOfInertia,
         engineVectors: stats.engineVectors,
@@ -394,13 +405,18 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
       function updatePlayer(dt: number) {
         const inputPower = Math.min(1, Math.hypot(joystick.value.x, joystick.value.y));
+        updateEnergySystem(player.energy, dt, [
+          { id: "engines", priority: "engines", amountPerSecond: getEngineEnergyLoad(stats, inputPower) },
+          { id: "shields", priority: "shields", amountPerSecond: stats.shieldRegen * 0.2 }
+        ]);
+        const engineEfficiency = getEnergyEfficiency(player.energy, "engines");
         if (inputPower > 0.05) {
-          applyShipPhysicsInput(player, { inputVector: joystick.value }, dt);
-          spawnEngineGlows(layers.engineVfx, player.pos, player.rotation, ship.engineMounts, inputPower);
+          applyShipPhysicsInput(player, { inputVector: joystick.value, powerEfficiency: engineEfficiency }, dt);
+          spawnEngineGlows(layers.engineVfx, player.pos, player.rotation, ship.engineMounts, inputPower * engineEfficiency);
         } else {
           applyShipPhysicsInput(player, { inputVector: { x: 0, y: 0 } }, dt);
         }
-        audio.setEnginePower(inputPower);
+        audio.setEnginePower(inputPower * engineEfficiency);
         applyShipDamageState(ship, textures, getShipDamageState(player.hp, player.maxHp));
 
         ship.container.position.set(player.pos.x, player.pos.y);
@@ -412,6 +428,10 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           weaponState.cooldown -= dt;
           const target = nearestEnemy(player.pos, enemies, weaponState.weapon.range);
           if (!target || weaponState.cooldown > 0) return;
+          if (!trySpendEnergy(player.energy, "weapons", weaponState.weapon.energyPerShot)) {
+            weaponState.cooldown = 0.18;
+            return;
+          }
           rotateTurretToTarget(weaponState, ship.container.rotation, player.pos, target.pos);
           weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
           const origin = getWorldMount(player.pos, player.rotation, weaponState.mount);
@@ -464,12 +484,20 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           const ideal = enemy.kind === "bomber" ? 360 : 210;
           const desired = Math.atan2(dy, dx) + (dist < ideal ? Math.PI : 0);
           const inputPower = dist > ideal ? 0.9 : 0.45;
+          updateEnergySystem(enemy.energy, dt, [
+            { id: "engines", priority: "engines", amountPerSecond: getEngineEnergyLoad(enemy.stats, inputPower) },
+            { id: "shields", priority: "shields", amountPerSecond: enemy.stats.shieldRegen * 0.2 }
+          ]);
+          const engineEfficiency = getEnergyEfficiency(enemy.energy, "engines");
           applyShipPhysicsInput(
             enemy,
-            { inputVector: { x: Math.cos(desired) * inputPower, y: Math.sin(desired) * inputPower } },
+            {
+              inputVector: { x: Math.cos(desired) * inputPower, y: Math.sin(desired) * inputPower },
+              powerEfficiency: engineEfficiency
+            },
             dt
           );
-          spawnEngineGlows(layers.engineVfx, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower);
+          spawnEngineGlows(layers.engineVfx, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower * engineEfficiency);
           enemy.body.position.set(enemy.pos.x, enemy.pos.y);
           enemy.body.rotation = enemy.rotation + Math.PI / 2;
         });
@@ -484,6 +512,10 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             const dy = player.pos.y - enemy.pos.y;
             const dist = Math.hypot(dx, dy);
             if (weaponState.cooldown > 0 || dist > weaponState.weapon.range) return;
+            if (!trySpendEnergy(enemy.energy, "weapons", weaponState.weapon.energyPerShot)) {
+              weaponState.cooldown = 0.22;
+              return;
+            }
             rotateTurretToTarget(weaponState, enemy.body.rotation, enemy.pos, player.pos);
             weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
             const origin = getWorldMount(enemy.pos, enemy.rotation, weaponState.mount);
@@ -915,6 +947,7 @@ function makeEnemy(
     acceleration: Math.max(30, stats.acceleration * 70),
     maxSpeed: stats.maxSpeed,
     turnRate: Math.max(1.5, stats.turnRate),
+    energy: createEnergySystem(stats),
     mass: stats.mass,
     momentOfInertia: stats.momentOfInertia,
     engineVectors: stats.engineVectors,
@@ -924,7 +957,8 @@ function makeEnemy(
     body,
     visual,
     weapons: collectWeapons(build, visual.turrets),
-    engineMounts: visual.engineMounts
+    engineMounts: visual.engineMounts,
+    stats
   };
 }
 

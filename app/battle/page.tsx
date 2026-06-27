@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useShipStore } from "@/game/store/shipStore";
-import { calculateShipStats } from "@/game/ship/stats";
+import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getBuildBlockers } from "@/game/ship/validation";
 
 const BattleCanvas = dynamic(() => import("@/components/battle/BattleCanvas"), {
@@ -15,7 +15,7 @@ export default function BattlePage() {
   const build = useShipStore((state) => state.build);
   const addReward = useShipStore((state) => state.addReward);
   const [result, setResult] = useState<"victory" | "defeat" | null>(null);
-  const stats = useMemo(() => calculateShipStats(build), [build]);
+  const stats = useMemo(() => calculateShipStatsV2(build), [build]);
   const blockers = useMemo(() => getBuildBlockers(build), [build]);
 
   const handleResult = useCallback((nextResult: "victory" | "defeat") => {
@@ -34,6 +34,10 @@ export default function BattlePage() {
               <span className="small">
                 HP {stats.hp.toFixed(0)} · DPS {stats.dps.toFixed(1)} · accel{" "}
                 {stats.acceleration.toFixed(2)}
+              </span>
+              <span className="small">
+                EN {stats.energyBalance >= 0 ? "+" : ""}
+                {stats.energyBalance.toFixed(0)}/s · buffer {Math.max(20, stats.powerStorage + stats.powerOutput * 2).toFixed(0)}
               </span>
               <div className="bar">
                 <span style={{ width: `${result === "defeat" ? 0 : 100}%` }} />
