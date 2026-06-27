@@ -5,6 +5,10 @@ import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Text
 import type { TextStyleFontWeight } from "pixi.js";
 import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
 import { calculateShipStats } from "@/game/ship/stats";
+import { getWorldMount, clampToScreenEdge, type Vec } from "@/game/battle/math";
+import { applyShipPhysics } from "@/game/battle/shipPhysics";
+import { projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
+import { collectWeapons, rotateTurretToTarget, type WeaponState } from "@/game/battle/weapons";
 import {
   battleVfxAtlas,
   getModuleSpriteKey,
@@ -48,7 +52,6 @@ type BattleCanvasProps = {
   onResult: (result: "victory" | "defeat") => void;
 };
 
-type Vec = { x: number; y: number };
 type Enemy = {
   kind: "drone" | "raider" | "bomber";
   build: ShipBuild;
@@ -125,12 +128,6 @@ type Particle = {
   alpha: number;
   body: Graphics;
   kind: "spark" | "smoke" | "flash" | "shockwave" | "debris";
-};
-type WeaponState = {
-  weapon: WeaponDef;
-  cooldown: number;
-  mount: Vec;
-  turret?: Sprite;
 };
 type EnemyMarker = {
   enemy: Enemy;
@@ -863,34 +860,6 @@ function applyShipDamageState(visual: ShipVisual, textures: AtlasTextures, state
   visual.damageState = state;
 }
 
-function collectWeapons(build: ShipBuild, turrets: Map<string, Sprite>): WeaponState[] {
-  const frame = getFrame(build.frameId);
-  const centerX = (frame.size.width - 1) / 2;
-  const centerY = (frame.size.height - 1) / 2;
-  const weapons: WeaponState[] = [];
-
-  build.modules.forEach((installed) => {
-    const module = getModule(installed.moduleId);
-    if (!module.weapon) return;
-    const cells = getTransformedCells(module, installed.position, installed.rotation);
-    const mountCell = cells.reduce(
-      (acc, cell) => ({ x: acc.x + cell.x / cells.length, y: acc.y + cell.y / cells.length }),
-      { x: 0, y: 0 }
-    );
-    weapons.push({
-      weapon: module.weapon,
-      cooldown: Math.random() * 0.8,
-      mount: {
-        x: (mountCell.x - centerX) * 20,
-        y: (mountCell.y - centerY) * 20
-      },
-      turret: turrets.get(installed.instanceId)
-    });
-  });
-
-  return weapons;
-}
-
 function getWeaponBaseKey(moduleId: string): WeaponSpriteKey {
   if (moduleId === "laser_turret") return "laserBase";
   if (moduleId === "plasma_cannon") return "plasmaBase";
@@ -903,12 +872,6 @@ function getWeaponTurretKey(moduleId: string): WeaponSpriteKey {
   if (moduleId === "plasma_cannon") return "plasmaTurret";
   if (moduleId === "missile_pod") return "missileTurret";
   return "autocannonTurret";
-}
-
-function rotateTurretToTarget(weaponState: WeaponState, ownerRotation: number, ownerPos: Vec, targetPos: Vec) {
-  if (!weaponState.turret) return;
-  const targetAngle = Math.atan2(targetPos.y - ownerPos.y, targetPos.x - ownerPos.x);
-  weaponState.turret.rotation = targetAngle - ownerRotation + Math.PI / 2;
 }
 
 function makeEnemy(
@@ -992,24 +955,6 @@ function drawMarkerPlate(
     .roundRect(-width / 2, -height / 2, width, height, 9)
     .fill({ color: fill, alpha: 0.78 })
     .stroke({ color: stroke, alpha: strokeAlpha, width: 1 });
-}
-
-function clampToScreenEdge(x: number, y: number, width: number, height: number, padding: number) {
-  const centerX = width / 2;
-  const centerY = height / 2;
-  const dx = x - centerX;
-  const dy = y - centerY;
-  const safeHalfWidth = width / 2 - padding;
-  const safeHalfHeight = height / 2 - padding;
-  const scale = Math.min(
-    Math.abs(dx) > 0.001 ? safeHalfWidth / Math.abs(dx) : Number.POSITIVE_INFINITY,
-    Math.abs(dy) > 0.001 ? safeHalfHeight / Math.abs(dy) : Number.POSITIVE_INFINITY
-  );
-
-  return {
-    x: centerX + dx * scale,
-    y: centerY + dy * scale
-  };
 }
 
 function drawDamageFlash(graphics: Graphics, width: number, height: number, pulse: number) {
@@ -1319,148 +1264,6 @@ function nearestEnemy(origin: Vec, enemies: Enemy[], range: number): Enemy | nul
     }
   }
   return best;
-}
-
-function rotateTowards(current: number, target: number, maxDelta: number) {
-  const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
-  if (Math.abs(delta) <= maxDelta) return target;
-  return current + Math.sign(delta) * maxDelta;
-}
-
-function applyShipPhysics(
-  ship: {
-    pos: Vec;
-    vel: Vec;
-    rotation: number;
-    acceleration: number;
-    maxSpeed: number;
-    turnRate: number;
-  },
-  desiredDirection: number,
-  inputPower: number,
-  dt: number
-) {
-  const power = Math.min(1, Math.max(0, inputPower));
-  if (power > 0.05) {
-    ship.rotation = rotateTowards(ship.rotation, desiredDirection, ship.turnRate * dt);
-    ship.vel.x += Math.cos(desiredDirection) * ship.acceleration * power * dt;
-    ship.vel.y += Math.sin(desiredDirection) * ship.acceleration * power * dt;
-  }
-
-  const speed = Math.hypot(ship.vel.x, ship.vel.y);
-  if (speed > ship.maxSpeed) {
-    ship.vel.x = (ship.vel.x / speed) * ship.maxSpeed;
-    ship.vel.y = (ship.vel.y / speed) * ship.maxSpeed;
-  }
-
-  ship.vel.x *= 0.99;
-  ship.vel.y *= 0.99;
-  ship.pos.x += ship.vel.x * dt;
-  ship.pos.y += ship.vel.y * dt;
-}
-
-function getWorldMount(pos: Vec, rotation: number, mount: Vec) {
-  return {
-    x: pos.x + Math.cos(rotation) * mount.x - Math.sin(rotation) * mount.y,
-    y: pos.y + Math.sin(rotation) * mount.x + Math.cos(rotation) * mount.y
-  };
-}
-
-function resolveShipCollisions(
-  player: { build: ShipBuild; pos: Vec; vel: Vec; rotation: number },
-  playerBody: Container,
-  enemies: Enemy[]
-) {
-  const activeEnemies = enemies.filter((enemy) => enemy.hp > 0);
-  for (let pass = 0; pass < 2; pass += 1) {
-    activeEnemies.forEach((enemy) => resolveModuleCollision(player, enemy));
-    for (let i = 0; i < activeEnemies.length; i += 1) {
-      for (let j = i + 1; j < activeEnemies.length; j += 1) {
-        resolveModuleCollision(activeEnemies[i], activeEnemies[j]);
-      }
-    }
-  }
-
-  playerBody.position.set(player.pos.x, player.pos.y);
-  activeEnemies.forEach((enemy) => enemy.body.position.set(enemy.pos.x, enemy.pos.y));
-}
-
-function resolveModuleCollision(
-  a: { build: ShipBuild; pos: Vec; vel: Vec; rotation: number },
-  b: { build: ShipBuild; pos: Vec; vel: Vec; rotation: number }
-) {
-  const aPoints = getCollisionPoints(a.build, a.pos, a.rotation);
-  const bPoints = getCollisionPoints(b.build, b.pos, b.rotation);
-  const minDist = 25;
-  let pushX = 0;
-  let pushY = 0;
-  let hits = 0;
-
-  for (const ap of aPoints) {
-    for (const bp of bPoints) {
-      const dx = bp.x - ap.x;
-      const dy = bp.y - ap.y;
-      const dist = Math.max(0.001, Math.hypot(dx, dy));
-      if (dist >= minDist) continue;
-      const push = (minDist - dist) / minDist;
-      pushX += (dx / dist) * push;
-      pushY += (dy / dist) * push;
-      hits += 1;
-    }
-  }
-
-  if (hits === 0) return;
-  const nx = pushX / hits;
-  const ny = pushY / hits;
-  const len = Math.max(0.001, Math.hypot(nx, ny));
-  const separation = Math.min(18, hits * 1.8);
-  const sx = (nx / len) * separation;
-  const sy = (ny / len) * separation;
-
-  a.pos.x -= sx * 0.5;
-  a.pos.y -= sy * 0.5;
-  b.pos.x += sx * 0.5;
-  b.pos.y += sy * 0.5;
-  a.vel.x *= 0.62;
-  a.vel.y *= 0.62;
-  b.vel.x *= 0.62;
-  b.vel.y *= 0.62;
-}
-
-function getCollisionPoints(build: ShipBuild, pos: Vec, rotation: number) {
-  const frame = getFrame(build.frameId);
-  const centerX = (frame.size.width - 1) / 2;
-  const centerY = (frame.size.height - 1) / 2;
-  const cell = 26;
-  const visualRotation = rotation + Math.PI / 2;
-  const cos = Math.cos(visualRotation);
-  const sin = Math.sin(visualRotation);
-  const points: Vec[] = [];
-
-  build.modules.forEach((installed) => {
-    const module = getModule(installed.moduleId);
-    getTransformedCells(module, installed.position, installed.rotation).forEach((shipCell) => {
-      const lx = (shipCell.x - centerX) * cell;
-      const ly = (shipCell.y - centerY) * cell;
-      points.push({
-        x: pos.x + lx * cos - ly * sin,
-        y: pos.y + lx * sin + ly * cos
-      });
-    });
-  });
-
-  return points;
-}
-
-function projectileHitsShip(
-  projectile: Projectile,
-  build: ShipBuild,
-  pos: Vec,
-  rotation: number
-) {
-  return getCollisionPoints(build, pos, rotation).some((point) => {
-    return Math.hypot(point.x - projectile.pos.x, point.y - projectile.pos.y) < 18 + projectile.radius;
-  });
 }
 
 function spawnEngineGlows(
