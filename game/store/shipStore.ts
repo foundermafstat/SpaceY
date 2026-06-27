@@ -11,6 +11,7 @@ import {
   getPanel,
   getTransformedCells
 } from "@/game/ship/build";
+import { installedModuleToElement } from "@/game/ship/domainCompat";
 import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship/migration";
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
@@ -72,7 +73,7 @@ export const useShipStore = create<ShipState>()(
           build: {
             ...build,
             modules,
-            elements: modules
+            elements: modules.map(installedModuleToElement)
           }
         });
         return true;
@@ -97,7 +98,7 @@ export const useShipStore = create<ShipState>()(
           build: {
             ...build,
             modules,
-            elements: modules
+            elements: modules.map(installedModuleToElement)
           }
         });
         return true;
@@ -187,7 +188,7 @@ export const useShipStore = create<ShipState>()(
           build: {
             ...build,
             modules,
-            elements: modules
+            elements: modules.map(installedModuleToElement)
           }
         });
       },

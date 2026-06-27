@@ -1,10 +1,12 @@
 import { cabinDefs } from "@/game/data/cabins";
+import { compatibilityElementDefs, elementDefs } from "@/game/data/elements";
 import { frameDefs } from "@/game/data/frames";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
 import { moduleToElementRole } from "@/game/ship/domainCompat";
 import type {
   GridCell,
+  ElementDef,
   InstalledPanel,
   ModuleDef,
   PanelConnector,
@@ -54,6 +56,14 @@ export function getModule(moduleId: string) {
   const module = moduleDefs.find((item) => item.id === moduleId);
   if (!module) throw new Error(`Unknown module: ${moduleId}`);
   return module;
+}
+
+export function getElement(elementId: string): ElementDef {
+  const element =
+    elementDefs.find((item) => item.id === elementId) ??
+    compatibilityElementDefs.find((item) => item.id === elementId);
+  if (!element) throw new Error(`Unknown element: ${elementId}`);
+  return element;
 }
 
 export function getPanel(panelId: string) {

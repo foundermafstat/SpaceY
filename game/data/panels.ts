@@ -23,6 +23,7 @@ const allElementRoles: ElementRole[] = [
   "structure",
   "armor",
   "engine",
+  "maneuver_thruster",
   "weapon",
   "reactor",
   "battery",

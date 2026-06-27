@@ -21,7 +21,7 @@ const socketNetworks: Record<SocketType, NetworkType[]> = {
   utility: ["power", "control"]
 };
 
-const moduleElementRoles: Record<ModuleDef["type"], ElementRole> = {
+const moduleElementRoles: Record<ModuleDef["type"], Exclude<ElementRole, "maneuver_thruster" | "radiator" | "cargo" | "scanner" | "drill">> = {
   core: "cabin",
   hull: "structure",
   armor: "armor",
@@ -34,6 +34,7 @@ const moduleElementRoles: Record<ModuleDef["type"], ElementRole> = {
 };
 
 export function moduleToElementRole(module: ModuleDef): ElementRole {
+  if (module.id === "side_thruster") return "maneuver_thruster";
   return moduleElementRoles[module.type];
 }
 
@@ -106,6 +107,6 @@ export function shipBuildToV2(build: ShipBuild): ShipBuildV2 {
     cabinId: build.cabinId ?? build.frameId,
     frameId: build.frameId,
     panels: build.panels,
-    elements: build.modules.map(installedModuleToElement)
+    elements: build.elements ?? build.modules.map(installedModuleToElement)
   };
 }

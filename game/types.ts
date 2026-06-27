@@ -40,10 +40,15 @@ export type ElementRole =
   | "structure"
   | "armor"
   | "engine"
+  | "maneuver_thruster"
   | "weapon"
   | "reactor"
   | "battery"
   | "shield"
+  | "radiator"
+  | "cargo"
+  | "scanner"
+  | "drill"
   | "utility";
 export type NetworkType = "structure" | "power" | "heat" | "control" | "shield";
 export type ConnectorFamily = "structural" | "power" | "thermal" | "weapon" | "engine" | "utility";
@@ -234,7 +239,7 @@ export interface ShipBuild {
   cabinId?: string;
   panels: InstalledPanel[];
   modules: InstalledModule[];
-  elements?: InstalledModule[];
+  elements?: InstalledElement[];
 }
 
 export interface ShipBuildV2 {
