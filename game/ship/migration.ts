@@ -2,9 +2,11 @@ import { getCabinIdForFrame } from "@/game/data/cabins";
 import { defaultBuild } from "@/game/data/defaultBuild";
 import { installedModuleToElement } from "@/game/ship/domainCompat";
 import type {
+  GridCell,
   InstalledElement,
   InstalledModule,
   InstalledPanel,
+  Rotation,
   ShipBuild,
   ShipBuildSchemaVersion
 } from "@/game/types";
@@ -21,7 +23,7 @@ type PersistedShipBuild = Partial<Omit<ShipBuild, "schemaVersion">> & {
 export function migrateShipBuild(value: unknown): ShipBuild {
   if (!isObject(value)) return cloneDefaultBuild();
 
-  const build = value as PersistedShipBuild;
+const build = value as PersistedShipBuild;
   if (!Array.isArray(build.panels)) return cloneDefaultBuild();
 
   const modules = Array.isArray(build.modules)
@@ -41,6 +43,8 @@ export function migrateShipBuild(value: unknown): ShipBuild {
     cabinId: typeof build.cabinId === "string"
       ? build.cabinId
       : getCabinIdForFrame(typeof build.frameId === "string" ? build.frameId : defaultBuild.frameId),
+    cabinPosition: isGridCell(build.cabinPosition) ? build.cabinPosition : defaultBuild.cabinPosition,
+    cabinRotation: isRotation(build.cabinRotation) ? build.cabinRotation : defaultBuild.cabinRotation,
     panels: build.panels,
     modules,
     elements
@@ -50,6 +54,7 @@ export function migrateShipBuild(value: unknown): ShipBuild {
 function cloneDefaultBuild(): ShipBuild {
   return {
     ...defaultBuild,
+    cabinPosition: defaultBuild.cabinPosition ? { ...defaultBuild.cabinPosition } : undefined,
     panels: defaultBuild.panels.map((panel) => ({ ...panel, position: { ...panel.position } })),
     modules: defaultBuild.modules.map((module) => ({ ...module, position: { ...module.position } })),
     elements: (defaultBuild.elements ?? defaultBuild.modules.map(installedModuleToElement)).map((element) => ({
@@ -61,6 +66,14 @@ function cloneDefaultBuild(): ShipBuild {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isGridCell(value: unknown): value is GridCell {
+  return isObject(value) && typeof value.x === "number" && typeof value.y === "number";
+}
+
+function isRotation(value: unknown): value is Rotation {
+  return value === 0 || value === 90 || value === 180 || value === 270;
 }
 
 function normalizeElement(element: InstalledModule | InstalledElement): InstalledElement {

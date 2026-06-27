@@ -1,0 +1,929 @@
+{
+  "items": [
+    {
+      "id": "cabin_1x1",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.8397,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.8367,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.7951,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.7415,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6772,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6775,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6678,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6962,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.7336,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.7372,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.7192,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.6589,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_3x1",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_3x1.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 256
+      },
+      "alphaCoverage": 0.5852,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_3x1",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_3x1.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 256
+      },
+      "alphaCoverage": 0.5912,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_3x1",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_3x1.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 256
+      },
+      "alphaCoverage": 0.5823,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_3x1",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_3x1.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 256
+      },
+      "alphaCoverage": 0.5493,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_2x2.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 512
+      },
+      "alphaCoverage": 0.8551,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_2x2.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 512
+      },
+      "alphaCoverage": 0.8513,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_2x2.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 512
+      },
+      "alphaCoverage": 0.843,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_2x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_2x2.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 512
+      },
+      "alphaCoverage": 0.7455,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_t_3x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_t_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.4436,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_t_3x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_t_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.4427,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_t_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_t_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.4282,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_t_3x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_t_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.3903,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_cross_3x3",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_cross_3x3.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 768
+      },
+      "alphaCoverage": 0.5196,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_cross_3x3",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_cross_3x3.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 768
+      },
+      "alphaCoverage": 0.52,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_cross_3x3",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_cross_3x3.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 768
+      },
+      "alphaCoverage": 0.4665,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_cross_3x3",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_cross_3x3.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 768
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 768
+      },
+      "alphaCoverage": 0.508,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_u_3x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_u_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.6329,
+      "emptyCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_u_3x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_u_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.636,
+      "emptyCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_u_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_u_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.6272,
+      "emptyCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_u_3x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_u_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.6049,
+      "emptyCells": [
+        {
+          "x": 1,
+          "y": 0,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_block_3x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_block_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5267,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_block_3x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_block_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5275,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_block_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_block_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5247,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_block_3x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_block_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.4879,
+      "emptyCells": [],
+      "ok": true
+    },
+    {
+      "id": "cabin_notch_3x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_notch_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5193,
+      "emptyCells": [
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_notch_3x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_notch_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5198,
+      "emptyCells": [
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_notch_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_notch_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.5127,
+      "emptyCells": [
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_notch_3x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_notch_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.4328,
+      "emptyCells": [
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_zig_3x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v2/cabins/ideal/cabin_zig_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.2549,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_zig_3x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v2/cabins/damaged/cabin_zig_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.2558,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_zig_3x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v2/cabins/heavyDamage/cabin_zig_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.2555,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    },
+    {
+      "id": "cabin_zig_3x2",
+      "state": "debris",
+      "path": "/assets/cabins-v2/cabins/debris/cabin_zig_3x2.webp",
+      "expectedSize": {
+        "width": 768,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 768,
+        "height": 512
+      },
+      "alphaCoverage": 0.2615,
+      "emptyCells": [
+        {
+          "x": 0,
+          "y": 0,
+          "alphaCoverage": 0
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "alphaCoverage": 0
+        }
+      ],
+      "ok": true
+    }
+  ],
+  "ok": true
+}

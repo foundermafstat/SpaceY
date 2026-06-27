@@ -1,4 +1,4 @@
-import type { ModuleDef, PanelDef, PanelState } from "@/game/types";
+import type { CabinDef, ModuleDef, PanelDef, PanelState } from "@/game/types";
 
 export type ModuleSpriteKey =
   | "core"
@@ -170,6 +170,27 @@ export const panelAtlas = {
   rows: 4
 };
 
+export const cabinAtlas = {
+  src: "/assets/cabins-v2/cabins"
+};
+
+const cabinSpriteBounds: Record<
+  string,
+  { width: number; height: number; bbox: { x: number; y: number; width: number; height: number } }
+> = {
+  cabin_1x1: { width: 256, height: 256, bbox: { x: 2, y: 0, width: 251, height: 256 } },
+  cabin_1x2: { width: 256, height: 512, bbox: { x: 32, y: 0, width: 192, height: 512 } },
+  cabin_2x1: { width: 512, height: 256, bbox: { x: 0, y: 15, width: 512, height: 225 } },
+  cabin_2x2: { width: 512, height: 512, bbox: { x: 8, y: 0, width: 496, height: 512 } },
+  cabin_3x1: { width: 768, height: 256, bbox: { x: 92, y: 0, width: 583, height: 256 } },
+  cabin_block_3x2: { width: 768, height: 512, bbox: { x: 153, y: 0, width: 461, height: 512 } },
+  cabin_cross_3x3: { width: 768, height: 768, bbox: { x: 1, y: 0, width: 766, height: 768 } },
+  cabin_notch_3x2: { width: 768, height: 512, bbox: { x: 118, y: 0, width: 532, height: 512 } },
+  cabin_t_3x2: { width: 768, height: 512, bbox: { x: 102, y: 0, width: 563, height: 512 } },
+  cabin_u_3x2: { width: 768, height: 512, bbox: { x: 49, y: 0, width: 670, height: 512 } },
+  cabin_zig_3x2: { width: 768, height: 512, bbox: { x: 198, y: 0, width: 371, height: 512 } }
+};
+
 const panelAssetStates: Record<PanelState, "ideal" | "damaged" | "heavyDamage" | "debris"> = {
   ideal: "ideal",
   damaged: "damaged",
@@ -271,9 +292,53 @@ export function getPanelCellSpriteStyle(
   };
 }
 
+export function getCabinSpriteStyle(cabin: CabinDef) {
+  const spriteId = getCabinSpriteId(cabin);
+  const bounds = cabinSpriteBounds[spriteId];
+  if (!bounds) {
+    return {
+      backgroundImage: `url(${getCabinSpriteSrc(cabin)})`,
+      backgroundSize: "100% 100%",
+      backgroundPosition: "0 0"
+    };
+  }
+
+  return {
+    backgroundImage: `url(${getCabinSpriteSrc(cabin)})`,
+    backgroundSize: `${(bounds.width / bounds.bbox.width) * 100}% ${(bounds.height / bounds.bbox.height) * 100}%`,
+    backgroundPosition: `${cropPosition(bounds.bbox.x, bounds.width, bounds.bbox.width)}% ${cropPosition(bounds.bbox.y, bounds.height, bounds.bbox.height)}%`
+  };
+}
+
+export function getCabinCellSpriteStyle(cabin: CabinDef, localCell: { x: number; y: number }) {
+  const asset = cabin.assetGridSize;
+  const x = asset.width === 1 ? 0 : (localCell.x / (asset.width - 1)) * 100;
+  const y = asset.height === 1 ? 0 : (localCell.y / (asset.height - 1)) * 100;
+
+  return {
+    backgroundImage: `url(${getCabinSpriteSrc(cabin)})`,
+    backgroundSize: `${asset.width * 100}% ${asset.height * 100}%`,
+    backgroundPosition: `${x}% ${y}%`
+  };
+}
+
 function getPanelSpriteSrc(panel: PanelDef, state: PanelState) {
   const assetId = panelSpriteAssets[panel.spriteId] ? panel.spriteId : "single_1";
   return `${panelAtlas.src}/${panelAssetStates[state]}/${assetId}.webp`;
+}
+
+function getCabinSpriteSrc(cabin: CabinDef) {
+  const spriteId = getCabinSpriteId(cabin);
+  return `${cabinAtlas.src}/ideal/${spriteId}.webp`;
+}
+
+function getCabinSpriteId(cabin: CabinDef) {
+  return cabin.spriteId?.startsWith("cabin_") ? cabin.spriteId : "cabin_1x1";
+}
+
+function cropPosition(offset: number, sourceSize: number, cropSize: number) {
+  const transparentSize = sourceSize - cropSize;
+  return transparentSize <= 0 ? 0 : (offset / transparentSize) * 100;
 }
 
 function getPanelAssetCell(

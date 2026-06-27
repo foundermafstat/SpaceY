@@ -6,6 +6,8 @@ export const defaultBuild: ShipBuild = {
   name: "Starter Scout",
   frameId: "scout_frame",
   cabinId: "solo_pod_mk1",
+  cabinPosition: { x: 2, y: 0 },
+  cabinRotation: 0,
   panels: [
     { instanceId: "p-spine", panelId: "spine_4", position: { x: 2, y: 1 }, rotation: 0, state: "ideal" },
     { instanceId: "p-left-gun", panelId: "node_plate", position: { x: 1, y: 2 }, rotation: 0, state: "ideal" },

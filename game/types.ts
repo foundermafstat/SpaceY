@@ -20,7 +20,7 @@ export type DamageType =
 
 export type SocketType = "none" | "hard" | "power" | "weapon" | "engine" | "utility";
 export type Rotation = 0 | 90 | 180 | 270;
-export type BuildMode = "panels" | "modules";
+export type BuildMode = "cabins" | "panels" | "modules";
 export type PanelState = "ideal" | "damaged" | "critical" | "debris";
 export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
 export type ShipBuildSchemaVersion = 2 | 3 | 4;
@@ -199,6 +199,8 @@ export interface CabinDef {
   name: string;
   gridSize: FrameDef["size"];
   activeCells: GridCell[];
+  shape: ModuleShape;
+  assetGridSize: FrameDef["size"];
   baseMass: number;
   baseHp: number;
   baseEnergy: number;
@@ -273,6 +275,8 @@ export interface ShipBuild {
   name: string;
   frameId: string;
   cabinId?: string;
+  cabinPosition?: GridCell;
+  cabinRotation?: Rotation;
   panels: InstalledPanel[];
   modules: InstalledModule[];
   elements?: InstalledElement[];

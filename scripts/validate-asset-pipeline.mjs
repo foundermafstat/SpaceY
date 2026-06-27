@@ -12,7 +12,7 @@ const requiredPaths = [
   "/assets/panels-v3/validation-report.json"
 ];
 const panelStates = ["ideal", "damaged", "heavyDamage", "debris"];
-const cabinStates = ["ideal", "damaged", "heavyDamage", "deformed", "debris"];
+const cabinStates = ["ideal", "damaged", "heavyDamage", "debris"];
 const panelNames = [
   "single_1",
   "bar_2h",
@@ -29,10 +29,22 @@ const panelNames = [
   "long_corner_2x3",
   "block_tail_2x3"
 ];
-const cabinNames = ["cabin_1x1", "cabin_1x2", "cabin_2x1"];
+const cabinNames = [
+  "cabin_1x1",
+  "cabin_1x2",
+  "cabin_2x1",
+  "cabin_3x1",
+  "cabin_2x2",
+  "cabin_t_3x2",
+  "cabin_cross_3x3",
+  "cabin_u_3x2",
+  "cabin_block_3x2",
+  "cabin_notch_3x2",
+  "cabin_zig_3x2"
+];
 
 const missing = [];
-requiredPaths.push("/assets/cabins-v1/manifest.json", "/assets/cabins-v1/validation-report.json");
+requiredPaths.push("/assets/cabins-v2/manifest.json", "/assets/cabins-v2/validation-report.json");
 
 for (const assetPath of requiredPaths) {
   if (!fs.existsSync(path.join(root, "public", assetPath))) {
@@ -51,7 +63,7 @@ for (const state of panelStates) {
 
 for (const state of cabinStates) {
   for (const cabin of cabinNames) {
-    const assetPath = `/assets/cabins-v1/cabins/${state}/${cabin}.webp`;
+    const assetPath = `/assets/cabins-v2/cabins/${state}/${cabin}.webp`;
     if (!fs.existsSync(path.join(root, "public", assetPath))) {
       missing.push(assetPath);
     }

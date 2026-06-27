@@ -1,8 +1,11 @@
 import {
   canInstallModule,
   canInstallPanel,
+  canPlaceCabin,
   cellKey,
-  getFrame,
+  getBuildGrid,
+  getCabinCellOccupant,
+  getInstalledCabinPosition,
   getModule,
   getPanel,
   getTransformedCells
@@ -55,8 +58,24 @@ export function validateWholeBuild(build: ShipBuild): BuildValidationResult {
     });
   }
 
-  const frame = getFrame(build.frameId);
-  const activeCells = new Set(frame.activeCells.map(cellKey));
+  if (build.cabinId) {
+    const cabinPlacement = canPlaceCabin(
+      build,
+      build.cabinId,
+      getInstalledCabinPosition(build) ?? { x: 0, y: 0 },
+      build.cabinRotation ?? 0
+    );
+    if (!cabinPlacement.ok) {
+      blockers.push({
+        severity: "blocker",
+        code: "invalid_cabin",
+        message: cabinPlacement.reason ?? "Invalid cabin placement"
+      });
+    }
+  }
+
+  const buildGrid = getBuildGrid(build);
+  const activeCells = new Set(buildGrid.activeCells.map(cellKey));
   const occupiedPanelCells = new Set<string>();
   for (const installed of build.panels ?? []) {
     const panel = getPanel(installed.panelId);
@@ -73,6 +92,13 @@ export function validateWholeBuild(build: ShipBuild): BuildValidationResult {
           severity: "blocker",
           code: "panel_overlap",
           message: "Panel overlaps"
+        });
+      }
+      if (getCabinCellOccupant(build, cell)) {
+        blockers.push({
+          severity: "blocker",
+          code: "panel_cabin_overlap",
+          message: "Panel overlaps cabin"
         });
       }
       occupiedPanelCells.add(cellKey(cell));

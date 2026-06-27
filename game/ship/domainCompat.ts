@@ -44,6 +44,15 @@ export function frameToCabinDef(frame: FrameDef): CabinDef {
     name: frame.name.replace("Frame", "Cabin"),
     gridSize: frame.size,
     activeCells: frame.activeCells,
+    shape: {
+      cells: [
+        {
+          x: Math.floor(frame.size.width / 2),
+          y: Math.floor(frame.size.height / 2)
+        }
+      ]
+    },
+    assetGridSize: { width: 1, height: 1 },
     baseMass: frame.baseMass,
     baseHp: frame.baseHp,
     baseEnergy: 0,

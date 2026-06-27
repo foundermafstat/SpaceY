@@ -3,10 +3,14 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultBuild } from "@/game/data/defaultBuild";
+import { cloneShipBuild, shipBuildPresets } from "@/game/data/shipPresets";
 import {
   canInstallModule,
   canInstallPanel,
+  canPlaceCabin,
   cellKey,
+  getCabin,
+  getDefaultCabinPosition,
   getModule,
   getPanel,
   getTransformedCells
@@ -16,6 +20,7 @@ import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
 const rotations: Rotation[] = [0, 90, 180, 270];
+const buildModes: BuildMode[] = ["cabins", "panels", "modules"];
 
 type ShipState = {
   build: ShipBuild;
@@ -25,6 +30,9 @@ type ShipState = {
   rotation: Rotation;
   scrap: number;
   setBuildMode: (mode: BuildMode) => void;
+  loadPreset: (presetId: string) => void;
+  selectCabin: (cabinId: string) => void;
+  moveCabin: (position: { x: number; y: number }, rotation?: Rotation) => boolean;
   selectModule: (moduleId: string) => void;
   selectPanel: (panelId: string) => void;
   rotateSelected: () => void;
@@ -44,7 +52,7 @@ function normalizePersistedState(persisted: unknown, current: ShipState): ShipSt
     ...current,
     ...state,
     build: migrateShipBuild(state.build),
-    buildMode: state.buildMode ?? "modules",
+    buildMode: buildModes.includes(state.buildMode as BuildMode) ? state.buildMode as BuildMode : "modules",
     selectedModuleId: state.selectedModuleId ?? "hull_block",
     selectedPanelId: state.selectedPanelId ?? "node_plate",
     rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
@@ -61,6 +69,53 @@ export const useShipStore = create<ShipState>()(
       rotation: 0,
       scrap: 0,
       setBuildMode: (mode) => set({ buildMode: mode }),
+      loadPreset: (presetId) => {
+        const preset = shipBuildPresets.find((item) => item.id === presetId);
+        if (!preset) return;
+        set({
+          build: cloneShipBuild(preset),
+          buildMode: "modules",
+          selectedModuleId: "hull_block",
+          selectedPanelId: "node_plate",
+          rotation: 0
+        });
+      },
+      selectCabin: (cabinId) => {
+        const build = get().build;
+        if (build.cabinId === cabinId) return;
+        const cabin = getCabin(cabinId);
+        const cabinPosition = getDefaultCabinPosition(cabin);
+        set({
+          build: {
+            ...build,
+            frameId: cabin.legacyFrameId ?? build.frameId,
+            cabinId,
+            cabinPosition,
+            cabinRotation: 0,
+            panels: [],
+            modules: [],
+            elements: []
+          },
+          selectedPanelId: "node_plate",
+          selectedModuleId: "hull_block",
+          rotation: 0
+        });
+      },
+      moveCabin: (position, rotation) => {
+        const build = get().build;
+        if (!build.cabinId) return false;
+        const nextRotation = rotation ?? build.cabinRotation ?? 0;
+        const result = canPlaceCabin(build, build.cabinId, position, nextRotation);
+        if (!result.ok) return false;
+        set({
+          build: {
+            ...build,
+            cabinPosition: position,
+            cabinRotation: nextRotation
+          }
+        });
+        return true;
+      },
       selectModule: (moduleId) => set({ selectedModuleId: moduleId }),
       selectPanel: (panelId) => set({ selectedPanelId: panelId }),
       rotateSelected: () =>
@@ -223,7 +278,7 @@ export const useShipStore = create<ShipState>()(
         return {
           ...state,
           build: migrateShipBuild(state.build),
-          buildMode: state.buildMode ?? "modules",
+          buildMode: buildModes.includes(state.buildMode as BuildMode) ? state.buildMode as BuildMode : "modules",
           selectedModuleId: state.selectedModuleId ?? "hull_block",
           selectedPanelId: state.selectedPanelId ?? "node_plate",
           rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0

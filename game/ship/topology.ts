@@ -1,8 +1,8 @@
 import {
   cellKey,
   getElement,
-  getFrame,
   getInstalledPanelConnectors,
+  getInstalledCabinCells,
   getModule,
   getPanel,
   getTransformedCells
@@ -36,17 +36,13 @@ const oppositeSide: Record<PanelConnectorSide, PanelConnectorSide> = {
 export function buildShipTopology(build: ShipBuild): ShipTopologyGraph {
   const nodes: ShipTopologyNode[] = [];
   const edges: ShipTopologyEdge[] = [];
-  const frame = getFrame(build.frameId);
-  const cabinCell = {
-    x: Math.floor(frame.size.width / 2),
-    y: Math.floor(frame.size.height / 2)
-  };
+  const cabinCells = getInstalledCabinCells(build);
   const cabinNodeId = cabinNode(build);
 
   nodes.push({
     id: cabinNodeId,
     kind: "cabin",
-    cells: [cabinCell],
+    cells: cabinCells,
     networkTypes: ["structure", "power", "control"]
   });
 
@@ -64,7 +60,7 @@ export function buildShipTopology(build: ShipBuild): ShipTopologyGraph {
     });
     panelNetworks.set(nodeId, panel.networks);
     cells.forEach((cell) => panelCells.set(cellKey(cell), nodeId));
-    if (cells.some((cell) => cell.x === cabinCell.x && cell.y === cabinCell.y)) {
+    if (touchesAnyCell(cells, cabinCells)) {
       edges.push(makeEdge(cabinNodeId, nodeId, "structural", panel.networks));
     }
   }
@@ -230,4 +226,14 @@ function panelNode(instanceId: string) {
 
 function elementNode(instanceId: string) {
   return `element:${instanceId}`;
+}
+
+function touchesAnyCell(cells: GridCell[], targetCells: GridCell[]) {
+  const targets = new Set(targetCells.map(cellKey));
+  return cells.some((cell) =>
+    (Object.keys(sideDeltas) as PanelConnectorSide[]).some((side) => {
+      const delta = sideDeltas[side];
+      return targets.has(cellKey({ x: cell.x + delta.x, y: cell.y + delta.y }));
+    })
+  );
 }

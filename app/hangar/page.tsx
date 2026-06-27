@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import Link from "next/link";
 import { createDraggable, type Draggable } from "animejs";
+import { cabinDefs } from "@/game/data/cabins";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
+import { shipBuildPresets } from "@/game/data/shipPresets";
 import { useShipStore } from "@/game/store/shipStore";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import {
@@ -13,11 +15,15 @@ import {
   getElementNetworkAccess
 } from "@/game/ship/topology";
 import {
+  canPlaceCabin,
   cellKey,
+  getBuildGrid,
   getBuildableCellKeys,
   getCabin,
+  getCabinCellOccupant,
   getCellOccupant,
   getFrame,
+  getInstalledCabinPosition,
   getInstalledPanelConnectors,
   getModule,
   getPanel,
@@ -34,6 +40,7 @@ import {
 } from "@/game/ship/validation";
 import {
   getAiModuleSpriteStyle,
+  getCabinSpriteStyle,
   getHoverSpriteStyle,
   getPanelCellSpriteStyle,
   getPanelSpriteStyle
@@ -63,7 +70,10 @@ const overlayModes: Array<{ id: OverlayMode; label: string }> = [
   { id: "engines", label: "Engines" },
   { id: "mass", label: "Mass" }
 ];
-const fallbackGridPitch = 41;
+const cabinPalette = cabinDefs.filter((item) => item.spriteId?.startsWith("cabin_"));
+const gridCellSize = 38;
+const gridGap = 3;
+const fallbackGridPitch = gridCellSize + gridGap;
 const initialScenePosition = { x: 0, y: 0 };
 const installSounds = {
   module: [
@@ -92,6 +102,8 @@ export default function HangarPage() {
     selectedPanelId,
     rotation,
     setBuildMode,
+    loadPreset,
+    selectCabin,
     selectModule,
     selectPanel,
     rotateSelected,
@@ -100,6 +112,7 @@ export default function HangarPage() {
     removeModule,
     installPanel,
     movePanel,
+    moveCabin,
     removePanel,
     resetBuild
   } = useShipStore();
@@ -121,6 +134,9 @@ export default function HangarPage() {
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("structure");
   const frame = getFrame(build.frameId);
   const cabin = build.cabinId ? getCabin(build.cabinId) : null;
+  const buildGrid = getBuildGrid(build);
+  const gridWidth = buildGrid.size.width;
+  const gridHeight = buildGrid.size.height;
   const selectedModule = selectedModuleId ? getModule(selectedModuleId) : null;
   const selectedPanel = selectedPanelId ? getPanel(selectedPanelId) : null;
   const stats = calculateShipStatsV2(build);
@@ -133,7 +149,9 @@ export default function HangarPage() {
     x: Math.round(stats.centerOfMass.x),
     y: Math.round(stats.centerOfMass.y)
   };
+  const activeCellKeys = new Set(buildGrid.activeCells.map(cellKey));
   const panelCellKeys = getBuildableCellKeys(build);
+  const cabinPosition = getInstalledCabinPosition(build);
   const zoom = zoomSteps[zoomIndex];
   const canTestBattle = blockers.length === 0;
 
@@ -228,6 +246,11 @@ export default function HangarPage() {
   }
 
   function previewClass(cell: GridCell) {
+    if (buildMode === "cabins") {
+      if (!cabin) return "";
+      return canPlaceCabin(build, cabin.id, cell, 0).ok ? "valid" : "invalid";
+    }
+
     if (buildMode === "panels") {
       if (!selectedPanel) return "";
       const cells = getTransformedCells(selectedPanel, cell, rotation);
@@ -268,6 +291,11 @@ export default function HangarPage() {
   }
 
   function handleCell(cell: GridCell) {
+    if (buildMode === "cabins") {
+      moveCabin(cell, 0);
+      return;
+    }
+
     if (buildMode === "panels") {
       const panelOccupant = getPanelCellOccupant(build, cell);
       if (panelOccupant) {
@@ -318,9 +346,9 @@ export default function HangarPage() {
     if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
       return null;
     }
-    const x = Math.floor(((clientX - rect.left) / rect.width) * frame.size.width);
-    const y = Math.floor(((clientY - rect.top) / rect.height) * frame.size.height);
-    if (x < 0 || y < 0 || x >= frame.size.width || y >= frame.size.height) return null;
+    const x = Math.floor(((clientX - rect.left) / rect.width) * gridWidth);
+    const y = Math.floor(((clientY - rect.top) / rect.height) * gridHeight);
+    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) return null;
     return { x, y };
   }
 
@@ -367,12 +395,13 @@ export default function HangarPage() {
           element.classList.remove("dragging");
           const instanceId = element.dataset.dragInstanceId;
           const kind = element.dataset.dragKind;
-          if (targetCell && instanceId && kind) {
+          if (targetCell && kind) {
             const offsetX = Number(element.dataset.dragOffsetX ?? 0);
             const offsetY = Number(element.dataset.dragOffsetY ?? 0);
             const position = { x: targetCell.x - offsetX, y: targetCell.y - offsetY };
-            if (kind === "module") moveModule(instanceId, position);
-            if (kind === "panel") movePanel(instanceId, position);
+            if (kind === "cabin") moveCabin(position, 0);
+            if (kind === "module" && instanceId) moveModule(instanceId, position);
+            if (kind === "panel" && instanceId) movePanel(instanceId, position);
           }
           drag.reset();
         }
@@ -416,10 +445,11 @@ export default function HangarPage() {
   }, [
     build,
     buildMode,
-    frame.size.height,
-    frame.size.width,
+    gridHeight,
+    gridWidth,
     installModule,
     installPanel,
+    moveCabin,
     moveModule,
     movePanel,
     rotation,
@@ -491,16 +521,17 @@ export default function HangarPage() {
                 <div
                   className="ship-grid"
                   ref={gridRef}
-                  style={{ gridTemplateColumns: `repeat(${frame.size.width}, 1fr)` }}
+                  style={{ gridTemplateColumns: `repeat(${gridWidth}, 1fr)` }}
                   onPointerDown={handleGridPanPointerDown}
                   onPointerMove={handlePanPointerMove}
                   onPointerUp={handlePanPointerUp}
                   onPointerCancel={handlePanPointerUp}
                   onMouseDown={handleGridPanMouseDown}
                 >
-                  {Array.from({ length: frame.size.height }).flatMap((_, y) =>
-                    Array.from({ length: frame.size.width }).map((__, x) => {
+                  {Array.from({ length: gridHeight }).flatMap((_, y) =>
+                    Array.from({ length: gridWidth }).map((__, x) => {
                       const cell = { x, y };
+                      const cabinOccupant = getCabinCellOccupant(build, cell);
                       const panelOccupant = getPanelCellOccupant(build, cell);
                       const panel = panelOccupant ? getPanel(panelOccupant.panelId) : null;
                       const panelConnectors = panelOccupant
@@ -508,35 +539,45 @@ export default function HangarPage() {
                             (connector) => connector.cell.x === x && connector.cell.y === y
                           )
                         : [];
-                      const active = buildMode === "panels" || panelCellKeys.has(cellKey(cell));
+                      const active = buildMode === "modules"
+                        ? panelCellKeys.has(cellKey(cell))
+                        : activeCellKeys.has(cellKey(cell));
                       const occupant = getCellOccupant(build, cell);
                       const module = occupant ? getModule(occupant.moduleId) : null;
                       const panelLocalCell = panel && panelOccupant
                         ? getPanelLocalCell(panel, panelOccupant, cell)
                         : null;
-                      const dragKind = buildMode === "panels" && panelOccupant
-                        ? "panel"
-                        : buildMode === "modules" && occupant
-                          ? "module"
-                          : undefined;
-                      const dragInstance = dragKind === "panel" ? panelOccupant : occupant;
+                      const dragData = buildMode === "panels" && panelOccupant
+                          ? {
+                              kind: "panel",
+                              instanceId: panelOccupant.instanceId,
+                              position: panelOccupant.position
+                            }
+                          : buildMode === "modules" && occupant
+                            ? {
+                                kind: "module",
+                                instanceId: occupant.instanceId,
+                                position: occupant.position
+                              }
+                            : null;
                       return (
                         <button
                           key={`${x}:${y}`}
                           className={[
                             "cell",
-                            dragKind ? "draggable-cell" : "",
+                            dragData ? "draggable-cell" : "",
                             active ? "" : "inactive",
+                            cabinOccupant ? "has-cabin" : "",
                             panel ? `has-panel panel-${panelOccupant?.state}` : "",
                             module ? `occupied ${module.type}` : "",
                             overlayClass(cell, module, panelOccupant, occupant),
                             previewClass(cell)
                           ].join(" ")}
                           data-grid-cell={`${x}:${y}`}
-                          data-drag-kind={dragKind}
-                          data-drag-instance-id={dragInstance?.instanceId}
-                          data-drag-offset-x={dragInstance ? x - dragInstance.position.x : undefined}
-                          data-drag-offset-y={dragInstance ? y - dragInstance.position.y : undefined}
+                          data-drag-kind={dragData?.kind}
+                          data-drag-instance-id={dragData?.instanceId}
+                          data-drag-offset-x={dragData ? x - dragData.position.x : undefined}
+                          data-drag-offset-y={dragData ? y - dragData.position.y : undefined}
                           onClick={() => handleCell(cell)}
                           aria-label={`cell ${x} ${y}`}
                         >
@@ -570,6 +611,29 @@ export default function HangarPage() {
                       );
                     })
                   )}
+                  {cabin && cabinPosition && (
+                    <button
+                      className={[
+                        "cabin-graphic",
+                        buildMode === "cabins" ? "draggable-cell" : ""
+                      ].join(" ")}
+                      style={{
+                        ...getCabinSpriteStyle(cabin),
+                        left: cabinPosition.x * fallbackGridPitch,
+                        top: cabinPosition.y * fallbackGridPitch,
+                        width: cabin.assetGridSize.width * gridCellSize + (cabin.assetGridSize.width - 1) * gridGap,
+                        height: cabin.assetGridSize.height * gridCellSize + (cabin.assetGridSize.height - 1) * gridGap
+                      }}
+                      data-grid-cell={`${cabinPosition.x}:${cabinPosition.y}`}
+                      data-drag-kind={buildMode === "cabins" ? "cabin" : undefined}
+                      data-drag-instance-id={build.cabinId}
+                      data-drag-offset-x={0}
+                      data-drag-offset-y={0}
+                      onClick={() => handleCell(cabinPosition)}
+                      aria-label="cabin"
+                      type="button"
+                    />
+                  )}
                 </div>
               </div>
             </div>
@@ -596,15 +660,23 @@ export default function HangarPage() {
             <details className="module-drawer" open>
               <summary>
                 <span>
-                  {buildMode === "panels"
-                    ? selectedPanel?.name ?? "Panels"
-                    : selectedModule?.name ?? "Modules"}
+                  {buildMode === "cabins"
+                    ? cabin?.name ?? "Cabins"
+                    : buildMode === "panels"
+                      ? selectedPanel?.name ?? "Panels"
+                      : selectedModule?.name ?? "Modules"}
                 </span>
                 <span className="small">
-                  Panels {(build.panels ?? []).length} · Energy {stats.energyBalance.toFixed(0)}
+                  Cells {buildGrid.activeCells.length} · Panels {(build.panels ?? []).length} · Energy {stats.energyBalance.toFixed(0)}
                 </span>
               </summary>
               <div className="build-mode-tabs" role="tablist" aria-label="Build layer">
+                <button
+                  className={buildMode === "cabins" ? "selected" : ""}
+                  onClick={() => setBuildMode("cabins")}
+                >
+                  Cabins
+                </button>
                 <button
                   className={buildMode === "panels" ? "selected" : ""}
                   onClick={() => setBuildMode("panels")}
@@ -618,9 +690,40 @@ export default function HangarPage() {
                   Modules
                 </button>
               </div>
+              <div className="preset-list" aria-label="Ship presets">
+                {shipBuildPresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    className={preset.id === build.id ? "selected" : ""}
+                    onClick={() => loadPreset(preset.id)}
+                  >
+                    <strong>{preset.name}</strong>
+                    <span>
+                      {preset.panels.length} panels · {preset.modules.filter((item) => getModule(item.moduleId).weapon).length} guns
+                    </span>
+                  </button>
+                ))}
+              </div>
               <div className="module-list" ref={drawerRef}>
-                {buildMode === "panels"
-                  ? panelDefs.map((panel) => (
+                {buildMode === "cabins"
+                  ? cabinPalette.map((item) => (
+                      <button
+                        key={item.id}
+                        className={`module-card cabin-card ${item.id === build.cabinId ? "selected" : ""}`}
+                        onClick={() => selectCabin(item.id)}
+                      >
+                        <span className="cabin-thumb" style={getCabinSpriteStyle(item)} />
+                        <strong>{item.name}</strong>
+                        <span>
+                          cabin {item.shape.cells.length} cells · form {item.activeCells.length}
+                        </span>
+                        <span>
+                          {item.role} · crew {item.crew} · energy {item.baseEnergy}
+                        </span>
+                      </button>
+                    ))
+                  : buildMode === "panels"
+                    ? panelDefs.map((panel) => (
                       <button
                         key={panel.id}
                         className={`module-card panel-card ${panel.id === selectedPanelId ? "selected" : ""}`}
@@ -638,7 +741,7 @@ export default function HangarPage() {
                         </span>
                       </button>
                     ))
-                  : moduleDefs.map((module) => (
+                    : moduleDefs.map((module) => (
                       <button
                         key={module.id}
                         className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}

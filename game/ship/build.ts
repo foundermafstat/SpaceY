@@ -5,6 +5,7 @@ import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
 import { moduleToElementRole } from "@/game/ship/domainCompat";
 import type {
+  CabinDef,
   GridCell,
   ElementDef,
   InstalledPanel,
@@ -86,9 +87,48 @@ export function getTransformedCells(item: ShapedDef, position: GridCell, rotatio
   });
 }
 
+export function getBuildGrid(build: ShipBuild) {
+  if (build.cabinId) {
+    const cabin = getCabin(build.cabinId);
+    return { size: cabin.gridSize, activeCells: cabin.activeCells };
+  }
+  const frame = getFrame(build.frameId);
+  return { size: frame.size, activeCells: frame.activeCells };
+}
+
+export function getDefaultCabinPosition(cabin: CabinDef) {
+  return {
+    x: Math.max(0, Math.floor((cabin.gridSize.width - cabin.assetGridSize.width) / 2)),
+    y: Math.max(0, Math.floor((cabin.gridSize.height - cabin.assetGridSize.height) / 2))
+  };
+}
+
+export function getInstalledCabinPosition(build: ShipBuild) {
+  if (!build.cabinId) return null;
+  return build.cabinPosition ?? getDefaultCabinPosition(getCabin(build.cabinId));
+}
+
+export function getInstalledCabinCells(build: ShipBuild) {
+  if (!build.cabinId) return [];
+  const cabin = getCabin(build.cabinId);
+  const position = getInstalledCabinPosition(build) ?? getDefaultCabinPosition(cabin);
+  return getTransformedCells(cabin, position, build.cabinRotation ?? 0);
+}
+
+export function getCabinCellOccupant(build: ShipBuild, cell: GridCell) {
+  if (!build.cabinId) return null;
+  const cabin = getCabin(build.cabinId);
+  const position = getInstalledCabinPosition(build) ?? getDefaultCabinPosition(cabin);
+  const rotation = build.cabinRotation ?? 0;
+  const cells = getTransformedCells(cabin, position, rotation);
+  if (!cells.some((candidate) => candidate.x === cell.x && candidate.y === cell.y)) return null;
+  return { cabin, position, rotation };
+}
+
 export function getCellOccupant(build: ShipBuild, cell: GridCell) {
   for (const installed of build.modules) {
     const module = getModule(installed.moduleId);
+    if (build.cabinId && module.type === "core") continue;
     const cells = getTransformedCells(module, installed.position, installed.rotation);
     if (cells.some((candidate) => candidate.x === cell.x && candidate.y === cell.y)) {
       return installed;
@@ -212,15 +252,14 @@ export function canInstallPanel(
   position: GridCell,
   rotation: Rotation
 ) {
-  const frame = getFrame(build.frameId);
+  const grid = getBuildGrid(build);
   const panel = getPanel(panelId);
   const panels = build.panels ?? [];
   const targetCells = getTransformedCells(panel, position, rotation);
-  const targetCellKeys = new Set(targetCells.map(cellKey));
-  const activeCellKeys = new Set(frame.activeCells.map(cellKey));
+  const activeCellKeys = new Set(grid.activeCells.map(cellKey));
 
   for (const cell of targetCells) {
-    if (cell.x < 0 || cell.y < 0 || cell.x >= frame.size.width || cell.y >= frame.size.height) {
+    if (cell.x < 0 || cell.y < 0 || cell.x >= grid.size.width || cell.y >= grid.size.height) {
       return { ok: false, reason: "Outside construction grid" };
     }
     if (!activeCellKeys.has(cellKey(cell))) {
@@ -229,16 +268,16 @@ export function canInstallPanel(
     if (getPanelCellOccupant(build, cell)) {
       return { ok: false, reason: "Panel overlaps" };
     }
+    if (getCabinCellOccupant(build, cell)) {
+      return { ok: false, reason: "Cabin overlaps" };
+    }
   }
 
+  const touchesCabin = touchesAnyCell(targetCells, getInstalledCabinCells(build));
   if (panels.length === 0) {
-    const seedCell = {
-      x: Math.floor(frame.size.width / 2),
-      y: Math.floor(frame.size.height / 2)
-    };
-    return targetCellKeys.has(cellKey(seedCell))
+    return touchesCabin
       ? { ok: true, reason: null }
-      : { ok: false, reason: "First panel must cover center" };
+      : { ok: false, reason: "First panel must touch cabin" };
   }
 
   const existingCells = new Set<string>();
@@ -275,9 +314,41 @@ export function canInstallPanel(
     }
   }
 
-  return matchedEdges > 0
+  return matchedEdges > 0 || touchesCabin
     ? { ok: true, reason: null }
     : { ok: false, reason: "Matching connector required" };
+}
+
+export function canPlaceCabin(
+  build: ShipBuild,
+  cabinId: string,
+  position: GridCell,
+  rotation: Rotation = 0
+) {
+  const cabin = getCabin(cabinId);
+  const grid = { size: cabin.gridSize, activeCells: cabin.activeCells };
+  const activeCellKeys = new Set(grid.activeCells.map(cellKey));
+  const targetCells = getTransformedCells(cabin, position, rotation);
+  const candidateBuild = build.cabinId === cabinId
+    ? { ...build, cabinPosition: undefined }
+    : build;
+
+  for (const cell of targetCells) {
+    if (cell.x < 0 || cell.y < 0 || cell.x >= grid.size.width || cell.y >= grid.size.height) {
+      return { ok: false, reason: "Outside construction grid" };
+    }
+    if (!activeCellKeys.has(cellKey(cell))) {
+      return { ok: false, reason: "Outside cabin form" };
+    }
+    if (getPanelCellOccupant(candidateBuild, cell)) {
+      return { ok: false, reason: "Cabin overlaps panel" };
+    }
+    if (getCellOccupant(candidateBuild, cell)) {
+      return { ok: false, reason: "Cabin overlaps module" };
+    }
+  }
+
+  return { ok: true, reason: null };
 }
 
 export function cellKey(cell: GridCell) {
@@ -292,4 +363,14 @@ function addMapValue(map: Map<string, string[]>, key: string, value: string) {
   const values = map.get(key) ?? [];
   values.push(value);
   map.set(key, values);
+}
+
+function touchesAnyCell(cells: GridCell[], targetCells: GridCell[]) {
+  const targets = new Set(targetCells.map(cellKey));
+  return cells.some((cell) =>
+    (Object.keys(sideDeltas) as PanelConnectorSide[]).some((side) => {
+      const delta = sideDeltas[side];
+      return targets.has(cellKey({ x: cell.x + delta.x, y: cell.y + delta.y }));
+    })
+  );
 }

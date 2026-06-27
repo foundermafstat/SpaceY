@@ -1,4 +1,11 @@
-import { getFrame, getModule, getPanel, getTransformedCells } from "@/game/ship/build";
+import {
+  getCabin,
+  getFrame,
+  getInstalledCabinCells,
+  getModule,
+  getPanel,
+  getTransformedCells
+} from "@/game/ship/build";
 import {
   buildShipTopology,
   getConnectedPanelsFromCabin,
@@ -10,6 +17,10 @@ const networkTypes: NetworkType[] = ["structure", "power", "heat", "control", "s
 
 export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
   const frame = getFrame(build.frameId);
+  const cabin = build.cabinId ? getCabin(build.cabinId) : null;
+  const baseMass = cabin?.baseMass ?? frame.baseMass;
+  const baseHp = cabin?.baseHp ?? frame.baseHp;
+  const baseCell = cabin ? averageCells(getInstalledCabinCells(build)) : frameCenter(build);
   const panels = (build.panels ?? []).map((installed) => ({
     installed,
     def: getPanel(installed.panelId)
@@ -22,7 +33,7 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
     ? modules.filter((module) => module.def.type !== "core")
     : modules;
 
-  const weighted = [{ mass: frame.baseMass, cell: frameCenter(build) }];
+  const weighted = [{ mass: baseMass, cell: baseCell }];
   panels.forEach(({ installed, def }) => {
     getTransformedCells(def, installed.position, installed.rotation).forEach((cell) => {
       weighted.push({ mass: def.mass / Math.max(1, def.shape.cells.length), cell });
@@ -35,11 +46,11 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
   });
 
   const mass =
-    frame.baseMass +
+    baseMass +
     panels.reduce((sum, panel) => sum + panel.def.mass, 0) +
     statModules.reduce((sum, module) => sum + module.def.mass, 0);
   const hp =
-    frame.baseHp +
+    baseHp +
     panels.reduce((sum, panel) => sum + panel.def.hp, 0) +
     statModules.reduce((sum, module) => sum + module.def.hp, 0);
   const centerOfMass = getCenterOfMass(weighted);
@@ -61,7 +72,7 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
   const maxSpeed = Math.max(80, 82 + acceleration * 92 + Math.sqrt(mainThrust) * 5.5);
   const turnRate = Math.max(1.2, (lateralThrust + mainThrust * 0.18) / Math.max(40, mass));
 
-  const powerOutput = statModules.reduce((sum, module) => sum + (module.def.energyProduction ?? 0), 0);
+  const powerOutput = (cabin?.baseEnergy ?? 0) + statModules.reduce((sum, module) => sum + (module.def.energyProduction ?? 0), 0);
   const powerStorage = statModules.reduce(
     (sum, module) => sum + (module.def.type === "battery" ? module.def.hp : 0),
     0
@@ -84,7 +95,7 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
   if (!statModules.some((module) => module.def.type === "engine")) warnings.push("At least one engine required");
   if (!statModules.some((module) => module.def.type === "reactor")) warnings.push("Power module required");
   if (powerOutput - powerDemand < 0) warnings.push("Low Power: energy usage exceeds production");
-  if (mass > frame.maxMass) warnings.push("Mass exceeds frame limit");
+  if (mass > (cabin?.maxMass ?? frame.maxMass)) warnings.push("Mass exceeds frame limit");
   if (heatGeneration - heatDissipation > 40) warnings.push("High heat load");
 
   return {

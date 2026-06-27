@@ -384,6 +384,7 @@ button {
 }
 
 .ship-grid {
+  position: relative;
   display: grid;
   gap: 3px;
   touch-action: none;
@@ -412,6 +413,11 @@ button {
 .cell.has-panel {
   border-color: rgba(73, 215, 255, 0.22);
   background: rgba(17, 43, 62, 0.42);
+}
+
+.cell.has-cabin {
+  border-color: rgba(255, 210, 122, 0.28);
+  background: rgba(255, 210, 122, 0.12);
 }
 
 .cell.panel-damaged {
@@ -484,6 +490,7 @@ button {
 }
 
 .cell.dragging,
+.cabin-graphic.dragging,
 .module-card.dragging {
   z-index: 30;
   cursor: grabbing;
@@ -498,6 +505,27 @@ button {
   opacity: 0.62;
   pointer-events: none;
   z-index: 0;
+}
+
+.cabin-graphic {
+  position: absolute;
+  z-index: 2;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  background-origin: border-box;
+  background-clip: border-box;
+  background-repeat: no-repeat;
+  cursor: default;
+  padding: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 7px rgba(255, 210, 122, 0.22));
+}
+
+.cabin-graphic.draggable-cell {
+  cursor: grab;
+  pointer-events: auto;
 }
 
 .cell-connector {
@@ -631,6 +659,10 @@ button {
   padding-left: 50px;
 }
 
+.cabin-card {
+  padding-left: 50px;
+}
+
 .panel-thumb {
   position: absolute;
   left: 8px;
@@ -640,6 +672,18 @@ button {
   transform: translateY(-50%);
   background-repeat: no-repeat;
   filter: drop-shadow(0 0 8px rgba(73, 215, 255, 0.2));
+}
+
+.cabin-thumb {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  display: block;
+  width: 34px;
+  height: 34px;
+  transform: translateY(-50%);
+  background-repeat: no-repeat;
+  filter: drop-shadow(0 0 8px rgba(255, 210, 122, 0.22));
 }
 
 .panel {
@@ -768,7 +812,7 @@ button {
 
 .build-mode-tabs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   margin: 7px 0 2px;
 }
@@ -786,6 +830,47 @@ button {
   border-color: var(--cyan);
   background: rgba(73, 215, 255, 0.13);
   color: var(--text);
+}
+
+.preset-list {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(116px, 1fr);
+  gap: 6px;
+  overflow-x: auto;
+  padding: 7px 1px 2px;
+  scrollbar-width: none;
+}
+
+.preset-list::-webkit-scrollbar {
+  display: none;
+}
+
+.preset-list button {
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  cursor: pointer;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.preset-list button.selected {
+  border-color: var(--cyan);
+  background: rgba(73, 215, 255, 0.13);
+}
+
+.preset-list strong,
+.preset-list span {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.preset-list span {
+  margin-top: 4px;
+  color: var(--muted);
 }
 
 .module-drawer:not([open]) .module-list {
