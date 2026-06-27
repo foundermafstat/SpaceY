@@ -24,6 +24,19 @@ export type BuildMode = "panels" | "modules";
 export type PanelState = "ideal" | "damaged" | "critical" | "debris";
 export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
 export type ShipBuildSchemaVersion = 2 | 3 | 4;
+export type PanelRole = "structure" | "armor" | "mount" | "conduit" | "utility";
+export type ElementRole =
+  | "cabin"
+  | "structure"
+  | "armor"
+  | "engine"
+  | "weapon"
+  | "reactor"
+  | "battery"
+  | "shield"
+  | "utility";
+export type NetworkType = "structure" | "power" | "heat" | "control" | "shield";
+export type ConnectorFamily = "structural" | "power" | "thermal" | "weapon" | "engine" | "utility";
 
 export interface GridCell {
   x: number;
@@ -45,6 +58,7 @@ export interface PanelDef {
   name: string;
   shape: ModuleShape;
   connectors: PanelConnector[];
+  role?: PanelRole;
   mass: number;
   hp: number;
   spriteId: string;
@@ -124,11 +138,68 @@ export interface FrameDef {
   spriteId?: string;
 }
 
+export interface CabinDef {
+  id: string;
+  name: string;
+  gridSize: FrameDef["size"];
+  activeCells: GridCell[];
+  baseMass: number;
+  baseHp: number;
+  baseEnergy: number;
+  crew: number;
+  panelLimit: number;
+  maxMass: number;
+  role: "scout" | "fighter" | "industrial" | "capital";
+  spriteId?: string;
+  legacyFrameId?: string;
+}
+
+export interface MountSlot {
+  id: string;
+  cell: GridCell;
+  socket: SocketType;
+  side?: PanelConnectorSide;
+  networkTypes: NetworkType[];
+}
+
+export interface ElementDef {
+  id: string;
+  name: string;
+  role: ElementRole;
+  rarity: ModuleDef["rarity"];
+  shape: ModuleShape;
+  sockets: ModuleSockets;
+  mountSlots: MountSlot[];
+  mass: number;
+  hp: number;
+  energyProduction?: number;
+  energyConsumption?: number;
+  heatGeneration?: number;
+  heatDissipation?: number;
+  thrust?: number;
+  maneuverThrust?: number;
+  weapon?: WeaponDef;
+  shield?: ShieldDef;
+  spriteId: string;
+  emissionSpriteId?: string;
+  damagedSpriteId?: string;
+  tags: string[];
+  legacyModuleId?: string;
+}
+
 export interface InstalledModule {
   instanceId: string;
   moduleId: string;
   position: GridCell;
   rotation: Rotation;
+}
+
+export interface InstalledElement {
+  instanceId: string;
+  elementId: string;
+  position: GridCell;
+  rotation: Rotation;
+  legacyModuleId?: string;
 }
 
 export interface InstalledPanel {
@@ -150,6 +221,16 @@ export interface ShipBuild {
   elements?: InstalledModule[];
 }
 
+export interface ShipBuildV2 {
+  schemaVersion: 3 | 4;
+  id: string;
+  name: string;
+  cabinId: string;
+  frameId?: string;
+  panels: InstalledPanel[];
+  elements: InstalledElement[];
+}
+
 export interface ShipStats {
   hp: number;
   shield: number;
@@ -164,4 +245,41 @@ export interface ShipStats {
   heat: number;
   dps: number;
   warnings: string[];
+}
+
+export interface ShipStatsV2 extends ShipStats {
+  structureHp: number;
+  centerOfMass: GridCell;
+  networkCapacity: Record<NetworkType, number>;
+  disconnectedParts: number;
+}
+
+export interface ShipTopologyNode {
+  id: string;
+  kind: "cabin" | "panel" | "element";
+  cells: GridCell[];
+  networkTypes: NetworkType[];
+}
+
+export interface ShipTopologyEdge {
+  from: string;
+  to: string;
+  family: ConnectorFamily;
+  networkTypes: NetworkType[];
+}
+
+export interface ShipTopologyGraph {
+  nodes: ShipTopologyNode[];
+  edges: ShipTopologyEdge[];
+}
+
+export interface RuntimePartState {
+  id: string;
+  kind: "cabin" | "panel" | "element";
+  hp: number;
+  maxHp: number;
+  gridCells: GridCell[];
+  disabled: boolean;
+  detached: boolean;
+  networks: NetworkType[];
 }
