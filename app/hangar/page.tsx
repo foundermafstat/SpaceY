@@ -8,8 +8,6 @@ import { panelDefs } from "@/game/data/panels";
 import { useShipStore } from "@/game/store/shipStore";
 import { calculateShipStats } from "@/game/ship/stats";
 import {
-  canInstallModule,
-  canInstallPanel,
   cellKey,
   getBuildableCellKeys,
   getCabin,
@@ -22,6 +20,7 @@ import {
   getTransformedCells,
   rotateCell
 } from "@/game/ship/build";
+import { validateElementPlacement, validatePanelPlacement } from "@/game/ship/validation";
 import {
   getAiModuleSpriteStyle,
   getHoverSpriteStyle,
@@ -202,14 +201,14 @@ export default function HangarPage() {
       const cells = getTransformedCells(selectedPanel, cell, rotation);
       const covers = cells.some((covered) => covered.x === cell.x && covered.y === cell.y);
       if (!covers) return "";
-      return canInstallPanel(build, selectedPanel.id, cell, rotation).ok ? "valid" : "invalid";
+      return validatePanelPlacement(build, selectedPanel.id, cell, rotation).ok ? "valid" : "invalid";
     }
 
     if (!selectedModule || !panelCellKeys.has(cellKey(cell))) return "";
     const cells = getTransformedCells(selectedModule, cell, rotation);
     const covers = cells.some((covered) => covered.x === cell.x && covered.y === cell.y);
     if (!covers) return "";
-    return canInstallModule(build, selectedModule.id, cell, rotation).ok ? "valid" : "invalid";
+    return validateElementPlacement(build, selectedModule.id, cell, rotation).ok ? "valid" : "invalid";
   }
 
   function handleCell(cell: GridCell) {

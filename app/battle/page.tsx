@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { useShipStore } from "@/game/store/shipStore";
 import { calculateShipStats } from "@/game/ship/stats";
+import { getBuildBlockers } from "@/game/ship/validation";
 
 const BattleCanvas = dynamic(() => import("@/components/battle/BattleCanvas"), {
   ssr: false
@@ -15,6 +16,7 @@ export default function BattlePage() {
   const addReward = useShipStore((state) => state.addReward);
   const [result, setResult] = useState<"victory" | "defeat" | null>(null);
   const stats = useMemo(() => calculateShipStats(build), [build]);
+  const blockers = useMemo(() => getBuildBlockers(build), [build]);
 
   const handleResult = useCallback((nextResult: "victory" | "defeat") => {
     setResult(nextResult);
@@ -25,7 +27,7 @@ export default function BattlePage() {
     <main className="app-shell">
       <section className="mobile-frame">
         <div className="battle-host">
-          <BattleCanvas build={build} onResult={handleResult} />
+          {blockers.length === 0 && <BattleCanvas build={build} onResult={handleResult} />}
           <div className="battle-overlay">
             <div className="battle-hud panel">
               <strong>Survival Test</strong>
@@ -37,6 +39,19 @@ export default function BattlePage() {
                 <span style={{ width: `${result === "defeat" ? 0 : 100}%` }} />
               </div>
             </div>
+            {blockers.length > 0 && (
+              <div className="result-panel panel">
+                <div className="panel-title">
+                  <h2>Build Blocked</h2>
+                  <span className="small">{blockers[0].message}</span>
+                </div>
+                <div className="footer-actions">
+                  <Link className="button primary" href="/hangar">
+                    Hangar
+                  </Link>
+                </div>
+              </div>
+            )}
             {result && (
               <div className="result-panel panel">
                 <div className="panel-title">
