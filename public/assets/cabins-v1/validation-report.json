@@ -12,7 +12,7 @@
         "width": 256,
         "height": 256
       },
-      "alphaCoverage": 0.8478,
+      "alphaCoverage": 0.8142,
       "ok": true
     },
     {
@@ -27,7 +27,7 @@
         "width": 256,
         "height": 256
       },
-      "alphaCoverage": 0.867,
+      "alphaCoverage": 0.825,
       "ok": true
     },
     {
@@ -42,7 +42,7 @@
         "width": 256,
         "height": 256
       },
-      "alphaCoverage": 0.8554,
+      "alphaCoverage": 0.822,
       "ok": true
     },
     {
@@ -57,7 +57,7 @@
         "width": 256,
         "height": 256
       },
-      "alphaCoverage": 0.8571,
+      "alphaCoverage": 0.7811,
       "ok": true
     },
     {
@@ -72,7 +72,7 @@
         "width": 256,
         "height": 256
       },
-      "alphaCoverage": 0.6181,
+      "alphaCoverage": 0.584,
       "ok": true
     },
     {
@@ -87,7 +87,7 @@
         "width": 256,
         "height": 512
       },
-      "alphaCoverage": 0.6336,
+      "alphaCoverage": 0.7703,
       "ok": true
     },
     {
@@ -102,7 +102,7 @@
         "width": 256,
         "height": 512
       },
-      "alphaCoverage": 0.664,
+      "alphaCoverage": 0.7595,
       "ok": true
     },
     {
@@ -117,7 +117,7 @@
         "width": 256,
         "height": 512
       },
-      "alphaCoverage": 0.6817,
+      "alphaCoverage": 0.7758,
       "ok": true
     },
     {
@@ -132,7 +132,7 @@
         "width": 256,
         "height": 512
       },
-      "alphaCoverage": 0.8069,
+      "alphaCoverage": 0.7757,
       "ok": true
     },
     {
@@ -147,7 +147,7 @@
         "width": 256,
         "height": 512
       },
-      "alphaCoverage": 0.4455,
+      "alphaCoverage": 0.6141,
       "ok": true
     },
     {
@@ -162,7 +162,7 @@
         "width": 512,
         "height": 256
       },
-      "alphaCoverage": 0.6139,
+      "alphaCoverage": 0.7325,
       "ok": true
     },
     {
@@ -177,7 +177,7 @@
         "width": 512,
         "height": 256
       },
-      "alphaCoverage": 0.7149,
+      "alphaCoverage": 0.7236,
       "ok": true
     },
     {
@@ -192,7 +192,7 @@
         "width": 512,
         "height": 256
       },
-      "alphaCoverage": 0.7001,
+      "alphaCoverage": 0.7213,
       "ok": true
     },
     {
@@ -207,7 +207,7 @@
         "width": 512,
         "height": 256
       },
-      "alphaCoverage": 0.6914,
+      "alphaCoverage": 0.7583,
       "ok": true
     },
     {
@@ -222,7 +222,7 @@
         "width": 512,
         "height": 256
       },
-      "alphaCoverage": 0.2396,
+      "alphaCoverage": 0.3069,
       "ok": true
     }
   ],

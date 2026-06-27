@@ -3,7 +3,7 @@
   "quality": 75,
   "cellSize": 256,
   "perspective": "top-down orthographic",
-  "sourceMode": "current cabin top-view references plus imagegen damage reference sheet",
+  "sourceMode": "direct imagegen source sheet crop, chroma-key removed, normalized to exact grid cell sizes",
   "sourceReferences": {
     "currentCabins": "/assets/cabins-v1/source/reference/current-cabins-reference-sheet.png",
     "imagegenDamageSheet": "/assets/cabins-v1/source/imagegen/cabin-damage-reference-source.png"
