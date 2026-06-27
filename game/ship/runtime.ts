@@ -20,9 +20,13 @@ export type RuntimeWeapon = {
 export type RuntimeEngine = {
   partId: string;
   mount: GridCell;
+  thrustVector: GridCell;
   thrust: number;
+  reverseThrust: number;
   maneuverThrust: number;
-  direction: "rear" | "side";
+  spoolTime: number;
+  energyDrawPerSecond: number;
+  heatPerSecond: number;
 };
 
 export type RuntimeShield = {
@@ -115,12 +119,17 @@ export function createShipRuntime(
       weapons.push({ partId, weapon: module.weapon, mount: installed.position, cooldown: 0 });
     }
     if (module.type === "engine") {
+      const engineVector = stats.engineVectors.find((engine) => engine.partId === partId);
       engines.push({
         partId,
-        mount: installed.position,
+        mount: engineVector?.mount ?? installed.position,
+        thrustVector: engineVector?.thrustVector ?? { x: 0, y: -1 },
         thrust: module.thrust ?? 0,
-        maneuverThrust: module.maneuverThrust ?? 0,
-        direction: module.id === "side_thruster" ? "side" : "rear"
+        reverseThrust: engineVector?.reverseThrust ?? 0,
+        maneuverThrust: engineVector?.lateralThrust ?? module.maneuverThrust ?? 0,
+        spoolTime: engineVector?.spoolTime ?? 0.35,
+        energyDrawPerSecond: engineVector?.energyDrawPerSecond ?? module.energyConsumption ?? 0,
+        heatPerSecond: engineVector?.heatPerSecond ?? module.heatGeneration ?? 0
       });
     }
     if (module.shield) {

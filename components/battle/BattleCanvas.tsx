@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
 import type { TextStyleFontWeight } from "pixi.js";
 import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
-import { calculateShipStats } from "@/game/ship/stats";
+import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getWorldMount, clampToScreenEdge, type Vec } from "@/game/battle/math";
-import { applyShipPhysics } from "@/game/battle/shipPhysics";
+import { applyShipPhysicsInput } from "@/game/battle/shipPhysics";
 import { projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
 import { collectWeapons, rotateTurretToTarget, type WeaponState } from "@/game/battle/weapons";
 import {
@@ -58,11 +58,17 @@ type Enemy = {
   pos: Vec;
   vel: Vec;
   rotation: number;
+  angularVelocity: number;
   hp: number;
   maxHp: number;
   acceleration: number;
   maxSpeed: number;
   turnRate: number;
+  mass: number;
+  momentOfInertia: number;
+  engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
+  brakingPower: number;
+  driftFactor: number;
   radius: number;
   body: Container;
   visual: ShipVisual;
@@ -179,7 +185,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
     let battleAudio: ReturnType<typeof createBattleAudio> | null = null;
     const app = new Application();
     const host = hostRef.current;
-    const stats = calculateShipStats(build);
+    const stats = calculateShipStatsV2(build);
     const resize = () => {
       if (!initialized) return;
       app.renderer.resize(host.clientWidth, host.clientHeight);
@@ -292,9 +298,15 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         hp: stats.hp,
         maxHp: stats.hp,
         rotation: -Math.PI / 2,
+        angularVelocity: 0,
         maxSpeed: stats.maxSpeed,
         acceleration: Math.max(35, stats.acceleration * 70),
-        turnRate: Math.max(1.8, stats.turnRate)
+        turnRate: Math.max(1.8, stats.turnRate),
+        mass: stats.mass,
+        momentOfInertia: stats.momentOfInertia,
+        engineVectors: stats.engineVectors,
+        brakingPower: stats.brakingPower,
+        driftFactor: stats.driftFactor
       };
       const joystick = { active: false, origin: { x: 0, y: 0 }, value: { x: 0, y: 0 } };
       const enemies: Enemy[] = [
@@ -383,10 +395,10 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       function updatePlayer(dt: number) {
         const inputPower = Math.min(1, Math.hypot(joystick.value.x, joystick.value.y));
         if (inputPower > 0.05) {
-          applyShipPhysics(player, Math.atan2(joystick.value.y, joystick.value.x), inputPower, dt);
+          applyShipPhysicsInput(player, { inputVector: joystick.value }, dt);
           spawnEngineGlows(layers.engineVfx, player.pos, player.rotation, ship.engineMounts, inputPower);
         } else {
-          applyShipPhysics(player, player.rotation, 0, dt);
+          applyShipPhysicsInput(player, { inputVector: { x: 0, y: 0 } }, dt);
         }
         audio.setEnginePower(inputPower);
         applyShipDamageState(ship, textures, getShipDamageState(player.hp, player.maxHp));
@@ -452,7 +464,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           const ideal = enemy.kind === "bomber" ? 360 : 210;
           const desired = Math.atan2(dy, dx) + (dist < ideal ? Math.PI : 0);
           const inputPower = dist > ideal ? 0.9 : 0.45;
-          applyShipPhysics(enemy, desired, inputPower, dt);
+          applyShipPhysicsInput(
+            enemy,
+            { inputVector: { x: Math.cos(desired) * inputPower, y: Math.sin(desired) * inputPower } },
+            dt
+          );
           spawnEngineGlows(layers.engineVfx, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower);
           enemy.body.position.set(enemy.pos.x, enemy.pos.y);
           enemy.body.rotation = enemy.rotation + Math.PI / 2;
@@ -881,7 +897,7 @@ function makeEnemy(
   textures: AtlasTextures
 ): Enemy {
   const build = makeEnemyBuild(kind);
-  const stats = calculateShipStats(build);
+  const stats = calculateShipStatsV2(build);
   const radius = kind === "drone" ? 28 : kind === "raider" ? 40 : 48;
   const visual = buildShipGraphic(build, textures);
   const body = visual.container;
@@ -893,11 +909,17 @@ function makeEnemy(
     pos: { x, y },
     vel: { x: 0, y: 0 },
     rotation: Math.PI / 2,
+    angularVelocity: 0,
     hp: stats.hp,
     maxHp: stats.hp,
     acceleration: Math.max(30, stats.acceleration * 70),
     maxSpeed: stats.maxSpeed,
     turnRate: Math.max(1.5, stats.turnRate),
+    mass: stats.mass,
+    momentOfInertia: stats.momentOfInertia,
+    engineVectors: stats.engineVectors,
+    brakingPower: stats.brakingPower,
+    driftFactor: stats.driftFactor,
     radius,
     body,
     visual,

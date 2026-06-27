@@ -75,6 +75,14 @@ export const moduleDefs: ModuleDef[] = [
     heatGeneration: 4,
     thrust: 82,
     maneuverThrust: 18,
+    engineProfile: {
+      thrustVector: { x: 0, y: -1 },
+      reverseThrust: 16,
+      lateralThrust: 18,
+      spoolTime: 0.35,
+      energyDrawPerSecond: 5,
+      heatPerSecond: 4
+    },
     spriteId: "ion_engine",
     tags: ["engine", "light"]
   },
@@ -96,6 +104,14 @@ export const moduleDefs: ModuleDef[] = [
     heatGeneration: 8,
     thrust: 145,
     maneuverThrust: 22,
+    engineProfile: {
+      thrustVector: { x: 0, y: -1 },
+      reverseThrust: 24,
+      lateralThrust: 22,
+      spoolTime: 0.5,
+      energyDrawPerSecond: 9,
+      heatPerSecond: 8
+    },
     spriteId: "plasma_thruster",
     tags: ["engine", "medium"]
   },
@@ -112,6 +128,14 @@ export const moduleDefs: ModuleDef[] = [
     heatGeneration: 3,
     thrust: 25,
     maneuverThrust: 58,
+    engineProfile: {
+      thrustVector: { x: 1, y: 0 },
+      reverseThrust: 10,
+      lateralThrust: 58,
+      spoolTime: 0.18,
+      energyDrawPerSecond: 4,
+      heatPerSecond: 3
+    },
     spriteId: "side_thruster",
     tags: ["engine", "maneuver"]
   },

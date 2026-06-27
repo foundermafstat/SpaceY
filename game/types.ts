@@ -119,6 +119,23 @@ export interface ShieldDef {
   radius: number;
 }
 
+export interface EngineProfile {
+  thrustVector: GridCell;
+  reverseThrust: number;
+  lateralThrust: number;
+  spoolTime: number;
+  energyDrawPerSecond: number;
+  heatPerSecond: number;
+}
+
+export interface EngineVector extends EngineProfile {
+  partId: string;
+  moduleId: string;
+  mount: GridCell;
+  thrust: number;
+  torqueArm: number;
+}
+
 export interface ModuleDef {
   id: string;
   name: string;
@@ -134,6 +151,7 @@ export interface ModuleDef {
   heatDissipation?: number;
   thrust?: number;
   maneuverThrust?: number;
+  engineProfile?: EngineProfile;
   weapon?: WeaponDef;
   shield?: ShieldDef;
   spriteId: string;
@@ -199,6 +217,7 @@ export interface ElementDef {
   heatDissipation?: number;
   thrust?: number;
   maneuverThrust?: number;
+  engineProfile?: EngineProfile;
   weapon?: WeaponDef;
   shield?: ShieldDef;
   spriteId: string;
@@ -275,6 +294,7 @@ export interface ShipStatsV2 extends ShipStats {
   mainThrust: number;
   reverseThrust: number;
   lateralThrust: number;
+  engineVectors: EngineVector[];
   torque: number;
   brakingPower: number;
   driftFactor: number;

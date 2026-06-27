@@ -79,6 +79,7 @@ export function moduleToElementDef(module: ModuleDef): ElementDef {
     heatDissipation: module.heatDissipation,
     thrust: module.thrust,
     maneuverThrust: module.maneuverThrust,
+    engineProfile: module.engineProfile,
     weapon: module.weapon,
     shield: module.shield,
     spriteId: module.spriteId,

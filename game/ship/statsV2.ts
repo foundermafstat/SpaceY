@@ -4,7 +4,7 @@ import {
   getConnectedPanelsFromCabin,
   getNetworkLoad
 } from "@/game/ship/topology";
-import type { DamageType, GridCell, NetworkType, ShipBuild, ShipStatsV2 } from "@/game/types";
+import type { DamageType, EngineVector, GridCell, NetworkType, Rotation, ShipBuild, ShipStatsV2 } from "@/game/types";
 
 const networkTypes: NetworkType[] = ["structure", "power", "heat", "control", "shield"];
 
@@ -49,13 +49,11 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
     return sum + item.mass * (dx * dx + dy * dy);
   }, 0);
 
-  const mainThrust = statModules.reduce((sum, module) => sum + (module.def.thrust ?? 0), 0);
-  const lateralThrust = statModules.reduce((sum, module) => sum + (module.def.maneuverThrust ?? 0), 0);
-  const reverseThrust = lateralThrust * 0.35;
-  const torque = statModules.reduce((sum, module) => {
-    const dx = module.installed.position.x - centerOfMass.x;
-    return sum + Math.abs(dx) * ((module.def.thrust ?? 0) + (module.def.maneuverThrust ?? 0));
-  }, 0);
+  const engineVectors = getEngineVectors(statModules, centerOfMass);
+  const mainThrust = engineVectors.reduce((sum, engine) => sum + engine.thrust, 0);
+  const lateralThrust = engineVectors.reduce((sum, engine) => sum + engine.lateralThrust, 0);
+  const reverseThrust = engineVectors.reduce((sum, engine) => sum + engine.reverseThrust, 0);
+  const torque = engineVectors.reduce((sum, engine) => sum + Math.abs(engine.torqueArm) * engine.thrust, 0);
   const brakingPower = reverseThrust + lateralThrust * 0.25;
   const driftFactor = clamp(1 - lateralThrust / Math.max(1, mainThrust + lateralThrust), 0.05, 1);
   const stability = clamp(1 - torque / Math.max(1, mass * 120), 0, 1);
@@ -109,6 +107,7 @@ export function calculateShipStatsV2(build: ShipBuild): ShipStatsV2 {
     mainThrust,
     reverseThrust,
     lateralThrust,
+    engineVectors,
     torque,
     brakingPower,
     driftFactor,
@@ -153,6 +152,74 @@ function getWeaponDpsByType(modules: Array<{ weapon?: { damageType: DamageType; 
       (result[module.weapon.damageType] ?? 0) + module.weapon.damage * module.weapon.fireRate;
     return result;
   }, {});
+}
+
+function getEngineVectors(
+  modules: Array<{
+    installed: { instanceId: string; moduleId: string; position: GridCell; rotation: Rotation };
+    def: {
+      thrust?: number;
+      maneuverThrust?: number;
+      energyConsumption?: number;
+      heatGeneration?: number;
+      engineProfile?: {
+        thrustVector: GridCell;
+        reverseThrust: number;
+        lateralThrust: number;
+        spoolTime: number;
+        energyDrawPerSecond: number;
+        heatPerSecond: number;
+      };
+      shape: { cells: GridCell[] };
+    };
+  }>,
+  centerOfMass: GridCell
+): EngineVector[] {
+  return modules
+    .filter((module) => (module.def.thrust ?? 0) > 0 || (module.def.maneuverThrust ?? 0) > 0)
+    .map(({ installed, def }) => {
+      const cells = getTransformedCells(def, installed.position, installed.rotation);
+      const mount = averageCells(cells);
+      const profile = def.engineProfile ?? {
+        thrustVector: { x: 0, y: -1 },
+        reverseThrust: (def.maneuverThrust ?? 0) * 0.35,
+        lateralThrust: def.maneuverThrust ?? 0,
+        spoolTime: 0.35,
+        energyDrawPerSecond: def.energyConsumption ?? 0,
+        heatPerSecond: def.heatGeneration ?? 0
+      };
+      const thrustVector = rotateGridVector(profile.thrustVector, installed.rotation);
+      const arm = { x: mount.x - centerOfMass.x, y: mount.y - centerOfMass.y };
+
+      return {
+        partId: `element:${installed.instanceId}`,
+        moduleId: installed.moduleId,
+        mount,
+        thrustVector,
+        thrust: def.thrust ?? 0,
+        reverseThrust: profile.reverseThrust,
+        lateralThrust: profile.lateralThrust,
+        spoolTime: profile.spoolTime,
+        energyDrawPerSecond: profile.energyDrawPerSecond,
+        heatPerSecond: profile.heatPerSecond,
+        torqueArm: arm.x * thrustVector.y - arm.y * thrustVector.x
+      };
+    });
+}
+
+function averageCells(cells: GridCell[]): GridCell {
+  if (cells.length === 0) return { x: 0, y: 0 };
+  return {
+    x: cells.reduce((sum, cell) => sum + cell.x, 0) / cells.length,
+    y: cells.reduce((sum, cell) => sum + cell.y, 0) / cells.length
+  };
+}
+
+function rotateGridVector(vector: GridCell, rotation: Rotation): GridCell {
+  if (rotation === 90) return { x: -vector.y, y: vector.x };
+  if (rotation === 180) return { x: -vector.x, y: -vector.y };
+  if (rotation === 270) return { x: vector.y, y: -vector.x };
+  return vector;
 }
 
 function clamp(value: number, min: number, max: number) {
