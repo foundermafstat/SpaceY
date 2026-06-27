@@ -348,11 +348,14 @@ export interface ShipTopologyGraph {
   edges: ShipTopologyEdge[];
 }
 
+export type RuntimePartDamageState = "ideal" | "lightDamage" | "heavyDamage" | "disabled" | "destroyed" | "detached";
+
 export interface RuntimePartState {
   id: string;
   kind: "cabin" | "panel" | "element";
   hp: number;
   maxHp: number;
+  state: RuntimePartDamageState;
   gridCells: GridCell[];
   disabled: boolean;
   detached: boolean;

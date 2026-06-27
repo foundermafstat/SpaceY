@@ -3,6 +3,7 @@ import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { buildShipTopology } from "@/game/ship/topology";
 import type {
   GridCell,
+  RuntimePartDamageState,
   RuntimePartState,
   ShipBuild,
   ShipStatsV2,
@@ -78,6 +79,7 @@ export function createShipRuntime(
         kind: "cabin",
         hp: stats.structureHp,
         maxHp: stats.structureHp,
+        state: "ideal",
         gridCells: node.cells,
         disabled: false,
         detached: false,
@@ -93,6 +95,7 @@ export function createShipRuntime(
       kind: "panel",
       hp: panel.hp,
       maxHp: panel.hp,
+      state: "ideal",
       gridCells,
       disabled: false,
       detached: false,
@@ -110,6 +113,7 @@ export function createShipRuntime(
       kind: "element",
       hp: module.hp,
       maxHp: module.hp,
+      state: "ideal",
       gridCells,
       disabled: false,
       detached: false,
@@ -168,9 +172,19 @@ export function damageRuntimePart(runtime: ShipRuntime, partId: string, amount: 
       return {
         ...part,
         hp,
+        state: getRuntimePartDamageState(hp, part.maxHp),
         disabled: hp <= 0,
         detached: hp <= 0 && part.kind !== "cabin"
       };
     })
   };
+}
+
+export function getRuntimePartDamageState(hp: number, maxHp: number): RuntimePartDamageState {
+  const ratio = maxHp > 0 ? hp / maxHp : 0;
+  if (ratio <= 0) return "destroyed";
+  if (ratio < 0.25) return "disabled";
+  if (ratio < 0.5) return "heavyDamage";
+  if (ratio < 0.8) return "lightDamage";
+  return "ideal";
 }

@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
 import type { TextStyleFontWeight } from "pixi.js";
 import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
+import { createShipRuntime, type ShipRuntime } from "@/game/ship/runtime";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getWorldMount, clampToScreenEdge, type Vec } from "@/game/battle/math";
 import { applyShipPhysicsInput } from "@/game/battle/shipPhysics";
-import { projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
+import { findHitPart, projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
 import { collectWeapons, rotateTurretToTarget, type WeaponState } from "@/game/battle/weapons";
 import {
   createEnergySystem,
@@ -40,6 +41,7 @@ import {
   getWeaponPowerPriority,
   updateWeaponRuntime
 } from "@/game/battle/systems/WeaponSystem";
+import { applyRuntimeDamage } from "@/game/battle/systems/DamageSystem";
 import {
   battleVfxAtlas,
   getModuleSpriteKey,
@@ -86,6 +88,7 @@ type BattleCanvasProps = {
 type Enemy = {
   kind: "drone" | "raider" | "bomber";
   build: ShipBuild;
+  runtime: ShipRuntime;
   pos: Vec;
   vel: Vec;
   rotation: number;
@@ -330,6 +333,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
       const player = {
         build,
+        runtime: createShipRuntime(build, stats),
         pos: { x: 0, y: 0 },
         vel: { x: 0, y: 0 },
         hp: stats.hp,
@@ -665,9 +669,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             if (hit || enemy.hp <= 0) return;
             if (
               projectile.owner === "player" &&
-              projectileHitsShip(projectile, enemy.build, enemy.pos, enemy.rotation)
+              (findHitPart(projectile, enemy.runtime, { pos: enemy.pos, rotation: enemy.rotation }) ||
+                projectileHitsShip(projectile, enemy.build, enemy.pos, enemy.rotation))
             ) {
-              const damage = damageShip(enemy, projectile.damageType, projectile.damage);
+              const hitPart = findHitPart(projectile, enemy.runtime, { pos: enemy.pos, rotation: enemy.rotation });
+              const damage = damageShip(enemy, projectile.damageType, projectile.damage, hitPart?.partId);
               spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, projectile.color);
               if (damage.shieldHit) {
                 spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
@@ -680,9 +686,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
           if (
             projectile.owner === "enemy" &&
-            projectileHitsShip(projectile, player.build, player.pos, player.rotation)
+            (findHitPart(projectile, player.runtime, { pos: player.pos, rotation: player.rotation }) ||
+              projectileHitsShip(projectile, player.build, player.pos, player.rotation))
           ) {
-            const damage = damageShip(player, projectile.damageType, projectile.damage);
+            const hitPart = findHitPart(projectile, player.runtime, { pos: player.pos, rotation: player.rotation });
+            const damage = damageShip(player, projectile.damageType, projectile.damage, hitPart?.partId);
             spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, 0xff596a);
             if (damage.shieldHit) {
               spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
@@ -811,13 +819,54 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       }
 
       function damageShip(
-        target: { hp: number; shield: ShieldSystemState },
+        target: {
+          hp: number;
+          shield: ShieldSystemState;
+          energy: EnergySystemState;
+          runtime: ShipRuntime;
+          engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
+          weapons?: WeaponState[];
+        },
         damageType: WeaponDef["damageType"],
-        amount: number
+        amount: number,
+        hitPartId?: string | null
       ): ShieldDamageResult {
         const damage = applyShieldDamage(target.shield, damageType, amount);
-        if (damage.hullDamage > 0) target.hp -= damage.hullDamage;
+        if (damage.hullDamage > 0) {
+          const runtimeDamage = applyRuntimeDamage(target.runtime, {
+            damageType,
+            amount: damage.hullDamage,
+            hitPartId
+          });
+          target.runtime = runtimeDamage.runtime;
+          target.hp -= runtimeDamage.hullDamage;
+          if (runtimeDamage.cabinDestroyed) target.hp = 0;
+          syncRuntimeSystems(target, target.weapons ?? weapons);
+        }
         return damage;
+      }
+
+      function syncRuntimeSystems(
+        target: {
+          shield: ShieldSystemState;
+          energy: EnergySystemState;
+          runtime: ShipRuntime;
+          engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
+        },
+        targetWeapons: WeaponState[]
+      ) {
+        const activePartIds = new Set(
+          target.runtime.parts.filter((part) => !part.disabled && !part.detached).map((part) => part.id)
+        );
+        targetWeapons.forEach((weapon) => {
+          if (!activePartIds.has(weapon.partId)) weapon.disabled = true;
+        });
+        const activeEngineIds = new Set(target.runtime.engines.map((engine) => engine.partId));
+        target.engineVectors = target.engineVectors.filter((engine) => activeEngineIds.has(engine.partId));
+        target.energy.generationPerSecond = target.runtime.energy.output;
+        target.shield.capacity = target.runtime.shieldPool;
+        target.shield.current = Math.min(target.shield.current, target.shield.capacity);
+        target.shield.isOnline = target.shield.capacity > 0 && target.shield.current > 0;
       }
 
       function applyProjectileSplash(projectile: Projectile, primaryEnemy?: Enemy) {
@@ -1057,6 +1106,7 @@ function makeEnemy(
 ): Enemy {
   const build = makeEnemyBuild(kind);
   const stats = calculateShipStatsV2(build);
+  const runtime = createShipRuntime(build, stats);
   const radius = kind === "drone" ? 28 : kind === "raider" ? 40 : 48;
   const visual = buildShipGraphic(build, textures);
   const body = visual.container;
@@ -1065,6 +1115,7 @@ function makeEnemy(
   return {
     kind,
     build,
+    runtime,
     pos: { x, y },
     vel: { x: 0, y: 0 },
     rotation: Math.PI / 2,
