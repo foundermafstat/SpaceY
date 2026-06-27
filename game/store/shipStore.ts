@@ -11,6 +11,7 @@ import {
   getPanel,
   getTransformedCells
 } from "@/game/ship/build";
+import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship/migration";
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
 const rotations: Rotation[] = [0, 90, 180, 270];
@@ -58,18 +59,20 @@ export const useShipStore = create<ShipState>()(
         const build = get().build;
         const result = canInstallModule(build, moduleId, position, rotation);
         if (!result.ok) return false;
+        const modules = [
+          ...build.modules,
+          {
+            instanceId: `${moduleId}-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+            moduleId,
+            position,
+            rotation
+          }
+        ];
         set({
           build: {
             ...build,
-            modules: [
-              ...build.modules,
-              {
-                instanceId: `${moduleId}-${Date.now()}-${Math.round(Math.random() * 1000)}`,
-                moduleId,
-                position,
-                rotation
-              }
-            ]
+            modules,
+            elements: modules
           }
         });
         return true;
@@ -85,14 +88,16 @@ export const useShipStore = create<ShipState>()(
         };
         const result = canInstallModule(candidateBuild, moving.moduleId, position, nextRotation);
         if (!result.ok) return false;
+        const modules = build.modules.map((module) =>
+          module.instanceId === instanceId
+            ? { ...module, position, rotation: nextRotation }
+            : module
+        );
         set({
           build: {
             ...build,
-            modules: build.modules.map((module) =>
-              module.instanceId === instanceId
-                ? { ...module, position, rotation: nextRotation }
-                : module
-            )
+            modules,
+            elements: modules
           }
         });
         return true;
@@ -177,10 +182,12 @@ export const useShipStore = create<ShipState>()(
       },
       removeModule: (instanceId) => {
         const build = get().build;
+        const modules = build.modules.filter((module) => module.instanceId !== instanceId);
         set({
           build: {
             ...build,
-            modules: build.modules.filter((module) => module.instanceId !== instanceId)
+            modules,
+            elements: modules
           }
         });
       },
@@ -196,21 +203,15 @@ export const useShipStore = create<ShipState>()(
     }),
     {
       name: "starframe-arena-ship",
-      version: 2,
+      version: CURRENT_SHIP_BUILD_SCHEMA_VERSION,
       migrate: (persisted) => {
         const state = persisted as Partial<ShipState>;
-        if (!state.build || !Array.isArray((state.build as { panels?: unknown }).panels)) {
-          return {
-            ...state,
-            build: defaultBuild,
-            buildMode: "modules",
-            selectedModuleId: "hull_block",
-            selectedPanelId: "node_plate",
-            rotation: 0
-          };
-        }
         return {
           ...state,
+          build: migrateShipBuild(state.build),
+          buildMode: state.buildMode ?? "modules",
+          selectedModuleId: state.selectedModuleId ?? "hull_block",
+          selectedPanelId: state.selectedPanelId ?? "node_plate",
           rotation: rotations.includes(state.rotation as Rotation) ? state.rotation : 0
         };
       }

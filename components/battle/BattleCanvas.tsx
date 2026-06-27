@@ -1046,6 +1046,7 @@ function drawDamageFlash(graphics: Graphics, width: number, height: number, puls
 function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
   if (kind === "drone") {
     return {
+      schemaVersion: 3,
       id: "enemy-drone",
       name: "Drone",
       frameId: "enemy_drone_frame",
@@ -1062,6 +1063,7 @@ function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
 
   if (kind === "raider") {
     return {
+      schemaVersion: 3,
       id: "enemy-raider",
       name: "Raider",
       frameId: "enemy_raider_frame",
@@ -1079,6 +1081,7 @@ function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
   }
 
   return {
+    schemaVersion: 3,
     id: "enemy-bomber",
     name: "Bomber",
     frameId: "enemy_bomber_frame",

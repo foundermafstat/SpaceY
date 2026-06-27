@@ -1036,6 +1036,7 @@ function makeShip(width: number, height: number, rng: () => number, textures: Ho
   const dist = Math.max(1, Math.hypot(dx, dy));
   const tangent = rng() < 0.5 ? -1 : 1;
   const stats = calculateShipStats({
+    schemaVersion: 3,
     id: "home-scene-ship",
     name: "Home Scene Ship",
     frameId: moduleCount <= 5 ? "enemy_drone_frame" : moduleCount >= 8 ? "enemy_bomber_frame" : "enemy_raider_frame",

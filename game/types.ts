@@ -23,6 +23,7 @@ export type Rotation = 0 | 90 | 180 | 270;
 export type BuildMode = "panels" | "modules";
 export type PanelState = "ideal" | "damaged" | "critical" | "debris";
 export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
+export type ShipBuildSchemaVersion = 2 | 3 | 4;
 
 export interface GridCell {
   x: number;
@@ -139,11 +140,14 @@ export interface InstalledPanel {
 }
 
 export interface ShipBuild {
+  schemaVersion: ShipBuildSchemaVersion;
   id: string;
   name: string;
   frameId: string;
+  cabinId?: string;
   panels: InstalledPanel[];
   modules: InstalledModule[];
+  elements?: InstalledModule[];
 }
 
 export interface ShipStats {
