@@ -12,6 +12,7 @@ import {
   canInstallPanel,
   cellKey,
   getBuildableCellKeys,
+  getCabin,
   getCellOccupant,
   getFrame,
   getInstalledPanelConnectors,
@@ -98,6 +99,7 @@ export default function HangarPage() {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [scenePosition, setScenePosition] = useState(initialScenePosition);
   const frame = getFrame(build.frameId);
+  const cabin = build.cabinId ? getCabin(build.cabinId) : null;
   const selectedModule = selectedModuleId ? getModule(selectedModuleId) : null;
   const selectedPanel = selectedPanelId ? getPanel(selectedPanelId) : null;
   const stats = calculateShipStats(build);
@@ -377,7 +379,7 @@ export default function HangarPage() {
           <header className="topbar hangar-topbar">
             <div className="brand">
               <strong>{build.name}</strong>
-              <span>{frame.name}</span>
+              <span>{cabin?.name ?? frame.name}</span>
             </div>
             <div className="hangar-stat-strip">
               <MiniStat label="HP" value={stats.hp.toFixed(0)} />

@@ -1,3 +1,4 @@
+import { getCabinIdForFrame } from "@/game/data/cabins";
 import { defaultBuild } from "@/game/data/defaultBuild";
 import type { InstalledModule, InstalledPanel, ShipBuild, ShipBuildSchemaVersion } from "@/game/types";
 
@@ -28,6 +29,9 @@ export function migrateShipBuild(value: unknown): ShipBuild {
     ...build,
     schemaVersion: CURRENT_SHIP_BUILD_SCHEMA_VERSION,
     frameId: typeof build.frameId === "string" ? build.frameId : defaultBuild.frameId,
+    cabinId: typeof build.cabinId === "string"
+      ? build.cabinId
+      : getCabinIdForFrame(typeof build.frameId === "string" ? build.frameId : defaultBuild.frameId),
     panels: build.panels,
     modules,
     elements

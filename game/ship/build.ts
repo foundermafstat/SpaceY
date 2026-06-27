@@ -1,3 +1,4 @@
+import { cabinDefs } from "@/game/data/cabins";
 import { frameDefs } from "@/game/data/frames";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
@@ -39,6 +40,12 @@ export function getFrame(frameId: string) {
   const frame = frameDefs.find((item) => item.id === frameId);
   if (!frame) throw new Error(`Unknown frame: ${frameId}`);
   return frame;
+}
+
+export function getCabin(cabinId: string) {
+  const cabin = cabinDefs.find((item) => item.id === cabinId);
+  if (!cabin) throw new Error(`Unknown cabin: ${cabinId}`);
+  return cabin;
 }
 
 export function getModule(moduleId: string) {
