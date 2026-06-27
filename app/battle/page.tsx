@@ -39,6 +39,9 @@ export default function BattlePage() {
                 EN {stats.energyBalance >= 0 ? "+" : ""}
                 {stats.energyBalance.toFixed(0)}/s · buffer {Math.max(20, stats.powerStorage + stats.powerOutput * 2).toFixed(0)}
               </span>
+              <span className="small">
+                Heat {Math.max(0, stats.heat).toFixed(0)}/s · cooling {stats.heatDissipation.toFixed(0)}
+              </span>
               <div className="bar">
                 <span style={{ width: `${result === "defeat" ? 0 : 100}%` }} />
               </div>

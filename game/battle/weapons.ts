@@ -4,6 +4,7 @@ import type { ShipBuild, WeaponDef } from "@/game/types";
 import type { Vec } from "@/game/battle/math";
 
 export type WeaponState = {
+  partId: string;
   weapon: WeaponDef;
   cooldown: number;
   mount: Vec;
@@ -25,6 +26,7 @@ export function collectWeapons(build: ShipBuild, turrets: Map<string, Sprite>): 
       { x: 0, y: 0 }
     );
     weapons.push({
+      partId: `element:${installed.instanceId}`,
       weapon: module.weapon,
       cooldown: Math.random() * 0.8,
       mount: {

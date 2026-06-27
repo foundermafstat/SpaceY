@@ -18,6 +18,15 @@ import {
   type EnergySystemState
 } from "@/game/battle/systems/EnergySystem";
 import {
+  addHeat,
+  createHeatSystem,
+  getEngineHeatLoad,
+  getHeatPenalty,
+  isPartOverheated,
+  updateHeatSystem,
+  type HeatSystemState
+} from "@/game/battle/systems/HeatSystem";
+import {
   battleVfxAtlas,
   getModuleSpriteKey,
   hoverAtlas,
@@ -73,6 +82,7 @@ type Enemy = {
   maxSpeed: number;
   turnRate: number;
   energy: EnergySystemState;
+  heat: HeatSystemState;
   mass: number;
   momentOfInertia: number;
   engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
@@ -313,6 +323,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         acceleration: Math.max(35, stats.acceleration * 70),
         turnRate: Math.max(1.8, stats.turnRate),
         energy: createEnergySystem(stats),
+        heat: createHeatSystem(stats),
         mass: stats.mass,
         momentOfInertia: stats.momentOfInertia,
         engineVectors: stats.engineVectors,
@@ -409,14 +420,25 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           { id: "engines", priority: "engines", amountPerSecond: getEngineEnergyLoad(stats, inputPower) },
           { id: "shields", priority: "shields", amountPerSecond: stats.shieldRegen * 0.2 }
         ]);
+        updateHeatSystem(player.heat, stats, dt, [
+          { partId: "engines", heatPerSecond: getEngineHeatLoad(stats, inputPower) }
+        ]);
         const engineEfficiency = getEnergyEfficiency(player.energy, "engines");
+        const heatPenalty = getHeatPenalty(player.heat);
         if (inputPower > 0.05) {
-          applyShipPhysicsInput(player, { inputVector: joystick.value, powerEfficiency: engineEfficiency }, dt);
-          spawnEngineGlows(layers.engineVfx, player.pos, player.rotation, ship.engineMounts, inputPower * engineEfficiency);
+          applyShipPhysicsInput(player, { inputVector: joystick.value, powerEfficiency: engineEfficiency, heatPenalty }, dt);
+          spawnEngineGlows(
+            layers.engineVfx,
+            player.pos,
+            player.rotation,
+            ship.engineMounts,
+            inputPower * engineEfficiency * (1 - heatPenalty)
+          );
         } else {
           applyShipPhysicsInput(player, { inputVector: { x: 0, y: 0 } }, dt);
         }
         audio.setEnginePower(inputPower * engineEfficiency);
+        if (heatPenalty > 0.82) player.hp -= dt * 4;
         applyShipDamageState(ship, textures, getShipDamageState(player.hp, player.maxHp));
 
         ship.container.position.set(player.pos.x, player.pos.y);
@@ -428,10 +450,15 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           weaponState.cooldown -= dt;
           const target = nearestEnemy(player.pos, enemies, weaponState.weapon.range);
           if (!target || weaponState.cooldown > 0) return;
+          if (isPartOverheated(player.heat, weaponState.partId)) {
+            weaponState.cooldown = 0.2;
+            return;
+          }
           if (!trySpendEnergy(player.energy, "weapons", weaponState.weapon.energyPerShot)) {
             weaponState.cooldown = 0.18;
             return;
           }
+          addHeat(player.heat, weaponState.partId, weaponState.weapon.heatPerShot);
           rotateTurretToTarget(weaponState, ship.container.rotation, player.pos, target.pos);
           weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
           const origin = getWorldMount(player.pos, player.rotation, weaponState.mount);
@@ -488,16 +515,28 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             { id: "engines", priority: "engines", amountPerSecond: getEngineEnergyLoad(enemy.stats, inputPower) },
             { id: "shields", priority: "shields", amountPerSecond: enemy.stats.shieldRegen * 0.2 }
           ]);
+          updateHeatSystem(enemy.heat, enemy.stats, dt, [
+            { partId: "engines", heatPerSecond: getEngineHeatLoad(enemy.stats, inputPower) }
+          ]);
           const engineEfficiency = getEnergyEfficiency(enemy.energy, "engines");
+          const heatPenalty = getHeatPenalty(enemy.heat);
           applyShipPhysicsInput(
             enemy,
             {
               inputVector: { x: Math.cos(desired) * inputPower, y: Math.sin(desired) * inputPower },
-              powerEfficiency: engineEfficiency
+              powerEfficiency: engineEfficiency,
+              heatPenalty
             },
             dt
           );
-          spawnEngineGlows(layers.engineVfx, enemy.pos, enemy.rotation, enemy.engineMounts, inputPower * engineEfficiency);
+          spawnEngineGlows(
+            layers.engineVfx,
+            enemy.pos,
+            enemy.rotation,
+            enemy.engineMounts,
+            inputPower * engineEfficiency * (1 - heatPenalty)
+          );
+          if (heatPenalty > 0.82) enemy.hp -= dt * 4;
           enemy.body.position.set(enemy.pos.x, enemy.pos.y);
           enemy.body.rotation = enemy.rotation + Math.PI / 2;
         });
@@ -512,10 +551,15 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             const dy = player.pos.y - enemy.pos.y;
             const dist = Math.hypot(dx, dy);
             if (weaponState.cooldown > 0 || dist > weaponState.weapon.range) return;
+            if (isPartOverheated(enemy.heat, weaponState.partId)) {
+              weaponState.cooldown = 0.24;
+              return;
+            }
             if (!trySpendEnergy(enemy.energy, "weapons", weaponState.weapon.energyPerShot)) {
               weaponState.cooldown = 0.22;
               return;
             }
+            addHeat(enemy.heat, weaponState.partId, weaponState.weapon.heatPerShot);
             rotateTurretToTarget(weaponState, enemy.body.rotation, enemy.pos, player.pos);
             weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
             const origin = getWorldMount(enemy.pos, enemy.rotation, weaponState.mount);
@@ -948,6 +992,7 @@ function makeEnemy(
     maxSpeed: stats.maxSpeed,
     turnRate: Math.max(1.5, stats.turnRate),
     energy: createEnergySystem(stats),
+    heat: createHeatSystem(stats),
     mass: stats.mass,
     momentOfInertia: stats.momentOfInertia,
     engineVectors: stats.engineVectors,
