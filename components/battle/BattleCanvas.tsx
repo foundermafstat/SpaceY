@@ -34,6 +34,13 @@ import {
   type ShieldSystemState
 } from "@/game/battle/systems/ShieldSystem";
 import {
+  beginWeaponFire,
+  canFireWeapon,
+  getDamageWithFalloff,
+  getWeaponPowerPriority,
+  updateWeaponRuntime
+} from "@/game/battle/systems/WeaponSystem";
+import {
   battleVfxAtlas,
   getModuleSpriteKey,
   hoverAtlas,
@@ -110,6 +117,8 @@ type Projectile = {
   damageType: WeaponDef["damageType"];
   damage: number;
   radius: number;
+  aoeRadius?: number;
+  piercing: number;
   life: number;
   body: Sprite;
   color: number;
@@ -457,25 +466,39 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
       function updateWeapons(dt: number) {
         weapons.forEach((weaponState) => {
-          weaponState.cooldown -= dt;
+          updateWeaponRuntime(weaponState, dt);
           const target = nearestEnemy(player.pos, enemies, weaponState.weapon.range);
-          if (!target || weaponState.cooldown > 0) return;
-          if (isPartOverheated(player.heat, weaponState.partId)) {
-            weaponState.cooldown = 0.2;
+          if (!target) return;
+          const targetDistance = Math.hypot(target.pos.x - player.pos.x, target.pos.y - player.pos.y);
+          const priority = getWeaponPowerPriority(weaponState.weapon);
+          const energyEfficiency = getEnergyEfficiency(player.energy, priority);
+          const overheated = isPartOverheated(player.heat, weaponState.partId);
+          if (
+            !canFireWeapon(weaponState, {
+              ownerPos: player.pos,
+              ownerRotation: player.rotation,
+              targetPos: target.pos,
+              targetDistance,
+              energyEfficiency,
+              overheated
+            })
+          ) {
+            if (overheated) weaponState.cooldown = 0.2;
             return;
           }
-          if (!trySpendEnergy(player.energy, "weapons", weaponState.weapon.energyPerShot)) {
+          if (!trySpendEnergy(player.energy, priority, weaponState.weapon.energyPerShot)) {
             weaponState.cooldown = 0.18;
             return;
           }
           addHeat(player.heat, weaponState.partId, weaponState.weapon.heatPerShot);
           rotateTurretToTarget(weaponState, ship.container.rotation, player.pos, target.pos);
-          weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
+          beginWeaponFire(weaponState, energyEfficiency);
           const origin = getWorldMount(player.pos, player.rotation, weaponState.mount);
           audio.play(getWeaponSoundKey(weaponState.weapon.damageType));
+          const damageAmount = getDamageWithFalloff(weaponState.weapon, targetDistance);
 
           if (weaponState.weapon.damageType === "energy") {
-            const damage = damageShip(target, weaponState.weapon.damageType, weaponState.weapon.damage);
+            const damage = damageShip(target, weaponState.weapon.damageType, damageAmount);
             spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, target.pos, damage.shieldHit);
             audio.play("impactEnergy");
             screenShake = 0.08;
@@ -494,10 +517,12 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             (dx / dist) * speed,
             (dy / dist) * speed,
             weaponState.weapon.damageType,
-            weaponState.weapon.damage,
+            damageAmount,
             weaponState.weapon.damageType === "explosive" ? 7 : 4,
             weaponState.weapon.damageType === "plasma" ? 0x8b5cff : 0x49d7ff,
-            weaponState.weapon.damageType === "explosive"
+            weaponState.weapon.damageType === "explosive",
+            weaponState.weapon.aoeRadius,
+            weaponState.weapon.piercing ?? 0
           );
           if (weaponState.weapon.damageType === "kinetic") {
             spawnShellCasing(layers.debris, textures.battleVfx.shellCasing, origin, player.rotation);
@@ -557,27 +582,39 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         enemies.forEach((enemy) => {
           if (enemy.hp <= 0) return;
           enemy.weapons.forEach((weaponState) => {
-            weaponState.cooldown -= dt;
+            updateWeaponRuntime(weaponState, dt);
             const dx = player.pos.x - enemy.pos.x;
             const dy = player.pos.y - enemy.pos.y;
             const dist = Math.hypot(dx, dy);
-            if (weaponState.cooldown > 0 || dist > weaponState.weapon.range) return;
-            if (isPartOverheated(enemy.heat, weaponState.partId)) {
-              weaponState.cooldown = 0.24;
+            const priority = getWeaponPowerPriority(weaponState.weapon);
+            const energyEfficiency = getEnergyEfficiency(enemy.energy, priority);
+            const overheated = isPartOverheated(enemy.heat, weaponState.partId);
+            if (
+              !canFireWeapon(weaponState, {
+                ownerPos: enemy.pos,
+                ownerRotation: enemy.rotation,
+                targetPos: player.pos,
+                targetDistance: dist,
+                energyEfficiency,
+                overheated
+              })
+            ) {
+              if (overheated) weaponState.cooldown = 0.24;
               return;
             }
-            if (!trySpendEnergy(enemy.energy, "weapons", weaponState.weapon.energyPerShot)) {
+            if (!trySpendEnergy(enemy.energy, priority, weaponState.weapon.energyPerShot)) {
               weaponState.cooldown = 0.22;
               return;
             }
             addHeat(enemy.heat, weaponState.partId, weaponState.weapon.heatPerShot);
             rotateTurretToTarget(weaponState, enemy.body.rotation, enemy.pos, player.pos);
-            weaponState.cooldown = Math.max(0.12, 1 / weaponState.weapon.fireRate);
+            beginWeaponFire(weaponState, energyEfficiency);
             const origin = getWorldMount(enemy.pos, enemy.rotation, weaponState.mount);
             audio.play(getWeaponSoundKey(weaponState.weapon.damageType), 0.58);
+            const damageAmount = getDamageWithFalloff(weaponState.weapon, dist);
 
             if (weaponState.weapon.damageType === "energy") {
-              const damage = damageShip(player, weaponState.weapon.damageType, weaponState.weapon.damage);
+              const damage = damageShip(player, weaponState.weapon.damageType, damageAmount);
               spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, player.pos, damage.shieldHit);
               audio.play("impactEnergy", 0.7);
               screenShake = 0.08;
@@ -593,10 +630,12 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
               (dx / dist) * speed,
               (dy / dist) * speed,
               weaponState.weapon.damageType,
-              weaponState.weapon.damage,
+              damageAmount,
               weaponState.weapon.damageType === "explosive" ? 6 : 4,
               0xff596a,
-              weaponState.weapon.damageType === "explosive"
+              weaponState.weapon.damageType === "explosive",
+              weaponState.weapon.aoeRadius,
+              weaponState.weapon.piercing ?? 0
             );
             if (weaponState.weapon.damageType === "kinetic") {
               spawnShellCasing(layers.debris, textures.battleVfx.shellCasing, origin, enemy.rotation);
@@ -633,6 +672,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
               if (damage.shieldHit) {
                 spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
               }
+              applyProjectileSplash(projectile, enemy);
               audio.play(getImpactSoundKey(projectile.damageType));
               hit = true;
             }
@@ -647,6 +687,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             if (damage.shieldHit) {
               spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
             }
+            applyProjectileSplash(projectile);
             audio.play(getImpactSoundKey(projectile.damageType), 0.76);
             screenShake = 0.12;
             hit = true;
@@ -777,6 +818,21 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         const damage = applyShieldDamage(target.shield, damageType, amount);
         if (damage.hullDamage > 0) target.hp -= damage.hullDamage;
         return damage;
+      }
+
+      function applyProjectileSplash(projectile: Projectile, primaryEnemy?: Enemy) {
+        if (!projectile.aoeRadius || projectile.aoeRadius <= 0) return;
+        if (projectile.owner !== "player") return;
+
+        enemies.forEach((enemy) => {
+          if (enemy === primaryEnemy || enemy.hp <= 0) return;
+          const dist = Math.hypot(enemy.pos.x - projectile.pos.x, enemy.pos.y - projectile.pos.y);
+          if (dist > projectile.aoeRadius!) return;
+          const damage = damageShip(enemy, projectile.damageType, projectile.damage * 0.45);
+          if (damage.shieldHit) {
+            spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 52, 0.16);
+          }
+        });
       }
 
       function finish(result: "victory" | "defeat") {
@@ -1184,7 +1240,9 @@ function makeProjectile(
   damage: number,
   radius: number,
   color = 0x49d7ff,
-  smoke = false
+  smoke = false,
+  aoeRadius?: number,
+  piercing = 0
 ): Projectile {
   const body = new Sprite(texture);
   body.anchor.set(0.5);
@@ -1201,6 +1259,8 @@ function makeProjectile(
     damageType,
     damage,
     radius,
+    aoeRadius,
+    piercing,
     life: 2.6,
     body,
     color,

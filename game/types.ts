@@ -95,16 +95,33 @@ export interface ModuleSockets {
 }
 
 export interface WeaponDef {
+  category?: "projectile" | "beam" | "missile" | "thermal" | "emp";
   damageType: DamageType;
   damage: number;
   fireRate: number;
   cooldown: number;
+  burst?: number;
+  reload?: number;
   range: number;
+  minRange?: number;
   projectileSpeed?: number;
   turnSpeed: number;
+  spread?: number;
+  tracking?: number;
+  arc?: number;
   targetingMode: "nearest" | "lowest_hp" | "highest_threat" | "missiles" | "boss_weakpoint";
+  powerPriority?: "lifeSupport" | "engines" | "shields" | "weapons" | "utility";
   energyPerShot: number;
   heatPerShot: number;
+  heatProfile?: {
+    maxHeat: number;
+    cooldownPerSecond: number;
+  };
+  damageFalloff?: {
+    start: number;
+    end: number;
+    minMultiplier: number;
+  };
   aoeRadius?: number;
   piercing?: number;
   knockback?: number;

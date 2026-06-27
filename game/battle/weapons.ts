@@ -1,12 +1,13 @@
 import type { Sprite } from "pixi.js";
+import {
+  createRuntimeWeaponState,
+  type RuntimeWeaponState
+} from "@/game/battle/systems/WeaponSystem";
 import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
 import type { ShipBuild, WeaponDef } from "@/game/types";
 import type { Vec } from "@/game/battle/math";
 
-export type WeaponState = {
-  partId: string;
-  weapon: WeaponDef;
-  cooldown: number;
+export type WeaponState = RuntimeWeaponState & {
   mount: Vec;
   turret?: Sprite;
 };
@@ -25,10 +26,9 @@ export function collectWeapons(build: ShipBuild, turrets: Map<string, Sprite>): 
       (acc, cell) => ({ x: acc.x + cell.x / cells.length, y: acc.y + cell.y / cells.length }),
       { x: 0, y: 0 }
     );
+    const partId = `element:${installed.instanceId}`;
     weapons.push({
-      partId: `element:${installed.instanceId}`,
-      weapon: module.weapon,
-      cooldown: Math.random() * 0.8,
+      ...createRuntimeWeaponState(partId, module.weapon),
       mount: {
         x: (mountCell.x - centerX) * 20,
         y: (mountCell.y - centerY) * 20
