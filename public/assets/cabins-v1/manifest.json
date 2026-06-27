@@ -1,0 +1,103 @@
+{
+  "format": "webp",
+  "quality": 75,
+  "cellSize": 256,
+  "perspective": "top-down orthographic",
+  "sourceMode": "current cabin top-view references plus imagegen damage reference sheet",
+  "sourceReferences": {
+    "currentCabins": "/assets/cabins-v1/source/reference/current-cabins-reference-sheet.png",
+    "imagegenDamageSheet": "/assets/cabins-v1/source/imagegen/cabin-damage-reference-source.png"
+  },
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "deformed",
+    "debris"
+  ],
+  "exactCabinDimensions": true,
+  "cabins": {
+    "cabin_1x1": {
+      "name": "Cabin 1x1",
+      "gridSize": {
+        "width": 1,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/cabins-v1/cabins/ideal/cabin_1x1.webp",
+        "damaged": "/assets/cabins-v1/cabins/damaged/cabin_1x1.webp",
+        "heavyDamage": "/assets/cabins-v1/cabins/heavyDamage/cabin_1x1.webp",
+        "deformed": "/assets/cabins-v1/cabins/deformed/cabin_1x1.webp",
+        "debris": "/assets/cabins-v1/cabins/debris/cabin_1x1.webp"
+      }
+    },
+    "cabin_1x2": {
+      "name": "Cabin 1x2",
+      "gridSize": {
+        "width": 1,
+        "height": 2
+      },
+      "pixelSize": {
+        "width": 256,
+        "height": 512
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "states": {
+        "ideal": "/assets/cabins-v1/cabins/ideal/cabin_1x2.webp",
+        "damaged": "/assets/cabins-v1/cabins/damaged/cabin_1x2.webp",
+        "heavyDamage": "/assets/cabins-v1/cabins/heavyDamage/cabin_1x2.webp",
+        "deformed": "/assets/cabins-v1/cabins/deformed/cabin_1x2.webp",
+        "debris": "/assets/cabins-v1/cabins/debris/cabin_1x2.webp"
+      }
+    },
+    "cabin_2x1": {
+      "name": "Cabin 2x1",
+      "gridSize": {
+        "width": 2,
+        "height": 1
+      },
+      "pixelSize": {
+        "width": 512,
+        "height": 256
+      },
+      "cells": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 1,
+          "y": 0
+        }
+      ],
+      "states": {
+        "ideal": "/assets/cabins-v1/cabins/ideal/cabin_2x1.webp",
+        "damaged": "/assets/cabins-v1/cabins/damaged/cabin_2x1.webp",
+        "heavyDamage": "/assets/cabins-v1/cabins/heavyDamage/cabin_2x1.webp",
+        "deformed": "/assets/cabins-v1/cabins/deformed/cabin_2x1.webp",
+        "debris": "/assets/cabins-v1/cabins/debris/cabin_2x1.webp"
+      }
+    }
+  },
+  "contactSheet": "/assets/cabins-v1/cabin-contact-sheet.png",
+  "validationReport": "/assets/cabins-v1/validation-report.json"
+}

@@ -1,0 +1,230 @@
+{
+  "items": [
+    {
+      "id": "cabin_1x1",
+      "state": "ideal",
+      "path": "/assets/cabins-v1/cabins/ideal/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.8478,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "damaged",
+      "path": "/assets/cabins-v1/cabins/damaged/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.867,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v1/cabins/heavyDamage/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.8554,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "deformed",
+      "path": "/assets/cabins-v1/cabins/deformed/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.8571,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x1",
+      "state": "debris",
+      "path": "/assets/cabins-v1/cabins/debris/cabin_1x1.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 256
+      },
+      "alphaCoverage": 0.6181,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "ideal",
+      "path": "/assets/cabins-v1/cabins/ideal/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6336,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "damaged",
+      "path": "/assets/cabins-v1/cabins/damaged/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.664,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v1/cabins/heavyDamage/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.6817,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "deformed",
+      "path": "/assets/cabins-v1/cabins/deformed/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.8069,
+      "ok": true
+    },
+    {
+      "id": "cabin_1x2",
+      "state": "debris",
+      "path": "/assets/cabins-v1/cabins/debris/cabin_1x2.webp",
+      "expectedSize": {
+        "width": 256,
+        "height": 512
+      },
+      "actualSize": {
+        "width": 256,
+        "height": 512
+      },
+      "alphaCoverage": 0.4455,
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "ideal",
+      "path": "/assets/cabins-v1/cabins/ideal/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.6139,
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "damaged",
+      "path": "/assets/cabins-v1/cabins/damaged/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.7149,
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "heavyDamage",
+      "path": "/assets/cabins-v1/cabins/heavyDamage/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.7001,
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "deformed",
+      "path": "/assets/cabins-v1/cabins/deformed/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.6914,
+      "ok": true
+    },
+    {
+      "id": "cabin_2x1",
+      "state": "debris",
+      "path": "/assets/cabins-v1/cabins/debris/cabin_2x1.webp",
+      "expectedSize": {
+        "width": 512,
+        "height": 256
+      },
+      "actualSize": {
+        "width": 512,
+        "height": 256
+      },
+      "alphaCoverage": 0.2396,
+      "ok": true
+    }
+  ],
+  "ok": true
+}

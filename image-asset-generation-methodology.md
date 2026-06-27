@@ -15,6 +15,7 @@ This file is the source of truth for generated gameplay assets.
 - Modules: `public/assets/modules/module-states-atlas.png`.
 - Weapons: `public/assets/weapons/weapon-states-atlas.png`.
 - Panels V3: `public/assets/panels-v3/panels/{ideal,damaged,heavyDamage,debris}`.
+- Cabins V1: `public/assets/cabins-v1/cabins/{ideal,damaged,heavyDamage,deformed,debris}`.
 - Legacy panel state atlas: `public/assets/panels/panel-states-atlas.png`.
 - Battle VFX: `public/assets/vfx/battle-vfx-atlas.png`.
 - Hover/engine UI VFX: `public/assets/vfx/hover-vfx-atlas.png`.
@@ -27,4 +28,4 @@ Run:
 npm run validate:assets
 ```
 
-The validator checks every atlas path referenced from `game/assets/moduleSprites.ts`, the restored legacy panel states atlas, and the required V3 panel state folders.
+The validator checks every atlas path referenced from `game/assets/moduleSprites.ts`, the restored legacy panel states atlas, the required V3 panel state folders, and the required V1 cabin state folders.
