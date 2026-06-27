@@ -27,6 +27,13 @@ import {
   type HeatSystemState
 } from "@/game/battle/systems/HeatSystem";
 import {
+  applyShieldDamage,
+  createShieldSystem,
+  updateShieldSystem,
+  type ShieldDamageResult,
+  type ShieldSystemState
+} from "@/game/battle/systems/ShieldSystem";
+import {
   battleVfxAtlas,
   getModuleSpriteKey,
   hoverAtlas,
@@ -83,6 +90,7 @@ type Enemy = {
   turnRate: number;
   energy: EnergySystemState;
   heat: HeatSystemState;
+  shield: ShieldSystemState;
   mass: number;
   momentOfInertia: number;
   engineVectors: ReturnType<typeof calculateShipStatsV2>["engineVectors"];
@@ -324,6 +332,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         turnRate: Math.max(1.8, stats.turnRate),
         energy: createEnergySystem(stats),
         heat: createHeatSystem(stats),
+        shield: createShieldSystem(stats),
         mass: stats.mass,
         momentOfInertia: stats.momentOfInertia,
         engineVectors: stats.engineVectors,
@@ -425,6 +434,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         ]);
         const engineEfficiency = getEnergyEfficiency(player.energy, "engines");
         const heatPenalty = getHeatPenalty(player.heat);
+        updateShieldSystem(player.shield, dt, getEnergyEfficiency(player.energy, "shields"));
         if (inputPower > 0.05) {
           applyShipPhysicsInput(player, { inputVector: joystick.value, powerEfficiency: engineEfficiency, heatPenalty }, dt);
           spawnEngineGlows(
@@ -465,8 +475,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           audio.play(getWeaponSoundKey(weaponState.weapon.damageType));
 
           if (weaponState.weapon.damageType === "energy") {
-            target.hp -= weaponState.weapon.damage;
-            spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, target.pos);
+            const damage = damageShip(target, weaponState.weapon.damageType, weaponState.weapon.damage);
+            spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, target.pos, damage.shieldHit);
             audio.play("impactEnergy");
             screenShake = 0.08;
             return;
@@ -520,6 +530,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           ]);
           const engineEfficiency = getEnergyEfficiency(enemy.energy, "engines");
           const heatPenalty = getHeatPenalty(enemy.heat);
+          updateShieldSystem(enemy.shield, dt, getEnergyEfficiency(enemy.energy, "shields"));
           applyShipPhysicsInput(
             enemy,
             {
@@ -566,8 +577,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             audio.play(getWeaponSoundKey(weaponState.weapon.damageType), 0.58);
 
             if (weaponState.weapon.damageType === "energy") {
-              player.hp -= weaponState.weapon.damage;
-              spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, player.pos);
+              const damage = damageShip(player, weaponState.weapon.damageType, weaponState.weapon.damage);
+              spawnBeam(layers.impactVfx, particles, textures.battleVfx, origin, player.pos, damage.shieldHit);
               audio.play("impactEnergy", 0.7);
               screenShake = 0.08;
               return;
@@ -617,8 +628,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
               projectile.owner === "player" &&
               projectileHitsShip(projectile, enemy.build, enemy.pos, enemy.rotation)
             ) {
-              enemy.hp -= projectile.damage;
+              const damage = damageShip(enemy, projectile.damageType, projectile.damage);
               spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, projectile.color);
+              if (damage.shieldHit) {
+                spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
+              }
               audio.play(getImpactSoundKey(projectile.damageType));
               hit = true;
             }
@@ -628,8 +642,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
             projectile.owner === "enemy" &&
             projectileHitsShip(projectile, player.build, player.pos, player.rotation)
           ) {
-            player.hp -= projectile.damage;
+            const damage = damageShip(player, projectile.damageType, projectile.damage);
             spawnImpact(particles, layers.impactVfx, textures.battleVfx, projectile.pos, 0xff596a);
+            if (damage.shieldHit) {
+              spawnVfxSprite(layers.impactVfx, textures.battleVfx.shieldImpact, projectile.pos, 62, 0.18);
+            }
             audio.play(getImpactSoundKey(projectile.damageType), 0.76);
             screenShake = 0.12;
             hit = true;
@@ -750,6 +767,16 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         previousPlayerHp = player.hp;
         damagePulse = Math.max(0, damagePulse - dt * 1.9);
         drawDamageFlash(damageFlash, app.screen.width, app.screen.height, damagePulse);
+      }
+
+      function damageShip(
+        target: { hp: number; shield: ShieldSystemState },
+        damageType: WeaponDef["damageType"],
+        amount: number
+      ): ShieldDamageResult {
+        const damage = applyShieldDamage(target.shield, damageType, amount);
+        if (damage.hullDamage > 0) target.hp -= damage.hullDamage;
+        return damage;
       }
 
       function finish(result: "victory" | "defeat") {
@@ -993,6 +1020,7 @@ function makeEnemy(
     turnRate: Math.max(1.5, stats.turnRate),
     energy: createEnergySystem(stats),
     heat: createHeatSystem(stats),
+    shield: createShieldSystem(stats),
     mass: stats.mass,
     momentOfInertia: stats.momentOfInertia,
     engineVectors: stats.engineVectors,
@@ -1419,7 +1447,8 @@ function spawnBeam(
   particles: Particle[],
   textures: Record<BattleVfxSpriteKey, Texture>,
   from: Vec,
-  to: Vec
+  to: Vec,
+  shieldHit = false
 ) {
   const g = new Graphics()
     .moveTo(from.x, from.y)
@@ -1429,7 +1458,7 @@ function spawnBeam(
     .lineTo(to.x, to.y)
     .stroke({ color: 0xffffff, alpha: 0.8, width: 1 });
   layer.addChild(g);
-  spawnVfxSprite(layer, textures.shieldImpact, to, 62, 0.18);
+  if (shieldHit) spawnVfxSprite(layer, textures.shieldImpact, to, 62, 0.18);
   spawnImpact(particles, layer, textures, to, 0x66e6ff);
   setTimeout(() => g.destroy(), 90);
 }

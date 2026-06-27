@@ -42,6 +42,9 @@ export default function BattlePage() {
               <span className="small">
                 Heat {Math.max(0, stats.heat).toFixed(0)}/s · cooling {stats.heatDissipation.toFixed(0)}
               </span>
+              <span className="small">
+                Shield {stats.shieldCapacity.toFixed(0)} · regen {stats.shieldRegen.toFixed(1)}/s
+              </span>
               <div className="bar">
                 <span style={{ width: `${result === "defeat" ? 0 : 100}%` }} />
               </div>
