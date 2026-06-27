@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
 import type { TextStyleFontWeight } from "pixi.js";
+import { getEnemyDef, type EnemyDef, type EnemyKind } from "@/game/data/enemies";
 import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
 import { createShipRuntime, type ShipRuntime } from "@/game/ship/runtime";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
@@ -86,7 +87,7 @@ type BattleCanvasProps = {
 };
 
 type Enemy = {
-  kind: "drone" | "raider" | "bomber";
+  kind: EnemyKind;
   build: ShipBuild;
   runtime: ShipRuntime;
   pos: Vec;
@@ -354,10 +355,10 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       };
       const joystick = { active: false, origin: { x: 0, y: 0 }, value: { x: 0, y: 0 } };
       const enemies: Enemy[] = [
-        makeEnemy("drone", -210, -260, textures),
-        makeEnemy("drone", 190, -310, textures),
-        makeEnemy("raider", 250, -460, textures),
-        makeEnemy("bomber", -260, -540, textures)
+        makeEnemy(getEnemyDef("drone"), -210, -260, textures),
+        makeEnemy(getEnemyDef("drone"), 190, -310, textures),
+        makeEnemy(getEnemyDef("raider"), 250, -460, textures),
+        makeEnemy(getEnemyDef("bomber"), -260, -540, textures)
       ];
       enemies.forEach((enemy) => layers.ships.addChild(enemy.body));
       const enemyMarkers = enemies.map((enemy) => makeEnemyMarker(enemy));
@@ -1099,21 +1100,21 @@ function getWeaponTurretKey(moduleId: string): WeaponSpriteKey {
 }
 
 function makeEnemy(
-  kind: Enemy["kind"],
+  def: EnemyDef,
   x: number,
   y: number,
   textures: AtlasTextures
 ): Enemy {
-  const build = makeEnemyBuild(kind);
+  const build = def.build;
   const stats = calculateShipStatsV2(build);
   const runtime = createShipRuntime(build, stats);
-  const radius = kind === "drone" ? 28 : kind === "raider" ? 40 : 48;
+  const radius = def.kind === "drone" ? 28 : def.kind === "raider" ? 40 : 48;
   const visual = buildShipGraphic(build, textures);
   const body = visual.container;
   body.alpha = 0.92;
   body.position.set(x, y);
   return {
-    kind,
+    kind: def.kind,
     build,
     runtime,
     pos: { x, y },
@@ -1222,62 +1223,6 @@ function drawDamageFlash(graphics: Graphics, width: number, height: number, puls
   graphics
     .rect(0, 0, width, height)
     .stroke({ color: 0xff596a, alpha: 0.2 + intensity * 0.38, width: 2 + intensity * 4 });
-}
-
-function makeEnemyBuild(kind: Enemy["kind"]): ShipBuild {
-  if (kind === "drone") {
-    return {
-      schemaVersion: 3,
-      id: "enemy-drone",
-      name: "Drone",
-      frameId: "enemy_drone_frame",
-      panels: [],
-      modules: [
-        { instanceId: "d-core", moduleId: "core_mk1", position: { x: 1, y: 1 }, rotation: 0 },
-        { instanceId: "d-reactor", moduleId: "small_reactor", position: { x: 0, y: 1 }, rotation: 0 },
-        { instanceId: "d-engine", moduleId: "ion_engine", position: { x: 1, y: 2 }, rotation: 0 },
-        { instanceId: "d-gun", moduleId: "autocannon", position: { x: 1, y: 0 }, rotation: 0 },
-        { instanceId: "d-hull", moduleId: "hull_block", position: { x: 2, y: 1 }, rotation: 0 }
-      ]
-    };
-  }
-
-  if (kind === "raider") {
-    return {
-      schemaVersion: 3,
-      id: "enemy-raider",
-      name: "Raider",
-      frameId: "enemy_raider_frame",
-      panels: [],
-      modules: [
-        { instanceId: "r-core", moduleId: "core_mk1", position: { x: 1, y: 2 }, rotation: 0 },
-        { instanceId: "r-reactor", moduleId: "small_reactor", position: { x: 2, y: 2 }, rotation: 0 },
-        { instanceId: "r-engine-l", moduleId: "ion_engine", position: { x: 1, y: 4 }, rotation: 0 },
-        { instanceId: "r-engine-r", moduleId: "ion_engine", position: { x: 2, y: 4 }, rotation: 0 },
-        { instanceId: "r-gun", moduleId: "autocannon", position: { x: 1, y: 1 }, rotation: 0 },
-        { instanceId: "r-laser", moduleId: "laser_turret", position: { x: 2, y: 1 }, rotation: 0 },
-        { instanceId: "r-shield", moduleId: "shield_generator", position: { x: 1, y: 3 }, rotation: 0 }
-      ]
-    };
-  }
-
-  return {
-    schemaVersion: 3,
-    id: "enemy-bomber",
-    name: "Bomber",
-    frameId: "enemy_bomber_frame",
-    panels: [],
-    modules: [
-      { instanceId: "b-core", moduleId: "core_mk1", position: { x: 2, y: 2 }, rotation: 0 },
-      { instanceId: "b-reactor", moduleId: "small_reactor", position: { x: 2, y: 3 }, rotation: 0 },
-      { instanceId: "b-engine", moduleId: "plasma_thruster", position: { x: 1, y: 3 }, rotation: 0 },
-      { instanceId: "b-missile-l", moduleId: "missile_pod", position: { x: 1, y: 1 }, rotation: 0 },
-      { instanceId: "b-missile-r", moduleId: "missile_pod", position: { x: 3, y: 1 }, rotation: 0 },
-      { instanceId: "b-armor", moduleId: "light_armor", position: { x: 2, y: 1 }, rotation: 0 },
-      { instanceId: "b-hull-l", moduleId: "hull_block", position: { x: 1, y: 2 }, rotation: 0 },
-      { instanceId: "b-hull-r", moduleId: "hull_block", position: { x: 3, y: 2 }, rotation: 0 }
-    ]
-  };
 }
 
 function makeProjectile(
