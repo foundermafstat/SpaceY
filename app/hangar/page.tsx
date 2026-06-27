@@ -6,7 +6,12 @@ import { createDraggable, type Draggable } from "animejs";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
 import { useShipStore } from "@/game/store/shipStore";
-import { calculateShipStats } from "@/game/ship/stats";
+import { calculateShipStatsV2 } from "@/game/ship/statsV2";
+import {
+  buildShipTopology,
+  getConnectedPanelsFromCabin,
+  getElementNetworkAccess
+} from "@/game/ship/topology";
 import {
   cellKey,
   getBuildableCellKeys,
@@ -20,14 +25,22 @@ import {
   getTransformedCells,
   rotateCell
 } from "@/game/ship/build";
-import { validateElementPlacement, validatePanelPlacement } from "@/game/ship/validation";
+import {
+  getBuildBlockers,
+  getBuildHints,
+  getBuildWarnings,
+  validateElementPlacement,
+  validatePanelPlacement
+} from "@/game/ship/validation";
 import {
   getAiModuleSpriteStyle,
   getHoverSpriteStyle,
   getPanelCellSpriteStyle,
   getPanelSpriteStyle
 } from "@/game/assets/moduleSprites";
-import type { GridCell, InstalledPanel, ModuleType, PanelConnectorSide, PanelDef } from "@/game/types";
+import type { GridCell, InstalledModule, InstalledPanel, ModuleType, PanelConnectorSide, PanelDef } from "@/game/types";
+
+type OverlayMode = "structure" | "power" | "heat" | "weapons" | "engines" | "mass";
 
 const labels: Record<ModuleType, string> = {
   core: "Core",
@@ -42,6 +55,14 @@ const labels: Record<ModuleType, string> = {
 };
 
 const zoomSteps = [1, 1.15, 1.3, 1.5, 1.75];
+const overlayModes: Array<{ id: OverlayMode; label: string }> = [
+  { id: "structure", label: "Structure" },
+  { id: "power", label: "Power" },
+  { id: "heat", label: "Heat" },
+  { id: "weapons", label: "Weapons" },
+  { id: "engines", label: "Engines" },
+  { id: "mass", label: "Mass" }
+];
 const fallbackGridPitch = 41;
 const initialScenePosition = { x: 0, y: 0 };
 const installSounds = {
@@ -97,13 +118,24 @@ export default function HangarPage() {
   } | null>(null);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [scenePosition, setScenePosition] = useState(initialScenePosition);
+  const [overlayMode, setOverlayMode] = useState<OverlayMode>("structure");
   const frame = getFrame(build.frameId);
   const cabin = build.cabinId ? getCabin(build.cabinId) : null;
   const selectedModule = selectedModuleId ? getModule(selectedModuleId) : null;
   const selectedPanel = selectedPanelId ? getPanel(selectedPanelId) : null;
-  const stats = calculateShipStats(build);
+  const stats = calculateShipStatsV2(build);
+  const blockers = getBuildBlockers(build);
+  const warnings = getBuildWarnings(build);
+  const hints = getBuildHints(build);
+  const topology = buildShipTopology(build);
+  const connectedPanels = new Set(getConnectedPanelsFromCabin(topology));
+  const centerOfMassCell = {
+    x: Math.round(stats.centerOfMass.x),
+    y: Math.round(stats.centerOfMass.y)
+  };
   const panelCellKeys = getBuildableCellKeys(build);
   const zoom = zoomSteps[zoomIndex];
+  const canTestBattle = blockers.length === 0;
 
   function playInstallSound(kind: keyof typeof installSounds) {
     const soundList = installSounds[kind];
@@ -209,6 +241,30 @@ export default function HangarPage() {
     const covers = cells.some((covered) => covered.x === cell.x && covered.y === cell.y);
     if (!covers) return "";
     return validateElementPlacement(build, selectedModule.id, cell, rotation).ok ? "valid" : "invalid";
+  }
+
+  function overlayClass(
+    cell: GridCell,
+    module: ReturnType<typeof getModule> | null,
+    panelOccupant: InstalledPanel | null,
+    occupant: InstalledModule | null
+  ) {
+    if (overlayMode === "structure") {
+      if (!panelOccupant) return "";
+      return connectedPanels.has(`panel:${panelOccupant.instanceId}`) ? "overlay-structure" : "overlay-disconnected";
+    }
+    if (overlayMode === "power" && module) {
+      const hasPower = occupant ? getElementNetworkAccess(topology, occupant.instanceId).includes("power") : false;
+      return hasPower ? "overlay-power" : "overlay-disconnected";
+    }
+    if (overlayMode === "heat" && module) {
+      if ((module.heatGeneration ?? 0) > 0) return "overlay-heat";
+      if ((module.heatDissipation ?? 0) > 0) return "overlay-cooling";
+    }
+    if (overlayMode === "weapons" && module?.type === "weapon") return "overlay-weapon";
+    if (overlayMode === "engines" && module?.type === "engine") return "overlay-engine";
+    if (overlayMode === "mass" && cell.x === centerOfMassCell.x && cell.y === centerOfMassCell.y) return "overlay-mass-center";
+    return "";
   }
 
   function handleCell(cell: GridCell) {
@@ -386,12 +442,35 @@ export default function HangarPage() {
               <MiniStat label="SPD" value={stats.maxSpeed.toFixed(0)} />
               <MiniStat label="DPS" value={stats.dps.toFixed(1)} />
             </div>
-            <Link className="button primary" href="/battle">
-              Test Battle
-            </Link>
+            {canTestBattle ? (
+              <Link className="button primary" href="/battle">
+                Test Battle
+              </Link>
+            ) : (
+              <span className="button primary disabled" aria-disabled="true">
+                Blocked
+              </span>
+            )}
           </header>
 
+          <section className="build-status-panel" aria-label="Build status">
+            <StatusColumn title="Blockers" items={blockers.map((item) => item.message)} empty="Ready" tone="danger" />
+            <StatusColumn title="Warnings" items={warnings.map((item) => item.message)} empty="Clear" tone="warn" />
+            <StatusColumn title="Hints" items={hints.map((item) => item.message)} empty="None" tone="hint" />
+          </section>
+
           <section className="hangar-stage" ref={stageRef} aria-label="Assembly Grid">
+            <div className="overlay-tabs" role="tablist" aria-label="Grid overlay">
+              {overlayModes.map((mode) => (
+                <button
+                  key={mode.id}
+                  className={overlayMode === mode.id ? "selected" : ""}
+                  onClick={() => setOverlayMode(mode.id)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
             <div
               className="hangar-world"
               ref={worldRef}
@@ -450,6 +529,7 @@ export default function HangarPage() {
                             active ? "" : "inactive",
                             panel ? `has-panel panel-${panelOccupant?.state}` : "",
                             module ? `occupied ${module.type}` : "",
+                            overlayClass(cell, module, panelOccupant, occupant),
                             previewClass(cell)
                           ].join(" ")}
                           data-grid-cell={`${x}:${y}`}
@@ -553,6 +633,9 @@ export default function HangarPage() {
                         <span>
                           {panel.shape.cells.length} cell · {panel.connectors.length} locks
                         </span>
+                        <span>
+                          {panel.role} · HP {panel.hp} · mass {panel.mass}
+                        </span>
                       </button>
                     ))
                   : moduleDefs.map((module) => (
@@ -567,6 +650,10 @@ export default function HangarPage() {
                         <strong>{module.name}</strong>
                         <span>
                           {labels[module.type]} · {module.shape.cells.length} cell · mass {module.mass}
+                        </span>
+                        <span>
+                          HP {module.hp} · EN {(module.energyProduction ?? 0) - (module.energyConsumption ?? 0)} · heat{" "}
+                          {(module.heatGeneration ?? 0) - (module.heatDissipation ?? 0)}
                         </span>
                       </button>
                     ))}
@@ -600,6 +687,25 @@ function getPanelLocalCell(panel: PanelDef, installed: InstalledPanel, cell: Gri
 function shortConnectorLabel(id: string, side: PanelConnectorSide) {
   if (side === "top" || side === "bottom") return id.replace("V", "V");
   return id.replace("H", "H");
+}
+
+function StatusColumn({
+  title,
+  items,
+  empty,
+  tone
+}: {
+  title: string;
+  items: string[];
+  empty: string;
+  tone: "danger" | "warn" | "hint";
+}) {
+  return (
+    <div className={`status-column ${tone}`}>
+      <strong>{title}</strong>
+      <span>{items[0] ?? empty}</span>
+    </div>
+  );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
