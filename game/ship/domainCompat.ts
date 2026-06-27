@@ -33,6 +33,10 @@ const moduleElementRoles: Record<ModuleDef["type"], ElementRole> = {
   utility: "utility"
 };
 
+export function moduleToElementRole(module: ModuleDef): ElementRole {
+  return moduleElementRoles[module.type];
+}
+
 export function frameToCabinDef(frame: FrameDef): CabinDef {
   return {
     id: frame.id.replace("_frame", "_cabin"),
@@ -55,7 +59,7 @@ export function moduleToElementDef(module: ModuleDef): ElementDef {
   return {
     id: module.id,
     name: module.name,
-    role: moduleElementRoles[module.type],
+    role: moduleToElementRole(module),
     rarity: module.rarity,
     shape: module.shape,
     sockets: module.sockets,

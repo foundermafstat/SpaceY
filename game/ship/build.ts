@@ -2,6 +2,7 @@ import { cabinDefs } from "@/game/data/cabins";
 import { frameDefs } from "@/game/data/frames";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
+import { moduleToElementRole } from "@/game/ship/domainCompat";
 import type {
   GridCell,
   InstalledPanel,
@@ -9,6 +10,7 @@ import type {
   PanelConnector,
   PanelConnectorSide,
   PanelDef,
+  MountSlot,
   Rotation,
   ShipBuild
 } from "@/game/types";
@@ -127,6 +129,20 @@ export function getTransformedPanelConnectors(
   });
 }
 
+export function getTransformedPanelMountSlots(
+  panel: PanelDef,
+  position: GridCell,
+  rotation: Rotation
+): MountSlot[] {
+  return panel.mountSlots.map((slot) => {
+    const cell = rotateCell(slot.cell, rotation);
+    return {
+      ...slot,
+      cell: { x: position.x + cell.x, y: position.y + cell.y }
+    };
+  });
+}
+
 export function canInstallModule(
   build: ShipBuild,
   moduleId: string,
@@ -137,6 +153,7 @@ export function canInstallModule(
   const module = getModule(moduleId);
   const panelCells = getBuildableCellKeys(build);
   const targetCells = getTransformedCells(module, position, rotation);
+  const elementRole = moduleToElementRole(module);
 
   if (build.modules.length >= frame.maxModules) {
     return { ok: false, reason: "Module limit reached" };
@@ -159,6 +176,17 @@ export function canInstallModule(
   for (const cell of targetCells) {
     if (!panelCells.has(cellKey(cell))) {
       return { ok: false, reason: "No panel support" };
+    }
+    const installedPanel = getPanelCellOccupant(build, cell);
+    if (!installedPanel) {
+      return { ok: false, reason: "No panel support" };
+    }
+    const panel = getPanel(installedPanel.panelId);
+    if (!panel.allowedElementRoles.includes(elementRole)) {
+      return { ok: false, reason: "Panel mount incompatible" };
+    }
+    if (module.type === "reactor" && !panel.networks.includes("power")) {
+      return { ok: false, reason: "Power network required" };
     }
     if (getCellOccupant(build, cell)) {
       return { ok: false, reason: "Cell occupied" };

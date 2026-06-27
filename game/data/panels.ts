@@ -1,4 +1,14 @@
-import type { GridCell, PanelConnector, PanelConnectorSide, PanelDef } from "@/game/types";
+import type {
+  ElementRole,
+  GridCell,
+  MountSlot,
+  NetworkType,
+  PanelConnector,
+  PanelConnectorSide,
+  PanelDef,
+  PanelRole,
+  SocketType
+} from "@/game/types";
 
 const sides: PanelConnectorSide[] = ["top", "right", "bottom", "left"];
 const deltas: Record<PanelConnectorSide, GridCell> = {
@@ -9,6 +19,18 @@ const deltas: Record<PanelConnectorSide, GridCell> = {
 };
 const verticalIds = ["V1", "V2", "V3", "V4", "V5"];
 const horizontalIds = ["H1", "H2", "H3", "H4", "H5"];
+const allElementRoles: ElementRole[] = [
+  "structure",
+  "armor",
+  "engine",
+  "weapon",
+  "reactor",
+  "battery",
+  "shield",
+  "utility"
+];
+const hullElementRoles: ElementRole[] = ["structure", "armor", "utility"];
+const poweredElementRoles: ElementRole[] = ["structure", "armor", "reactor", "battery", "shield", "utility"];
 const panelSpriteIds: Record<string, string> = {
   node_plate: "single_1",
   rail_2: "bar_2h",
@@ -59,6 +81,36 @@ function connectors(shape: GridCell[], seed: number): PanelConnector[] {
   );
 }
 
+function panelMetadata(id: string, shape: GridCell[]) {
+  const isStarterMount = id === "node_plate";
+  const isSpine = id.startsWith("spine");
+  const role: PanelRole = isStarterMount ? "utility_mount" : isSpine ? "spine" : "hull";
+  const networks: NetworkType[] = isStarterMount || isSpine
+    ? ["structure", "power", "heat", "control"]
+    : ["structure"];
+  const socket: SocketType = isStarterMount ? "utility" : isSpine ? "power" : "hard";
+  const allowedElementRoles = isStarterMount || isSpine
+    ? allElementRoles
+    : id === "cross_5"
+      ? poweredElementRoles
+      : hullElementRoles;
+
+  return {
+    role,
+    networks,
+    external: true,
+    armorClass: role === "hull" ? 1 : 0,
+    detachResistance: 1 + shape.length * 0.12,
+    allowedElementRoles,
+    mountSlots: shape.map((cell): MountSlot => ({
+      id: `${id}-${cell.x}-${cell.y}`,
+      cell,
+      socket,
+      networkTypes: networks
+    }))
+  };
+}
+
 function panel(
   id: string,
   name: string,
@@ -67,11 +119,13 @@ function panel(
   tags: string[] = []
 ): PanelDef {
   const shape = cells(points);
+  const metadata = panelMetadata(id, shape);
   return {
     id,
     name,
     shape: { cells: shape },
     connectors: connectors(shape, spriteIndex),
+    ...metadata,
     mass: Math.max(3, shape.length * 3),
     hp: shape.length * 24,
     spriteId: panelSpriteIds[id] ?? "single_1",

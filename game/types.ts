@@ -24,7 +24,17 @@ export type BuildMode = "panels" | "modules";
 export type PanelState = "ideal" | "damaged" | "critical" | "debris";
 export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
 export type ShipBuildSchemaVersion = 2 | 3 | 4;
-export type PanelRole = "structure" | "armor" | "mount" | "conduit" | "utility";
+export type PanelRole =
+  | "hull"
+  | "armor"
+  | "weapon_mount"
+  | "engine_mount"
+  | "utility_mount"
+  | "cargo_floor"
+  | "heat_sink"
+  | "power_bus"
+  | "adapter"
+  | "spine";
 export type ElementRole =
   | "cabin"
   | "structure"
@@ -58,7 +68,13 @@ export interface PanelDef {
   name: string;
   shape: ModuleShape;
   connectors: PanelConnector[];
-  role?: PanelRole;
+  role: PanelRole;
+  mountSlots: MountSlot[];
+  networks: NetworkType[];
+  external: boolean;
+  armorClass: number;
+  detachResistance: number;
+  allowedElementRoles: ElementRole[];
   mass: number;
   hp: number;
   spriteId: string;
