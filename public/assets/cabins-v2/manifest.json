@@ -1,9 +1,9 @@
 {
   "format": "webp",
-  "quality": 75,
+  "quality": 92,
   "cellSize": 256,
   "perspective": "strict top-down orthographic",
-  "sourceMode": "direct imagegen source sheets; chroma-key removed and normalized with Node sharp; exact +/- cell masks applied",
+  "sourceMode": "direct imagegen source sheets; split into 2x2 state quadrants, chroma-key removed with Pillow, cropped, pattern-masked, and normalized to exact grid sizes with 3px margin",
   "states": [
     "ideal",
     "damaged",

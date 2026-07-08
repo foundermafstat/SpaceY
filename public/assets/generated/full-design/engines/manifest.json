@@ -1,0 +1,422 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "sourceGrid": [
+    2,
+    2
+  ],
+  "perspective": "top-down orthographic with side-visible nozzle hardware",
+  "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
+  "methodology": "image-asset-generation-methodology.md",
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "atlas": {
+    "src": "/assets/generated/full-design/engines/engines-atlas.png",
+    "columns": 12,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "assets": {
+    "engine_ion_light_1x1": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_ion_light_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_ion_light_1x1-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_ion_light_1x1.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_ion_light_1x1.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_ion_light_1x1.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_ion_light_1x1.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 0,
+          "row": 0
+        },
+        "damaged": {
+          "col": 0,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 0,
+          "row": 2
+        },
+        "debris": {
+          "col": 0,
+          "row": 3
+        }
+      }
+    },
+    "engine_ion_light_1x2": {
+      "role": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_ion_light_1x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_ion_light_1x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_ion_light_1x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_ion_light_1x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_ion_light_1x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_ion_light_1x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 1,
+          "row": 0
+        },
+        "damaged": {
+          "col": 1,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 1,
+          "row": 2
+        },
+        "debris": {
+          "col": 1,
+          "row": 3
+        }
+      }
+    },
+    "engine_plasma_medium_1x2": {
+      "role": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_plasma_medium_1x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_plasma_medium_1x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_plasma_medium_1x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_plasma_medium_1x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_plasma_medium_1x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_plasma_medium_1x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 2,
+          "row": 0
+        },
+        "damaged": {
+          "col": 2,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 2,
+          "row": 2
+        },
+        "debris": {
+          "col": 2,
+          "row": 3
+        }
+      }
+    },
+    "engine_plasma_medium_2x1": {
+      "role": "engine",
+      "grid": [
+        2,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_plasma_medium_2x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_plasma_medium_2x1-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_plasma_medium_2x1.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_plasma_medium_2x1.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_plasma_medium_2x1.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_plasma_medium_2x1.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 3,
+          "row": 0
+        },
+        "damaged": {
+          "col": 3,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 3,
+          "row": 2
+        },
+        "debris": {
+          "col": 3,
+          "row": 3
+        }
+      }
+    },
+    "engine_fusion_heavy_2x2": {
+      "role": "engine",
+      "grid": [
+        2,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_fusion_heavy_2x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_fusion_heavy_2x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_fusion_heavy_2x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_fusion_heavy_2x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_fusion_heavy_2x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_fusion_heavy_2x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 4,
+          "row": 0
+        },
+        "damaged": {
+          "col": 4,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 4,
+          "row": 2
+        },
+        "debris": {
+          "col": 4,
+          "row": 3
+        }
+      }
+    },
+    "engine_fusion_heavy_3x2": {
+      "role": "engine",
+      "grid": [
+        3,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_fusion_heavy_3x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_fusion_heavy_3x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_fusion_heavy_3x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_fusion_heavy_3x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_fusion_heavy_3x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_fusion_heavy_3x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 5,
+          "row": 0
+        },
+        "damaged": {
+          "col": 5,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 5,
+          "row": 2
+        },
+        "debris": {
+          "col": 5,
+          "row": 3
+        }
+      }
+    },
+    "engine_side_thruster_left_1x1": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_side_thruster_left_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_side_thruster_left_1x1-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_side_thruster_left_1x1.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_side_thruster_left_1x1.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_side_thruster_left_1x1.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_side_thruster_left_1x1.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 6,
+          "row": 0
+        },
+        "damaged": {
+          "col": 6,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 6,
+          "row": 2
+        },
+        "debris": {
+          "col": 6,
+          "row": 3
+        }
+      }
+    },
+    "engine_side_thruster_right_1x1": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_side_thruster_right_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_side_thruster_right_1x1-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_side_thruster_right_1x1.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_side_thruster_right_1x1.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_side_thruster_right_1x1.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_side_thruster_right_1x1.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 7,
+          "row": 0
+        },
+        "damaged": {
+          "col": 7,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 7,
+          "row": 2
+        },
+        "debris": {
+          "col": 7,
+          "row": 3
+        }
+      }
+    },
+    "engine_reverse_thruster_1x1": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_reverse_thruster_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_reverse_thruster_1x1-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_reverse_thruster_1x1.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_reverse_thruster_1x1.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_reverse_thruster_1x1.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_reverse_thruster_1x1.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 8,
+          "row": 0
+        },
+        "damaged": {
+          "col": 8,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 8,
+          "row": 2
+        },
+        "debris": {
+          "col": 8,
+          "row": 3
+        }
+      }
+    },
+    "engine_dark_matter_2x2": {
+      "role": "engine",
+      "grid": [
+        2,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_dark_matter_2x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_dark_matter_2x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_dark_matter_2x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_dark_matter_2x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_dark_matter_2x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_dark_matter_2x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 9,
+          "row": 0
+        },
+        "damaged": {
+          "col": 9,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 9,
+          "row": 2
+        },
+        "debris": {
+          "col": 9,
+          "row": 3
+        }
+      }
+    },
+    "engine_alien_1x2": {
+      "role": "engine",
+      "grid": [
+        1,
+        2
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_alien_1x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_alien_1x2-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_alien_1x2.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_alien_1x2.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_alien_1x2.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_alien_1x2.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 10,
+          "row": 0
+        },
+        "damaged": {
+          "col": 10,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 10,
+          "row": 2
+        },
+        "debris": {
+          "col": 10,
+          "row": 3
+        }
+      }
+    },
+    "engine_damaged_variant": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/engines/source/engine_damaged_variant-source.png",
+      "alphaSheet": "/assets/generated/full-design/engines/sheets-alpha/engine_damaged_variant-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/engines/states/ideal/engine_damaged_variant.png",
+        "damaged": "/assets/generated/full-design/engines/states/damaged/engine_damaged_variant.png",
+        "heavyDamage": "/assets/generated/full-design/engines/states/heavyDamage/engine_damaged_variant.png",
+        "debris": "/assets/generated/full-design/engines/states/debris/engine_damaged_variant.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 11,
+          "row": 0
+        },
+        "damaged": {
+          "col": 11,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 11,
+          "row": 2
+        },
+        "debris": {
+          "col": 11,
+          "row": 3
+        }
+      }
+    }
+  }
+}

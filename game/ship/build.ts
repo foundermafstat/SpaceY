@@ -10,7 +10,6 @@ import type {
   ElementDef,
   InstalledPanel,
   ModuleDef,
-  PanelConnector,
   PanelConnectorSide,
   PanelDef,
   MountSlot,
@@ -25,20 +24,6 @@ const sideDeltas: Record<PanelConnectorSide, GridCell> = {
   right: { x: 1, y: 0 },
   bottom: { x: 0, y: 1 },
   left: { x: -1, y: 0 }
-};
-
-const oppositeSide: Record<PanelConnectorSide, PanelConnectorSide> = {
-  top: "bottom",
-  right: "left",
-  bottom: "top",
-  left: "right"
-};
-
-const rotatedSide: Record<Rotation, Record<PanelConnectorSide, PanelConnectorSide>> = {
-  0: { top: "top", right: "right", bottom: "bottom", left: "left" },
-  90: { top: "right", right: "bottom", bottom: "left", left: "top" },
-  180: { top: "bottom", right: "left", bottom: "top", left: "right" },
-  270: { top: "left", right: "top", bottom: "right", left: "bottom" }
 };
 
 export function getFrame(frameId: string) {
@@ -159,26 +144,6 @@ export function getBuildableCellKeys(build: ShipBuild) {
   return keys;
 }
 
-export function getInstalledPanelConnectors(installed: InstalledPanel) {
-  const panel = getPanel(installed.panelId);
-  return getTransformedPanelConnectors(panel, installed.position, installed.rotation);
-}
-
-export function getTransformedPanelConnectors(
-  panel: PanelDef,
-  position: GridCell,
-  rotation: Rotation
-): PanelConnector[] {
-  return panel.connectors.map((connector) => {
-    const cell = rotateCell(connector.cell, rotation);
-    return {
-      ...connector,
-      cell: { x: position.x + cell.x, y: position.y + cell.y },
-      side: rotatedSide[rotation][connector.side]
-    };
-  });
-}
-
 export function getTransformedPanelMountSlots(
   panel: PanelDef,
   position: GridCell,
@@ -281,42 +246,26 @@ export function canInstallPanel(
   }
 
   const existingCells = new Set<string>();
-  const existingConnectorIds = new Map<string, string[]>();
   for (const installed of panels) {
     const installedPanel = getPanel(installed.panelId);
     getTransformedCells(installedPanel, installed.position, installed.rotation).forEach((cell) => {
       existingCells.add(cellKey(cell));
     });
-    getInstalledPanelConnectors(installed).forEach((connector) => {
-      addMapValue(existingConnectorIds, edgeKey(connector.cell, connector.side), connector.id);
-    });
   }
 
-  const newConnectorIds = new Map<string, string[]>();
-  getTransformedPanelConnectors(panel, position, rotation).forEach((connector) => {
-    addMapValue(newConnectorIds, edgeKey(connector.cell, connector.side), connector.id);
-  });
-
-  let matchedEdges = 0;
+  let touchingEdges = 0;
   for (const cell of targetCells) {
     for (const side of Object.keys(sideDeltas) as PanelConnectorSide[]) {
       const delta = sideDeltas[side];
       const neighbor = { x: cell.x + delta.x, y: cell.y + delta.y };
       if (!existingCells.has(cellKey(neighbor))) continue;
-
-      const newIds = newConnectorIds.get(edgeKey(cell, side)) ?? [];
-      const existingIds =
-        existingConnectorIds.get(edgeKey(neighbor, oppositeSide[side])) ?? [];
-      if (!newIds.some((id) => existingIds.includes(id))) {
-        return { ok: false, reason: "Connector mismatch" };
-      }
-      matchedEdges += 1;
+      touchingEdges += 1;
     }
   }
 
-  return matchedEdges > 0 || touchesCabin
+  return touchingEdges > 0 || touchesCabin
     ? { ok: true, reason: null }
-    : { ok: false, reason: "Matching connector required" };
+    : { ok: false, reason: "Panel must touch ship structure" };
 }
 
 export function canPlaceCabin(
@@ -353,16 +302,6 @@ export function canPlaceCabin(
 
 export function cellKey(cell: GridCell) {
   return `${cell.x}:${cell.y}`;
-}
-
-function edgeKey(cell: GridCell, side: PanelConnectorSide) {
-  return `${cell.x}:${cell.y}:${side}`;
-}
-
-function addMapValue(map: Map<string, string[]>, key: string, value: string) {
-  const values = map.get(key) ?? [];
-  values.push(value);
-  map.set(key, values);
 }
 
 function touchesAnyCell(cells: GridCell[], targetCells: GridCell[]) {

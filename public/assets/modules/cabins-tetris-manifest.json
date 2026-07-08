@@ -1,0 +1,226 @@
+{
+  "format": "webp",
+  "quality": 82,
+  "cellSize": 256,
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "methodology": "individual imagegen command-cabin source sheets; tetris mask only enforces final silhouette and dimensions",
+  "sourceDir": "/assets/modules/source/cabins-tetris",
+  "alphaSourceDir": "/assets/modules/source/cabins-tetris-alpha",
+  "cabins": {
+    "cabin_1x1": {
+      "name": "Cabin 1x1",
+      "gridSize": {
+        "width": 1,
+        "height": 1
+      },
+      "pattern": [
+        "+"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_1x1-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_1x1-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_1x1.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_1x1.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_1x1.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_1x1.webp"
+      }
+    },
+    "cabin_1x2": {
+      "name": "Cabin 1x2",
+      "gridSize": {
+        "width": 1,
+        "height": 2
+      },
+      "pattern": [
+        "+",
+        "+"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_1x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_1x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_1x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_1x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_1x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_1x2.webp"
+      }
+    },
+    "cabin_2x1": {
+      "name": "Cabin 2x1",
+      "gridSize": {
+        "width": 2,
+        "height": 1
+      },
+      "pattern": [
+        "++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_2x1-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_2x1-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_2x1.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_2x1.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_2x1.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_2x1.webp"
+      }
+    },
+    "cabin_3x1": {
+      "name": "Cabin 3x1",
+      "gridSize": {
+        "width": 3,
+        "height": 1
+      },
+      "pattern": [
+        "+++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_3x1-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_3x1-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_3x1.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_3x1.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_3x1.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_3x1.webp"
+      }
+    },
+    "cabin_2x2": {
+      "name": "Cabin 2x2",
+      "gridSize": {
+        "width": 2,
+        "height": 2
+      },
+      "pattern": [
+        "++",
+        "++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_2x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_2x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_2x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_2x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_2x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_2x2.webp"
+      }
+    },
+    "cabin_t_3x2": {
+      "name": "Cabin T 3x2",
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pattern": [
+        "-+-",
+        "+++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_t_3x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_t_3x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_t_3x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_t_3x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_t_3x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_t_3x2.webp"
+      }
+    },
+    "cabin_cross_3x3": {
+      "name": "Cabin Cross 3x3",
+      "gridSize": {
+        "width": 3,
+        "height": 3
+      },
+      "pattern": [
+        "-+-",
+        "+++",
+        "-+-"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_cross_3x3-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_cross_3x3-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_cross_3x3.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_cross_3x3.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_cross_3x3.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_cross_3x3.webp"
+      }
+    },
+    "cabin_u_3x2": {
+      "name": "Cabin U 3x2",
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pattern": [
+        "+-+",
+        "+++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_u_3x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_u_3x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_u_3x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_u_3x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_u_3x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_u_3x2.webp"
+      }
+    },
+    "cabin_block_3x2": {
+      "name": "Cabin Block 3x2",
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pattern": [
+        "+++",
+        "+++"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_block_3x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_block_3x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_block_3x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_block_3x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_block_3x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_block_3x2.webp"
+      }
+    },
+    "cabin_notch_3x2": {
+      "name": "Cabin Notch 3x2",
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pattern": [
+        "+++",
+        "++-"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_notch_3x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_notch_3x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_notch_3x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_notch_3x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_notch_3x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_notch_3x2.webp"
+      }
+    },
+    "cabin_zig_3x2": {
+      "name": "Cabin Zig 3x2",
+      "gridSize": {
+        "width": 3,
+        "height": 2
+      },
+      "pattern": [
+        "-++",
+        "++-"
+      ],
+      "source": "/assets/modules/source/cabins-tetris/cabin_zig_3x2-states-source.png",
+      "alphaSheet": "/assets/modules/source/cabins-tetris-alpha/cabin_zig_3x2-states-alpha.png",
+      "states": {
+        "ideal": "/assets/modules/cabins-tetris/ideal/cabin_zig_3x2.webp",
+        "damaged": "/assets/modules/cabins-tetris/damaged/cabin_zig_3x2.webp",
+        "heavyDamage": "/assets/modules/cabins-tetris/heavyDamage/cabin_zig_3x2.webp",
+        "debris": "/assets/modules/cabins-tetris/debris/cabin_zig_3x2.webp"
+      }
+    }
+  },
+  "contactSheet": "/assets/modules/cabins-tetris-contact-sheet.png",
+  "runtimeMirror": "/assets/cabins-v2/cabins",
+  "validationReport": "/assets/modules/cabins-tetris-validation-report.json"
+}

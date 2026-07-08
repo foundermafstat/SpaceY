@@ -1,0 +1,1761 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "sourceGrid": [
+    4,
+    4
+  ],
+  "perspective": "strict top-down orthographic",
+  "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
+  "methodology": "image-asset-generation-methodology.md",
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "parts": [
+    "base_mount",
+    "turret_body",
+    "barrel",
+    "active_subpart"
+  ],
+  "atlas": {
+    "src": "/assets/generated/full-design/weapons/weapons-multipart-atlas.png",
+    "columns": 15,
+    "rows": 16,
+    "cellWidth": 256,
+    "cellHeight": 256,
+    "rowOrder": "part-major: base_mount states, turret_body states, barrel states, active_subpart states"
+  },
+  "assets": {
+    "weapon_autocannon_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_autocannon_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_autocannon_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_body",
+        "barrel": "recoil_barrel",
+        "active_subpart": "muzzle_brake_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_autocannon_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_autocannon_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_autocannon_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_autocannon_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 0,
+            "row": 0
+          },
+          "damaged": {
+            "col": 0,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 0,
+            "row": 2
+          },
+          "debris": {
+            "col": 0,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 0,
+            "row": 4
+          },
+          "damaged": {
+            "col": 0,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 0,
+            "row": 6
+          },
+          "debris": {
+            "col": 0,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 0,
+            "row": 8
+          },
+          "damaged": {
+            "col": 0,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 0,
+            "row": 10
+          },
+          "debris": {
+            "col": 0,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 0,
+            "row": 12
+          },
+          "damaged": {
+            "col": 0,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 0,
+            "row": 14
+          },
+          "debris": {
+            "col": 0,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_dual_autocannon_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_dual_autocannon_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_dual_autocannon_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_body",
+        "barrel": "twin_recoil_barrels",
+        "active_subpart": "twin_muzzle_brakes_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_dual_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_dual_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_dual_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_dual_autocannon_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_dual_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_dual_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_dual_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_dual_autocannon_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_dual_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_dual_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_dual_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_dual_autocannon_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_dual_autocannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_dual_autocannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_dual_autocannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_dual_autocannon_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 1,
+            "row": 0
+          },
+          "damaged": {
+            "col": 1,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 1,
+            "row": 2
+          },
+          "debris": {
+            "col": 1,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 1,
+            "row": 4
+          },
+          "damaged": {
+            "col": 1,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 1,
+            "row": 6
+          },
+          "debris": {
+            "col": 1,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 1,
+            "row": 8
+          },
+          "damaged": {
+            "col": 1,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 1,
+            "row": 10
+          },
+          "debris": {
+            "col": 1,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 1,
+            "row": 12
+          },
+          "damaged": {
+            "col": 1,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 1,
+            "row": 14
+          },
+          "debris": {
+            "col": 1,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_railgun_1x2": {
+      "role": "weapon",
+      "grid": [
+        1,
+        2
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_railgun_1x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_railgun_1x2-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_carriage",
+        "barrel": "long_recoil_rail_barrel",
+        "active_subpart": "muzzle_coil_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_railgun_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_railgun_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_railgun_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_railgun_1x2.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_railgun_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_railgun_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_railgun_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_railgun_1x2.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_railgun_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_railgun_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_railgun_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_railgun_1x2.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_railgun_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_railgun_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_railgun_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_railgun_1x2.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 2,
+            "row": 0
+          },
+          "damaged": {
+            "col": 2,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 2,
+            "row": 2
+          },
+          "debris": {
+            "col": 2,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 2,
+            "row": 4
+          },
+          "damaged": {
+            "col": 2,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 2,
+            "row": 6
+          },
+          "debris": {
+            "col": 2,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 2,
+            "row": 8
+          },
+          "damaged": {
+            "col": 2,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 2,
+            "row": 10
+          },
+          "debris": {
+            "col": 2,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 2,
+            "row": 12
+          },
+          "damaged": {
+            "col": 2,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 2,
+            "row": 14
+          },
+          "debris": {
+            "col": 2,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_heavy_railgun_2x1": {
+      "role": "weapon",
+      "grid": [
+        2,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_heavy_railgun_2x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_heavy_railgun_2x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "heavy_base_mount",
+        "turret_body": "rotating_turret_carriage",
+        "barrel": "heavy_recoil_rail_barrel",
+        "active_subpart": "large_muzzle_coil_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_heavy_railgun_2x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_heavy_railgun_2x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_heavy_railgun_2x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_heavy_railgun_2x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_heavy_railgun_2x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_heavy_railgun_2x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_heavy_railgun_2x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_heavy_railgun_2x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_heavy_railgun_2x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_heavy_railgun_2x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_heavy_railgun_2x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_heavy_railgun_2x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_heavy_railgun_2x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_heavy_railgun_2x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_heavy_railgun_2x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_heavy_railgun_2x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 3,
+            "row": 0
+          },
+          "damaged": {
+            "col": 3,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 3,
+            "row": 2
+          },
+          "debris": {
+            "col": 3,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 3,
+            "row": 4
+          },
+          "damaged": {
+            "col": 3,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 3,
+            "row": 6
+          },
+          "debris": {
+            "col": 3,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 3,
+            "row": 8
+          },
+          "damaged": {
+            "col": 3,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 3,
+            "row": 10
+          },
+          "debris": {
+            "col": 3,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 3,
+            "row": 12
+          },
+          "damaged": {
+            "col": 3,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 3,
+            "row": 14
+          },
+          "debris": {
+            "col": 3,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_laser_turret_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_laser_turret_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_laser_turret_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_body",
+        "barrel": "focusing_laser_barrel",
+        "active_subpart": "emitter_lens_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_laser_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_laser_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_laser_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_laser_turret_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_laser_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_laser_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_laser_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_laser_turret_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_laser_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_laser_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_laser_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_laser_turret_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_laser_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_laser_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_laser_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_laser_turret_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 4,
+            "row": 0
+          },
+          "damaged": {
+            "col": 4,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 4,
+            "row": 2
+          },
+          "debris": {
+            "col": 4,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 4,
+            "row": 4
+          },
+          "damaged": {
+            "col": 4,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 4,
+            "row": 6
+          },
+          "debris": {
+            "col": 4,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 4,
+            "row": 8
+          },
+          "damaged": {
+            "col": 4,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 4,
+            "row": 10
+          },
+          "debris": {
+            "col": 4,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 4,
+            "row": 12
+          },
+          "damaged": {
+            "col": 4,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 4,
+            "row": 14
+          },
+          "debris": {
+            "col": 4,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_plasma_cannon_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_plasma_cannon_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_plasma_cannon_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_body",
+        "barrel": "plasma_recoil_barrel",
+        "active_subpart": "emitter_coil_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_plasma_cannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_plasma_cannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_plasma_cannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_plasma_cannon_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_plasma_cannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_plasma_cannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_plasma_cannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_plasma_cannon_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_plasma_cannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_plasma_cannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_plasma_cannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_plasma_cannon_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_plasma_cannon_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_plasma_cannon_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_plasma_cannon_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_plasma_cannon_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 5,
+            "row": 0
+          },
+          "damaged": {
+            "col": 5,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 5,
+            "row": 2
+          },
+          "debris": {
+            "col": 5,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 5,
+            "row": 4
+          },
+          "damaged": {
+            "col": 5,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 5,
+            "row": 6
+          },
+          "debris": {
+            "col": 5,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 5,
+            "row": 8
+          },
+          "damaged": {
+            "col": 5,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 5,
+            "row": 10
+          },
+          "debris": {
+            "col": 5,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 5,
+            "row": 12
+          },
+          "damaged": {
+            "col": 5,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 5,
+            "row": 14
+          },
+          "debris": {
+            "col": 5,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_heavy_plasma_cannon_2x2": {
+      "role": "weapon",
+      "grid": [
+        2,
+        2
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_heavy_plasma_cannon_2x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_heavy_plasma_cannon_2x2-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "heavy_2x2_base_mount",
+        "turret_body": "rotating_turret_core",
+        "barrel": "heavy_plasma_recoil_barrel",
+        "active_subpart": "large_emitter_coil_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_heavy_plasma_cannon_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_heavy_plasma_cannon_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_heavy_plasma_cannon_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_heavy_plasma_cannon_2x2.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_heavy_plasma_cannon_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_heavy_plasma_cannon_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_heavy_plasma_cannon_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_heavy_plasma_cannon_2x2.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_heavy_plasma_cannon_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_heavy_plasma_cannon_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_heavy_plasma_cannon_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_heavy_plasma_cannon_2x2.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_heavy_plasma_cannon_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_heavy_plasma_cannon_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_heavy_plasma_cannon_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_heavy_plasma_cannon_2x2.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 6,
+            "row": 0
+          },
+          "damaged": {
+            "col": 6,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 6,
+            "row": 2
+          },
+          "debris": {
+            "col": 6,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 6,
+            "row": 4
+          },
+          "damaged": {
+            "col": 6,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 6,
+            "row": 6
+          },
+          "debris": {
+            "col": 6,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 6,
+            "row": 8
+          },
+          "damaged": {
+            "col": 6,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 6,
+            "row": 10
+          },
+          "debris": {
+            "col": 6,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 6,
+            "row": 12
+          },
+          "damaged": {
+            "col": 6,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 6,
+            "row": 14
+          },
+          "debris": {
+            "col": 6,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_missile_pod_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_missile_pod_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_missile_pod_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_launcher_body",
+        "barrel": "missile_tube_rack",
+        "active_subpart": "sliding_hatch_cover_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_missile_pod_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_missile_pod_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_missile_pod_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_missile_pod_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_missile_pod_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_missile_pod_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_missile_pod_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_missile_pod_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_missile_pod_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_missile_pod_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_missile_pod_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_missile_pod_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_missile_pod_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_missile_pod_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_missile_pod_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_missile_pod_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 7,
+            "row": 0
+          },
+          "damaged": {
+            "col": 7,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 7,
+            "row": 2
+          },
+          "debris": {
+            "col": 7,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 7,
+            "row": 4
+          },
+          "damaged": {
+            "col": 7,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 7,
+            "row": 6
+          },
+          "debris": {
+            "col": 7,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 7,
+            "row": 8
+          },
+          "damaged": {
+            "col": 7,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 7,
+            "row": 10
+          },
+          "debris": {
+            "col": 7,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 7,
+            "row": 12
+          },
+          "damaged": {
+            "col": 7,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 7,
+            "row": 14
+          },
+          "debris": {
+            "col": 7,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_missile_pod_1x2": {
+      "role": "weapon",
+      "grid": [
+        1,
+        2
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_missile_pod_1x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_missile_pod_1x2-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "elongated_base_mount",
+        "turret_body": "rotating_launcher_body",
+        "barrel": "long_missile_tube_rack",
+        "active_subpart": "sliding_hatch_cover_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_missile_pod_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_missile_pod_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_missile_pod_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_missile_pod_1x2.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_missile_pod_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_missile_pod_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_missile_pod_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_missile_pod_1x2.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_missile_pod_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_missile_pod_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_missile_pod_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_missile_pod_1x2.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_missile_pod_1x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_missile_pod_1x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_missile_pod_1x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_missile_pod_1x2.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 8,
+            "row": 0
+          },
+          "damaged": {
+            "col": 8,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 8,
+            "row": 2
+          },
+          "debris": {
+            "col": 8,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 8,
+            "row": 4
+          },
+          "damaged": {
+            "col": 8,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 8,
+            "row": 6
+          },
+          "debris": {
+            "col": 8,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 8,
+            "row": 8
+          },
+          "damaged": {
+            "col": 8,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 8,
+            "row": 10
+          },
+          "debris": {
+            "col": 8,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 8,
+            "row": 12
+          },
+          "damaged": {
+            "col": 8,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 8,
+            "row": 14
+          },
+          "debris": {
+            "col": 8,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_flak_turret_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_flak_turret_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_flak_turret_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_turret_body",
+        "barrel": "short_flak_barrel_cluster",
+        "active_subpart": "muzzle_recoil_cluster_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_flak_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_flak_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_flak_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_flak_turret_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_flak_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_flak_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_flak_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_flak_turret_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_flak_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_flak_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_flak_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_flak_turret_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_flak_turret_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_flak_turret_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_flak_turret_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_flak_turret_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 9,
+            "row": 0
+          },
+          "damaged": {
+            "col": 9,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 9,
+            "row": 2
+          },
+          "debris": {
+            "col": 9,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 9,
+            "row": 4
+          },
+          "damaged": {
+            "col": 9,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 9,
+            "row": 6
+          },
+          "debris": {
+            "col": 9,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 9,
+            "row": 8
+          },
+          "damaged": {
+            "col": 9,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 9,
+            "row": 10
+          },
+          "debris": {
+            "col": 9,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 9,
+            "row": 12
+          },
+          "damaged": {
+            "col": 9,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 9,
+            "row": 14
+          },
+          "debris": {
+            "col": 9,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_emp_emitter_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_emp_emitter_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_emp_emitter_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_emitter_body",
+        "barrel": "capacitor_ring",
+        "active_subpart": "emitter_node_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_emp_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_emp_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_emp_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_emp_emitter_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_emp_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_emp_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_emp_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_emp_emitter_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_emp_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_emp_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_emp_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_emp_emitter_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_emp_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_emp_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_emp_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_emp_emitter_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 10,
+            "row": 0
+          },
+          "damaged": {
+            "col": 10,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 10,
+            "row": 2
+          },
+          "debris": {
+            "col": 10,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 10,
+            "row": 4
+          },
+          "damaged": {
+            "col": 10,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 10,
+            "row": 6
+          },
+          "debris": {
+            "col": 10,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 10,
+            "row": 8
+          },
+          "damaged": {
+            "col": 10,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 10,
+            "row": 10
+          },
+          "debris": {
+            "col": 10,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 10,
+            "row": 12
+          },
+          "damaged": {
+            "col": 10,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 10,
+            "row": 14
+          },
+          "debris": {
+            "col": 10,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_arc_lightning_emitter_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_arc_lightning_emitter_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_arc_lightning_emitter_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_emitter_body",
+        "barrel": "fork_emitter_arms",
+        "active_subpart": "discharge_node_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_arc_lightning_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_arc_lightning_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_arc_lightning_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_arc_lightning_emitter_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_arc_lightning_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_arc_lightning_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_arc_lightning_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_arc_lightning_emitter_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_arc_lightning_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_arc_lightning_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_arc_lightning_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_arc_lightning_emitter_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_arc_lightning_emitter_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_arc_lightning_emitter_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_arc_lightning_emitter_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_arc_lightning_emitter_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 11,
+            "row": 0
+          },
+          "damaged": {
+            "col": 11,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 11,
+            "row": 2
+          },
+          "debris": {
+            "col": 11,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 11,
+            "row": 4
+          },
+          "damaged": {
+            "col": 11,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 11,
+            "row": 6
+          },
+          "debris": {
+            "col": 11,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 11,
+            "row": 8
+          },
+          "damaged": {
+            "col": 11,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 11,
+            "row": 10
+          },
+          "debris": {
+            "col": 11,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 11,
+            "row": 12
+          },
+          "damaged": {
+            "col": 11,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 11,
+            "row": 14
+          },
+          "debris": {
+            "col": 11,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_point_defense_1x1": {
+      "role": "weapon",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_point_defense_1x1-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_point_defense_1x1-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_mini_turret_body",
+        "barrel": "rapid_barrel_cluster",
+        "active_subpart": "muzzle_cluster_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_point_defense_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_point_defense_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_point_defense_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_point_defense_1x1.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_point_defense_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_point_defense_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_point_defense_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_point_defense_1x1.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_point_defense_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_point_defense_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_point_defense_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_point_defense_1x1.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_point_defense_1x1.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_point_defense_1x1.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_point_defense_1x1.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_point_defense_1x1.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 12,
+            "row": 0
+          },
+          "damaged": {
+            "col": 12,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 12,
+            "row": 2
+          },
+          "debris": {
+            "col": 12,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 12,
+            "row": 4
+          },
+          "damaged": {
+            "col": 12,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 12,
+            "row": 6
+          },
+          "debris": {
+            "col": 12,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 12,
+            "row": 8
+          },
+          "damaged": {
+            "col": 12,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 12,
+            "row": 10
+          },
+          "debris": {
+            "col": 12,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 12,
+            "row": 12
+          },
+          "damaged": {
+            "col": 12,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 12,
+            "row": 14
+          },
+          "debris": {
+            "col": 12,
+            "row": 15
+          }
+        }
+      }
+    },
+    "weapon_drone_bay_2x2": {
+      "role": "weapon",
+      "grid": [
+        2,
+        2
+      ],
+      "source": "/assets/generated/full-design/weapons/source/weapon_drone_bay_2x2-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/weapon_drone_bay_2x2-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "heavy_2x2_base_mount",
+        "turret_body": "orientable_hangar_body",
+        "barrel": "sliding_bay_doors",
+        "active_subpart": "launch_rail_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/weapon_drone_bay_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/weapon_drone_bay_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/weapon_drone_bay_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/weapon_drone_bay_2x2.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/weapon_drone_bay_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/weapon_drone_bay_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/weapon_drone_bay_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/weapon_drone_bay_2x2.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/weapon_drone_bay_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/weapon_drone_bay_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/weapon_drone_bay_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/weapon_drone_bay_2x2.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/weapon_drone_bay_2x2.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/weapon_drone_bay_2x2.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/weapon_drone_bay_2x2.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/weapon_drone_bay_2x2.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 13,
+            "row": 0
+          },
+          "damaged": {
+            "col": 13,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 13,
+            "row": 2
+          },
+          "debris": {
+            "col": 13,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 13,
+            "row": 4
+          },
+          "damaged": {
+            "col": 13,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 13,
+            "row": 6
+          },
+          "debris": {
+            "col": 13,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 13,
+            "row": 8
+          },
+          "damaged": {
+            "col": 13,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 13,
+            "row": 10
+          },
+          "debris": {
+            "col": 13,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 13,
+            "row": 12
+          },
+          "damaged": {
+            "col": 13,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 13,
+            "row": 14
+          },
+          "debris": {
+            "col": 13,
+            "row": 15
+          }
+        }
+      }
+    },
+    "repair_beam": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/weapons/source/repair_beam-source.png",
+      "alphaSheet": "/assets/generated/full-design/weapons/sheets-alpha/repair_beam-sheet-alpha.png",
+      "partLabels": {
+        "base_mount": "base_mount",
+        "turret_body": "rotating_projector_body",
+        "barrel": "telescoping_emitter_arm",
+        "active_subpart": "emitter_lens_active_subpart"
+      },
+      "parts": {
+        "base_mount": {
+          "ideal": "/assets/generated/full-design/weapons/parts/base_mount/ideal/repair_beam.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/base_mount/damaged/repair_beam.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/base_mount/heavyDamage/repair_beam.png",
+          "debris": "/assets/generated/full-design/weapons/parts/base_mount/debris/repair_beam.png"
+        },
+        "turret_body": {
+          "ideal": "/assets/generated/full-design/weapons/parts/turret_body/ideal/repair_beam.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/turret_body/damaged/repair_beam.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/turret_body/heavyDamage/repair_beam.png",
+          "debris": "/assets/generated/full-design/weapons/parts/turret_body/debris/repair_beam.png"
+        },
+        "barrel": {
+          "ideal": "/assets/generated/full-design/weapons/parts/barrel/ideal/repair_beam.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/barrel/damaged/repair_beam.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/barrel/heavyDamage/repair_beam.png",
+          "debris": "/assets/generated/full-design/weapons/parts/barrel/debris/repair_beam.png"
+        },
+        "active_subpart": {
+          "ideal": "/assets/generated/full-design/weapons/parts/active_subpart/ideal/repair_beam.png",
+          "damaged": "/assets/generated/full-design/weapons/parts/active_subpart/damaged/repair_beam.png",
+          "heavyDamage": "/assets/generated/full-design/weapons/parts/active_subpart/heavyDamage/repair_beam.png",
+          "debris": "/assets/generated/full-design/weapons/parts/active_subpart/debris/repair_beam.png"
+        }
+      },
+      "atlas": {
+        "base_mount": {
+          "ideal": {
+            "col": 14,
+            "row": 0
+          },
+          "damaged": {
+            "col": 14,
+            "row": 1
+          },
+          "heavyDamage": {
+            "col": 14,
+            "row": 2
+          },
+          "debris": {
+            "col": 14,
+            "row": 3
+          }
+        },
+        "turret_body": {
+          "ideal": {
+            "col": 14,
+            "row": 4
+          },
+          "damaged": {
+            "col": 14,
+            "row": 5
+          },
+          "heavyDamage": {
+            "col": 14,
+            "row": 6
+          },
+          "debris": {
+            "col": 14,
+            "row": 7
+          }
+        },
+        "barrel": {
+          "ideal": {
+            "col": 14,
+            "row": 8
+          },
+          "damaged": {
+            "col": 14,
+            "row": 9
+          },
+          "heavyDamage": {
+            "col": 14,
+            "row": 10
+          },
+          "debris": {
+            "col": 14,
+            "row": 11
+          }
+        },
+        "active_subpart": {
+          "ideal": {
+            "col": 14,
+            "row": 12
+          },
+          "damaged": {
+            "col": 14,
+            "row": 13
+          },
+          "heavyDamage": {
+            "col": 14,
+            "row": 14
+          },
+          "debris": {
+            "col": 14,
+            "row": 15
+          }
+        }
+      }
+    }
+  },
+  "rejected": {
+    "weapon_autocannon_1x1-front-muzzle-rejected": "/assets/generated/full-design/weapons/rejected/weapon_autocannon_1x1-front-muzzle-rejected.png"
+  }
+}

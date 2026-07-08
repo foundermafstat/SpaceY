@@ -1,0 +1,158 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "sourceCellSize": 627,
+  "perspective": "strict top-down orthographic",
+  "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
+  "methodology": "image-asset-generation-methodology.md",
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "atlas": {
+    "src": "/assets/generated/full-design/mvp-elements/mvp-elements-atlas.png",
+    "columns": 4,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "assets": {
+    "reverse_thruster": {
+      "role": "engine",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/mvp-elements/source/reverse_thruster-source.png",
+      "alphaSheet": "/assets/generated/full-design/mvp-elements/sheets-alpha/reverse_thruster-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/mvp-elements/states/ideal/reverse_thruster.png",
+        "damaged": "/assets/generated/full-design/mvp-elements/states/damaged/reverse_thruster.png",
+        "heavyDamage": "/assets/generated/full-design/mvp-elements/states/heavyDamage/reverse_thruster.png",
+        "debris": "/assets/generated/full-design/mvp-elements/states/debris/reverse_thruster.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 0,
+          "row": 0
+        },
+        "damaged": {
+          "col": 0,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 0,
+          "row": 2
+        },
+        "debris": {
+          "col": 0,
+          "row": 3
+        }
+      }
+    },
+    "battery": {
+      "role": "energy",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/mvp-elements/source/battery-source.png",
+      "alphaSheet": "/assets/generated/full-design/mvp-elements/sheets-alpha/battery-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/mvp-elements/states/ideal/battery.png",
+        "damaged": "/assets/generated/full-design/mvp-elements/states/damaged/battery.png",
+        "heavyDamage": "/assets/generated/full-design/mvp-elements/states/heavyDamage/battery.png",
+        "debris": "/assets/generated/full-design/mvp-elements/states/debris/battery.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 1,
+          "row": 0
+        },
+        "damaged": {
+          "col": 1,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 1,
+          "row": 2
+        },
+        "debris": {
+          "col": 1,
+          "row": 3
+        }
+      }
+    },
+    "twin_cockpit": {
+      "role": "cabin",
+      "grid": [
+        2,
+        1
+      ],
+      "source": "/assets/generated/full-design/mvp-elements/source/twin_cockpit-source.png",
+      "alphaSheet": "/assets/generated/full-design/mvp-elements/sheets-alpha/twin_cockpit-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/mvp-elements/states/ideal/twin_cockpit.png",
+        "damaged": "/assets/generated/full-design/mvp-elements/states/damaged/twin_cockpit.png",
+        "heavyDamage": "/assets/generated/full-design/mvp-elements/states/heavyDamage/twin_cockpit.png",
+        "debris": "/assets/generated/full-design/mvp-elements/states/debris/twin_cockpit.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 2,
+          "row": 0
+        },
+        "damaged": {
+          "col": 2,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 2,
+          "row": 2
+        },
+        "debris": {
+          "col": 2,
+          "row": 3
+        }
+      }
+    },
+    "utility_cabin": {
+      "role": "cabin",
+      "grid": [
+        2,
+        2
+      ],
+      "source": "/assets/generated/full-design/mvp-elements/source/utility_cabin-source.png",
+      "alphaSheet": "/assets/generated/full-design/mvp-elements/sheets-alpha/utility_cabin-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/mvp-elements/states/ideal/utility_cabin.png",
+        "damaged": "/assets/generated/full-design/mvp-elements/states/damaged/utility_cabin.png",
+        "heavyDamage": "/assets/generated/full-design/mvp-elements/states/heavyDamage/utility_cabin.png",
+        "debris": "/assets/generated/full-design/mvp-elements/states/debris/utility_cabin.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 3,
+          "row": 0
+        },
+        "damaged": {
+          "col": 3,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 3,
+          "row": 2
+        },
+        "debris": {
+          "col": 3,
+          "row": 3
+        }
+      }
+    }
+  },
+  "excluded": {
+    "repair_beam": "rejected perspective source; regenerate as multipart active hardware"
+  }
+}

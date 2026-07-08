@@ -1,0 +1,189 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "sourceCellSize": 627,
+  "perspective": "strict top-down orthographic",
+  "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
+  "methodology": "image-asset-generation-methodology.md",
+  "promptSet": "/assets/generated/pilot/mission-elements/prompts.md",
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "atlas": {
+    "src": "/assets/generated/pilot/mission-elements/mission-elements-pilot-atlas.png",
+    "columns": 5,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "assets": {
+    "drill": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/pilot/mission-elements/source/drill-source.png",
+      "alphaSheet": "/assets/generated/pilot/mission-elements/sheets-alpha/drill-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/pilot/mission-elements/states/ideal/drill.png",
+        "damaged": "/assets/generated/pilot/mission-elements/states/damaged/drill.png",
+        "heavyDamage": "/assets/generated/pilot/mission-elements/states/heavyDamage/drill.png",
+        "debris": "/assets/generated/pilot/mission-elements/states/debris/drill.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 0,
+          "row": 0
+        },
+        "damaged": {
+          "col": 0,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 0,
+          "row": 2
+        },
+        "debris": {
+          "col": 0,
+          "row": 3
+        }
+      }
+    },
+    "loot_magnet": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/pilot/mission-elements/source/loot_magnet-source.png",
+      "alphaSheet": "/assets/generated/pilot/mission-elements/sheets-alpha/loot_magnet-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/pilot/mission-elements/states/ideal/loot_magnet.png",
+        "damaged": "/assets/generated/pilot/mission-elements/states/damaged/loot_magnet.png",
+        "heavyDamage": "/assets/generated/pilot/mission-elements/states/heavyDamage/loot_magnet.png",
+        "debris": "/assets/generated/pilot/mission-elements/states/debris/loot_magnet.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 1,
+          "row": 0
+        },
+        "damaged": {
+          "col": 1,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 1,
+          "row": 2
+        },
+        "debris": {
+          "col": 1,
+          "row": 3
+        }
+      }
+    },
+    "cargo_container": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/pilot/mission-elements/source/cargo_container-source.png",
+      "alphaSheet": "/assets/generated/pilot/mission-elements/sheets-alpha/cargo_container-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/pilot/mission-elements/states/ideal/cargo_container.png",
+        "damaged": "/assets/generated/pilot/mission-elements/states/damaged/cargo_container.png",
+        "heavyDamage": "/assets/generated/pilot/mission-elements/states/heavyDamage/cargo_container.png",
+        "debris": "/assets/generated/pilot/mission-elements/states/debris/cargo_container.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 2,
+          "row": 0
+        },
+        "damaged": {
+          "col": 2,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 2,
+          "row": 2
+        },
+        "debris": {
+          "col": 2,
+          "row": 3
+        }
+      }
+    },
+    "tractor_beam": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/pilot/mission-elements/source/tractor_beam-source.png",
+      "alphaSheet": "/assets/generated/pilot/mission-elements/sheets-alpha/tractor_beam-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/pilot/mission-elements/states/ideal/tractor_beam.png",
+        "damaged": "/assets/generated/pilot/mission-elements/states/damaged/tractor_beam.png",
+        "heavyDamage": "/assets/generated/pilot/mission-elements/states/heavyDamage/tractor_beam.png",
+        "debris": "/assets/generated/pilot/mission-elements/states/debris/tractor_beam.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 3,
+          "row": 0
+        },
+        "damaged": {
+          "col": 3,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 3,
+          "row": 2
+        },
+        "debris": {
+          "col": 3,
+          "row": 3
+        }
+      }
+    },
+    "scanner": {
+      "role": "utility",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/pilot/mission-elements/source/scanner-source.png",
+      "alphaSheet": "/assets/generated/pilot/mission-elements/sheets-alpha/scanner-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/pilot/mission-elements/states/ideal/scanner.png",
+        "damaged": "/assets/generated/pilot/mission-elements/states/damaged/scanner.png",
+        "heavyDamage": "/assets/generated/pilot/mission-elements/states/heavyDamage/scanner.png",
+        "debris": "/assets/generated/pilot/mission-elements/states/debris/scanner.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 4,
+          "row": 0
+        },
+        "damaged": {
+          "col": 4,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 4,
+          "row": 2
+        },
+        "debris": {
+          "col": 4,
+          "row": 3
+        }
+      }
+    }
+  }
+}

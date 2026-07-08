@@ -1,0 +1,353 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "sourceCellSize": 627,
+  "perspective": "strict top-down orthographic",
+  "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
+  "methodology": "image-asset-generation-methodology.md",
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "atlas": {
+    "src": "/assets/generated/full-design/panels/panels-full-design-atlas.png",
+    "columns": 10,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "panels": {
+    "light_hull_panel": {
+      "role": "light_hull",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/light_hull_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/light_hull_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/light_hull_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/light_hull_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/light_hull_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/light_hull_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 0,
+          "row": 0
+        },
+        "damaged": {
+          "col": 0,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 0,
+          "row": 2
+        },
+        "debris": {
+          "col": 0,
+          "row": 3
+        }
+      }
+    },
+    "heavy_hull_panel": {
+      "role": "heavy_hull",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/heavy_hull_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/heavy_hull_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/heavy_hull_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/heavy_hull_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/heavy_hull_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/heavy_hull_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 1,
+          "row": 0
+        },
+        "damaged": {
+          "col": 1,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 1,
+          "row": 2
+        },
+        "debris": {
+          "col": 1,
+          "row": 3
+        }
+      }
+    },
+    "cargo_panel": {
+      "role": "cargo",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/cargo_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/cargo_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/cargo_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/cargo_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/cargo_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/cargo_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 2,
+          "row": 0
+        },
+        "damaged": {
+          "col": 2,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 2,
+          "row": 2
+        },
+        "debris": {
+          "col": 2,
+          "row": 3
+        }
+      }
+    },
+    "weapon_mount_panel": {
+      "role": "weapon_mount",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/weapon_mount_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/weapon_mount_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/weapon_mount_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/weapon_mount_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/weapon_mount_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/weapon_mount_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 3,
+          "row": 0
+        },
+        "damaged": {
+          "col": 3,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 3,
+          "row": 2
+        },
+        "debris": {
+          "col": 3,
+          "row": 3
+        }
+      }
+    },
+    "engine_mount_panel": {
+      "role": "engine_mount",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/engine_mount_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/engine_mount_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/engine_mount_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/engine_mount_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/engine_mount_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/engine_mount_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 4,
+          "row": 0
+        },
+        "damaged": {
+          "col": 4,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 4,
+          "row": 2
+        },
+        "debris": {
+          "col": 4,
+          "row": 3
+        }
+      }
+    },
+    "utility_mount_panel": {
+      "role": "utility_mount",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/utility_mount_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/utility_mount_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/utility_mount_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/utility_mount_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/utility_mount_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/utility_mount_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 5,
+          "row": 0
+        },
+        "damaged": {
+          "col": 5,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 5,
+          "row": 2
+        },
+        "debris": {
+          "col": 5,
+          "row": 3
+        }
+      }
+    },
+    "heat_sink_panel": {
+      "role": "heat_sink",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/heat_sink_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/heat_sink_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/heat_sink_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/heat_sink_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/heat_sink_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/heat_sink_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 6,
+          "row": 0
+        },
+        "damaged": {
+          "col": 6,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 6,
+          "row": 2
+        },
+        "debris": {
+          "col": 6,
+          "row": 3
+        }
+      }
+    },
+    "adapter_panel": {
+      "role": "adapter",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/adapter_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/adapter_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/adapter_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/adapter_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/adapter_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/adapter_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 7,
+          "row": 0
+        },
+        "damaged": {
+          "col": 7,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 7,
+          "row": 2
+        },
+        "debris": {
+          "col": 7,
+          "row": 3
+        }
+      }
+    },
+    "y_junction_panel": {
+      "role": "y_junction",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/y_junction_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/y_junction_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/y_junction_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/y_junction_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/y_junction_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/y_junction_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 8,
+          "row": 0
+        },
+        "damaged": {
+          "col": 8,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 8,
+          "row": 2
+        },
+        "debris": {
+          "col": 8,
+          "row": 3
+        }
+      }
+    },
+    "shield_conductive_panel": {
+      "role": "shield_conductive",
+      "grid": [
+        1,
+        1
+      ],
+      "source": "/assets/generated/full-design/panels/source/shield_conductive_panel-source.png",
+      "alphaSheet": "/assets/generated/full-design/panels/sheets-alpha/shield_conductive_panel-sheet-alpha.png",
+      "states": {
+        "ideal": "/assets/generated/full-design/panels/states/ideal/shield_conductive_panel.png",
+        "damaged": "/assets/generated/full-design/panels/states/damaged/shield_conductive_panel.png",
+        "heavyDamage": "/assets/generated/full-design/panels/states/heavyDamage/shield_conductive_panel.png",
+        "debris": "/assets/generated/full-design/panels/states/debris/shield_conductive_panel.png"
+      },
+      "atlas": {
+        "ideal": {
+          "col": 9,
+          "row": 0
+        },
+        "damaged": {
+          "col": 9,
+          "row": 1
+        },
+        "heavyDamage": {
+          "col": 9,
+          "row": 2
+        },
+        "debris": {
+          "col": 9,
+          "row": 3
+        }
+      }
+    }
+  }
+}

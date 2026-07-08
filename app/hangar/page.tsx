@@ -15,7 +15,6 @@ import {
   getElementNetworkAccess
 } from "@/game/ship/topology";
 import {
-  canPlaceCabin,
   cellKey,
   getBuildGrid,
   getBuildableCellKeys,
@@ -24,7 +23,6 @@ import {
   getCellOccupant,
   getFrame,
   getInstalledCabinPosition,
-  getInstalledPanelConnectors,
   getModule,
   getPanel,
   getPanelCellOccupant,
@@ -45,7 +43,7 @@ import {
   getPanelCellSpriteStyle,
   getPanelSpriteStyle
 } from "@/game/assets/moduleSprites";
-import type { GridCell, InstalledModule, InstalledPanel, ModuleType, PanelConnectorSide, PanelDef } from "@/game/types";
+import type { CabinDef, GridCell, InstalledModule, InstalledPanel, ModuleType, PanelDef, Rotation } from "@/game/types";
 
 type OverlayMode = "structure" | "power" | "heat" | "weapons" | "engines" | "mass";
 
@@ -61,7 +59,9 @@ const labels: Record<ModuleType, string> = {
   utility: "Utility"
 };
 
+const rotations: Rotation[] = [0, 90, 180, 270];
 const zoomSteps = [1, 1.15, 1.3, 1.5, 1.75];
+const holdRotateMs = 1500;
 const overlayModes: Array<{ id: OverlayMode; label: string }> = [
   { id: "structure", label: "Structure" },
   { id: "power", label: "Power" },
@@ -74,6 +74,8 @@ const cabinPalette = cabinDefs.filter((item) => item.spriteId?.startsWith("cabin
 const gridCellSize = 38;
 const gridGap = 3;
 const fallbackGridPitch = gridCellSize + gridGap;
+const cabinGraphicOverhang = 5;
+const panelGraphicOverhang = 5;
 const initialScenePosition = { x: 0, y: 0 };
 const installSounds = {
   module: [
@@ -93,6 +95,21 @@ const installSounds = {
     "/assets/audio/hangar-panel-install-06.mp3"
   ]
 };
+
+function getCabinGraphicFrame(cabin: CabinDef, position: GridCell) {
+  const width = cabin.assetGridSize.width * gridCellSize + (cabin.assetGridSize.width - 1) * gridGap;
+  const height = cabin.assetGridSize.height * gridCellSize + (cabin.assetGridSize.height - 1) * gridGap;
+  const scale = 1 + (cabinGraphicOverhang * 2) / Math.min(width, height);
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+
+  return {
+    left: position.x * fallbackGridPitch - (scaledWidth - width) / 2,
+    top: position.y * fallbackGridPitch - (scaledHeight - height) / 2,
+    width: scaledWidth,
+    height: scaledHeight
+  };
+}
 
 export default function HangarPage() {
   const {
@@ -122,6 +139,15 @@ export default function HangarPage() {
   const gridRef = useRef<HTMLDivElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const installSoundIndexRef = useRef({ module: 0, panel: 0 });
+  const holdRotateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    timeoutId: number;
+    intervalId?: number;
+    rotated: boolean;
+  } | null>(null);
+  const suppressNextClickRef = useRef(false);
   const panGestureRef = useRef<{
     pointerId: number | "mouse";
     startX: number;
@@ -154,6 +180,17 @@ export default function HangarPage() {
   const cabinPosition = getInstalledCabinPosition(build);
   const zoom = zoomSteps[zoomIndex];
   const canTestBattle = blockers.length === 0;
+  const cabinGraphicFrame = cabin && cabinPosition ? getCabinGraphicFrame(cabin, cabinPosition) : null;
+  const panelGraphicCells = (build.panels ?? []).flatMap((installed) => {
+    const panel = getPanel(installed.panelId);
+    return getTransformedCells(panel, installed.position, installed.rotation).map((cell) => ({
+      key: `${installed.instanceId}:${cell.x}:${cell.y}`,
+      panel,
+      state: installed.state,
+      cell,
+      localCell: getPanelLocalCell(panel, installed, cell) ?? { x: 0, y: 0 }
+    }));
+  });
 
   function playInstallSound(kind: keyof typeof installSounds) {
     const soundList = installSounds[kind];
@@ -246,12 +283,7 @@ export default function HangarPage() {
   }
 
   function previewClass(cell: GridCell) {
-    if (buildMode === "cabins") {
-      if (!cabin) return "";
-      return canPlaceCabin(build, cabin.id, cell, 0).ok ? "valid" : "invalid";
-    }
-
-    if (buildMode === "panels") {
+    if (buildMode === "structure") {
       if (!selectedPanel) return "";
       const cells = getTransformedCells(selectedPanel, cell, rotation);
       const covers = cells.some((covered) => covered.x === cell.x && covered.y === cell.y);
@@ -291,12 +323,12 @@ export default function HangarPage() {
   }
 
   function handleCell(cell: GridCell) {
-    if (buildMode === "cabins") {
-      moveCabin(cell, 0);
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
       return;
     }
 
-    if (buildMode === "panels") {
+    if (buildMode === "structure") {
       const panelOccupant = getPanelCellOccupant(build, cell);
       if (panelOccupant) {
         removePanel(panelOccupant.instanceId);
@@ -316,6 +348,63 @@ export default function HangarPage() {
     }
     if (selectedModule && installModule(selectedModule.id, cell, rotation)) {
       playInstallSound("module");
+    }
+  }
+
+  function nextRotation(value: Rotation): Rotation {
+    const index = rotations.indexOf(value);
+    return rotations[(index + 1) % rotations.length];
+  }
+
+  function rotateInstalled(kind: "panel" | "module", instanceId: string) {
+    const state = useShipStore.getState();
+    if (kind === "panel") {
+      const installed = (state.build.panels ?? []).find((panel) => panel.instanceId === instanceId);
+      if (installed) state.movePanel(instanceId, installed.position, nextRotation(installed.rotation));
+      return;
+    }
+    const installed = state.build.modules.find((module) => module.instanceId === instanceId);
+    if (installed) state.moveModule(instanceId, installed.position, nextRotation(installed.rotation));
+  }
+
+  function clearHoldRotate() {
+    const current = holdRotateRef.current;
+    if (!current) return;
+    window.clearTimeout(current.timeoutId);
+    if (current.intervalId) window.clearInterval(current.intervalId);
+    if (current.rotated) suppressNextClickRef.current = true;
+    holdRotateRef.current = null;
+  }
+
+  function beginHoldRotate(
+    event: PointerEvent<HTMLElement>,
+    target?: { kind: "panel" | "module"; instanceId: string } | null
+  ) {
+    if (!target || event.pointerType === "mouse") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const timeoutId = window.setTimeout(() => {
+      rotateInstalled(target.kind, target.instanceId);
+      if (holdRotateRef.current) holdRotateRef.current.rotated = true;
+      const intervalId = window.setInterval(() => {
+        rotateInstalled(target.kind, target.instanceId);
+        if (holdRotateRef.current) holdRotateRef.current.rotated = true;
+      }, holdRotateMs);
+      if (holdRotateRef.current) holdRotateRef.current.intervalId = intervalId;
+    }, holdRotateMs);
+    holdRotateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      timeoutId,
+      rotated: false
+    };
+  }
+
+  function moveHoldRotate(event: PointerEvent<HTMLElement>) {
+    const current = holdRotateRef.current;
+    if (!current || current.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - current.startX, event.clientY - current.startY) > 8) {
+      clearHoldRotate();
     }
   }
 
@@ -458,8 +547,8 @@ export default function HangarPage() {
   ]);
 
   return (
-    <main className="app-shell">
-      <section className="mobile-frame">
+    <main className="app-shell game-shell">
+      <section className="mobile-frame game-frame game-frame--hangar">
         <div className="screen hangar-screen">
           <header className="topbar hangar-topbar">
             <div className="brand">
@@ -534,20 +623,12 @@ export default function HangarPage() {
                       const cabinOccupant = getCabinCellOccupant(build, cell);
                       const panelOccupant = getPanelCellOccupant(build, cell);
                       const panel = panelOccupant ? getPanel(panelOccupant.panelId) : null;
-                      const panelConnectors = panelOccupant
-                        ? getInstalledPanelConnectors(panelOccupant).filter(
-                            (connector) => connector.cell.x === x && connector.cell.y === y
-                          )
-                        : [];
                       const active = buildMode === "modules"
                         ? panelCellKeys.has(cellKey(cell))
                         : activeCellKeys.has(cellKey(cell));
                       const occupant = getCellOccupant(build, cell);
                       const module = occupant ? getModule(occupant.moduleId) : null;
-                      const panelLocalCell = panel && panelOccupant
-                        ? getPanelLocalCell(panel, panelOccupant, cell)
-                        : null;
-                      const dragData = buildMode === "panels" && panelOccupant
+                      const dragData = buildMode === "structure" && panelOccupant
                           ? {
                               kind: "panel",
                               instanceId: panelOccupant.instanceId,
@@ -578,29 +659,20 @@ export default function HangarPage() {
                           data-drag-instance-id={dragData?.instanceId}
                           data-drag-offset-x={dragData ? x - dragData.position.x : undefined}
                           data-drag-offset-y={dragData ? y - dragData.position.y : undefined}
+                          onPointerDown={(event) =>
+                            beginHoldRotate(
+                              event,
+                              dragData?.kind === "panel" || dragData?.kind === "module"
+                                ? { kind: dragData.kind, instanceId: dragData.instanceId }
+                                : null
+                            )
+                          }
+                          onPointerMove={moveHoldRotate}
+                          onPointerUp={clearHoldRotate}
+                          onPointerCancel={clearHoldRotate}
                           onClick={() => handleCell(cell)}
                           aria-label={`cell ${x} ${y}`}
                         >
-                          {panel && panelOccupant && (
-                            <>
-                              <span
-                                className="cell-panel-sprite"
-                                style={getPanelCellSpriteStyle(
-                                  panel,
-                                  panelOccupant.state,
-                                  panelLocalCell ?? { x: 0, y: 0 }
-                                )}
-                              />
-                              {panelConnectors.map((connector) => (
-                                <span
-                                  key={`${connector.side}:${connector.id}`}
-                                  className={`cell-connector ${connector.side}`}
-                                >
-                                  {shortConnectorLabel(connector.id, connector.side)}
-                                </span>
-                              ))}
-                            </>
-                          )}
                           {module && (
                             <>
                               <span className="cell-hover" style={getHoverSpriteStyle("ring")} />
@@ -611,21 +683,31 @@ export default function HangarPage() {
                       );
                     })
                   )}
-                  {cabin && cabinPosition && (
+                  {panelGraphicCells.map((graphic) => (
+                    <span
+                      key={graphic.key}
+                      className="panel-graphic-cell"
+                      style={{
+                        ...getPanelCellSpriteStyle(graphic.panel, graphic.state, graphic.localCell),
+                        left: graphic.cell.x * fallbackGridPitch - panelGraphicOverhang,
+                        top: graphic.cell.y * fallbackGridPitch - panelGraphicOverhang,
+                        width: gridCellSize + panelGraphicOverhang * 2,
+                        height: gridCellSize + panelGraphicOverhang * 2
+                      }}
+                    />
+                  ))}
+                  {cabin && cabinPosition && cabinGraphicFrame && (
                     <button
                       className={[
                         "cabin-graphic",
-                        buildMode === "cabins" ? "draggable-cell" : ""
+                        buildMode === "structure" ? "draggable-cell" : ""
                       ].join(" ")}
                       style={{
                         ...getCabinSpriteStyle(cabin),
-                        left: cabinPosition.x * fallbackGridPitch,
-                        top: cabinPosition.y * fallbackGridPitch,
-                        width: cabin.assetGridSize.width * gridCellSize + (cabin.assetGridSize.width - 1) * gridGap,
-                        height: cabin.assetGridSize.height * gridCellSize + (cabin.assetGridSize.height - 1) * gridGap
+                        ...cabinGraphicFrame
                       }}
                       data-grid-cell={`${cabinPosition.x}:${cabinPosition.y}`}
-                      data-drag-kind={buildMode === "cabins" ? "cabin" : undefined}
+                      data-drag-kind={buildMode === "structure" ? "cabin" : undefined}
                       data-drag-instance-id={build.cabinId}
                       data-drag-offset-x={0}
                       data-drag-offset-y={0}
@@ -660,11 +742,9 @@ export default function HangarPage() {
             <details className="module-drawer" open>
               <summary>
                 <span>
-                  {buildMode === "cabins"
-                    ? cabin?.name ?? "Cabins"
-                    : buildMode === "panels"
-                      ? selectedPanel?.name ?? "Panels"
-                      : selectedModule?.name ?? "Modules"}
+                  {buildMode === "structure"
+                    ? selectedPanel?.name ?? "Cabins & Panels"
+                    : selectedModule?.name ?? "Elements"}
                 </span>
                 <span className="small">
                   Cells {buildGrid.activeCells.length} · Panels {(build.panels ?? []).length} · Energy {stats.energyBalance.toFixed(0)}
@@ -672,22 +752,16 @@ export default function HangarPage() {
               </summary>
               <div className="build-mode-tabs" role="tablist" aria-label="Build layer">
                 <button
-                  className={buildMode === "cabins" ? "selected" : ""}
-                  onClick={() => setBuildMode("cabins")}
+                  className={buildMode === "structure" ? "selected" : ""}
+                  onClick={() => setBuildMode("structure")}
                 >
-                  Cabins
-                </button>
-                <button
-                  className={buildMode === "panels" ? "selected" : ""}
-                  onClick={() => setBuildMode("panels")}
-                >
-                  Panels
+                  Cabins & Panels
                 </button>
                 <button
                   className={buildMode === "modules" ? "selected" : ""}
                   onClick={() => setBuildMode("modules")}
                 >
-                  Modules
+                  Elements
                 </button>
               </div>
               <div className="preset-list" aria-label="Ship presets">
@@ -705,8 +779,10 @@ export default function HangarPage() {
                 ))}
               </div>
               <div className="module-list" ref={drawerRef}>
-                {buildMode === "cabins"
-                  ? cabinPalette.map((item) => (
+                {buildMode === "structure"
+                  ? (
+                    <>
+                      {cabinPalette.map((item) => (
                       <button
                         key={item.id}
                         className={`module-card cabin-card ${item.id === build.cabinId ? "selected" : ""}`}
@@ -721,9 +797,8 @@ export default function HangarPage() {
                           {item.role} · crew {item.crew} · energy {item.baseEnergy}
                         </span>
                       </button>
-                    ))
-                  : buildMode === "panels"
-                    ? panelDefs.map((panel) => (
+                      ))}
+                      {panelDefs.map((panel) => (
                       <button
                         key={panel.id}
                         className={`module-card panel-card ${panel.id === selectedPanelId ? "selected" : ""}`}
@@ -734,14 +809,16 @@ export default function HangarPage() {
                         <span className="panel-thumb" style={getPanelSpriteStyle(panel)} />
                         <strong>{panel.name}</strong>
                         <span>
-                          {panel.shape.cells.length} cell · {panel.connectors.length} locks
+                          {panel.shape.cells.length} cell
                         </span>
                         <span>
                           {panel.role} · HP {panel.hp} · mass {panel.mass}
                         </span>
                       </button>
-                    ))
-                    : moduleDefs.map((module) => (
+                      ))}
+                    </>
+                  )
+                  : moduleDefs.map((module) => (
                       <button
                         key={module.id}
                         className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}
@@ -785,11 +862,6 @@ function getPanelLocalCell(panel: PanelDef, installed: InstalledPanel, cell: Gri
     const rotated = rotateCell(shapeCell, installed.rotation);
     return rotated.x === offset.x && rotated.y === offset.y;
   });
-}
-
-function shortConnectorLabel(id: string, side: PanelConnectorSide) {
-  if (side === "top" || side === "bottom") return id.replace("V", "V");
-  return id.replace("H", "H");
 }
 
 function StatusColumn({

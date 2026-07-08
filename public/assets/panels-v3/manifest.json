@@ -9,9 +9,9 @@
     "debris"
   ],
   "exactPanelDimensions": true,
-  "panelAssemblyMode": "deterministic pattern mask over generated material",
-  "geometrySource": "+/- pattern mask, not image generation",
-  "seamlessPanels": true,
+  "panelAssemblyMode": "individual imagegen panel sprites; deterministic +/- mask only normalizes alpha",
+  "geometrySource": "+/- pattern mask controls final silhouette and runtime dimensions",
+  "seamlessPanels": false,
   "perspective": "top-down orthographic",
   "edgeElements": {
     "sourceManifest": "/assets/panels-v3/edge-elements/reference-complete/manifest.json",

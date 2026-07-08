@@ -1,0 +1,158 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "methodology": "image-asset-generation-methodology.md",
+  "sheet": "/assets/generated/full-design/ui/sheets-alpha/ui-sheet-alpha.png",
+  "atlas": {
+    "src": "/assets/generated/full-design/ui/ui-full-design-atlas.png",
+    "columns": 5,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  },
+  "items": {
+    "mobile_joystick_base": {
+      "src": "/assets/generated/full-design/ui/items/mobile_joystick_base.png",
+      "atlas": {
+        "col": 0,
+        "row": 0
+      }
+    },
+    "mobile_joystick_handle": {
+      "src": "/assets/generated/full-design/ui/items/mobile_joystick_handle.png",
+      "atlas": {
+        "col": 1,
+        "row": 0
+      }
+    },
+    "hp_bar_frame": {
+      "src": "/assets/generated/full-design/ui/items/hp_bar_frame.png",
+      "atlas": {
+        "col": 2,
+        "row": 0
+      }
+    },
+    "shield_bar_frame": {
+      "src": "/assets/generated/full-design/ui/items/shield_bar_frame.png",
+      "atlas": {
+        "col": 3,
+        "row": 0
+      }
+    },
+    "energy_bar_frame": {
+      "src": "/assets/generated/full-design/ui/items/energy_bar_frame.png",
+      "atlas": {
+        "col": 4,
+        "row": 0
+      }
+    },
+    "heat_bar_frame": {
+      "src": "/assets/generated/full-design/ui/items/heat_bar_frame.png",
+      "atlas": {
+        "col": 0,
+        "row": 1
+      }
+    },
+    "module_card_frame_common": {
+      "src": "/assets/generated/full-design/ui/items/module_card_frame_common.png",
+      "atlas": {
+        "col": 1,
+        "row": 1
+      }
+    },
+    "module_card_frame_rare": {
+      "src": "/assets/generated/full-design/ui/items/module_card_frame_rare.png",
+      "atlas": {
+        "col": 2,
+        "row": 1
+      }
+    },
+    "module_card_frame_epic": {
+      "src": "/assets/generated/full-design/ui/items/module_card_frame_epic.png",
+      "atlas": {
+        "col": 3,
+        "row": 1
+      }
+    },
+    "module_card_frame_legendary": {
+      "src": "/assets/generated/full-design/ui/items/module_card_frame_legendary.png",
+      "atlas": {
+        "col": 4,
+        "row": 1
+      }
+    },
+    "grid_cell_empty": {
+      "src": "/assets/generated/full-design/ui/items/grid_cell_empty.png",
+      "atlas": {
+        "col": 0,
+        "row": 2
+      }
+    },
+    "grid_cell_valid": {
+      "src": "/assets/generated/full-design/ui/items/grid_cell_valid.png",
+      "atlas": {
+        "col": 1,
+        "row": 2
+      }
+    },
+    "grid_cell_invalid": {
+      "src": "/assets/generated/full-design/ui/items/grid_cell_invalid.png",
+      "atlas": {
+        "col": 2,
+        "row": 2
+      }
+    },
+    "grid_cell_selected": {
+      "src": "/assets/generated/full-design/ui/items/grid_cell_selected.png",
+      "atlas": {
+        "col": 3,
+        "row": 2
+      }
+    },
+    "socket_icon_power": {
+      "src": "/assets/generated/full-design/ui/items/socket_icon_power.png",
+      "atlas": {
+        "col": 4,
+        "row": 2
+      }
+    },
+    "socket_icon_weapon": {
+      "src": "/assets/generated/full-design/ui/items/socket_icon_weapon.png",
+      "atlas": {
+        "col": 0,
+        "row": 3
+      }
+    },
+    "socket_icon_engine": {
+      "src": "/assets/generated/full-design/ui/items/socket_icon_engine.png",
+      "atlas": {
+        "col": 1,
+        "row": 3
+      }
+    },
+    "socket_icon_structure": {
+      "src": "/assets/generated/full-design/ui/items/socket_icon_structure.png",
+      "atlas": {
+        "col": 2,
+        "row": 3
+      }
+    },
+    "warning_icon_energy": {
+      "src": "/assets/generated/full-design/ui/items/warning_icon_energy.png",
+      "atlas": {
+        "col": 3,
+        "row": 3
+      }
+    },
+    "warning_icon_mass": {
+      "src": "/assets/generated/full-design/ui/items/warning_icon_mass.png",
+      "atlas": {
+        "col": 4,
+        "row": 3
+      }
+    }
+  },
+  "rejected": {
+    "irregularGrid": "/assets/generated/full-design/ui/source/ui-sheet-rejected-irregular-grid.png"
+  }
+}

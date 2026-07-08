@@ -20,7 +20,7 @@ import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
 const rotations: Rotation[] = [0, 90, 180, 270];
-const buildModes: BuildMode[] = ["cabins", "panels", "modules"];
+const buildModes: BuildMode[] = ["structure", "modules"];
 
 type ShipState = {
   build: ShipBuild;
@@ -52,18 +52,24 @@ function normalizePersistedState(persisted: unknown, current: ShipState): ShipSt
     ...current,
     ...state,
     build: migrateShipBuild(state.build),
-    buildMode: buildModes.includes(state.buildMode as BuildMode) ? state.buildMode as BuildMode : "modules",
+    buildMode: normalizeBuildMode(state.buildMode),
     selectedModuleId: state.selectedModuleId ?? "hull_block",
     selectedPanelId: state.selectedPanelId ?? "node_plate",
     rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
   };
 }
 
+function normalizeBuildMode(value: unknown): BuildMode {
+  if (value === "modules") return "modules";
+  if (value === "structure" || value === "cabins" || value === "panels") return "structure";
+  return "structure";
+}
+
 export const useShipStore = create<ShipState>()(
   persist(
     (set, get) => ({
       build: defaultBuild,
-      buildMode: "modules",
+      buildMode: "structure",
       selectedModuleId: "hull_block",
       selectedPanelId: "node_plate",
       rotation: 0,
@@ -74,7 +80,7 @@ export const useShipStore = create<ShipState>()(
         if (!preset) return;
         set({
           build: cloneShipBuild(preset),
-          buildMode: "modules",
+          buildMode: "structure",
           selectedModuleId: "hull_block",
           selectedPanelId: "node_plate",
           rotation: 0
@@ -263,7 +269,7 @@ export const useShipStore = create<ShipState>()(
       resetBuild: () =>
         set({
           build: defaultBuild,
-          buildMode: "modules",
+          buildMode: "structure",
           selectedModuleId: "hull_block",
           selectedPanelId: "node_plate",
           rotation: 0
@@ -278,7 +284,7 @@ export const useShipStore = create<ShipState>()(
         return {
           ...state,
           build: migrateShipBuild(state.build),
-          buildMode: buildModes.includes(state.buildMode as BuildMode) ? state.buildMode as BuildMode : "modules",
+          buildMode: normalizeBuildMode(state.buildMode),
           selectedModuleId: state.selectedModuleId ?? "hull_block",
           selectedPanelId: state.selectedPanelId ?? "node_plate",
           rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0

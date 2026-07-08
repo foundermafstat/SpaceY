@@ -178,17 +178,17 @@ const cabinSpriteBounds: Record<
   string,
   { width: number; height: number; bbox: { x: number; y: number; width: number; height: number } }
 > = {
-  cabin_1x1: { width: 256, height: 256, bbox: { x: 2, y: 0, width: 251, height: 256 } },
-  cabin_1x2: { width: 256, height: 512, bbox: { x: 32, y: 0, width: 192, height: 512 } },
-  cabin_2x1: { width: 512, height: 256, bbox: { x: 0, y: 15, width: 512, height: 225 } },
-  cabin_2x2: { width: 512, height: 512, bbox: { x: 8, y: 0, width: 496, height: 512 } },
-  cabin_3x1: { width: 768, height: 256, bbox: { x: 92, y: 0, width: 583, height: 256 } },
-  cabin_block_3x2: { width: 768, height: 512, bbox: { x: 153, y: 0, width: 461, height: 512 } },
-  cabin_cross_3x3: { width: 768, height: 768, bbox: { x: 1, y: 0, width: 766, height: 768 } },
-  cabin_notch_3x2: { width: 768, height: 512, bbox: { x: 118, y: 0, width: 532, height: 512 } },
-  cabin_t_3x2: { width: 768, height: 512, bbox: { x: 102, y: 0, width: 563, height: 512 } },
-  cabin_u_3x2: { width: 768, height: 512, bbox: { x: 49, y: 0, width: 670, height: 512 } },
-  cabin_zig_3x2: { width: 768, height: 512, bbox: { x: 198, y: 0, width: 371, height: 512 } }
+  cabin_1x1: { width: 256, height: 256, bbox: { x: 0, y: 0, width: 256, height: 256 } },
+  cabin_1x2: { width: 256, height: 512, bbox: { x: 0, y: 0, width: 256, height: 512 } },
+  cabin_2x1: { width: 512, height: 256, bbox: { x: 0, y: 0, width: 512, height: 256 } },
+  cabin_2x2: { width: 512, height: 512, bbox: { x: 0, y: 0, width: 512, height: 512 } },
+  cabin_3x1: { width: 768, height: 256, bbox: { x: 0, y: 0, width: 768, height: 256 } },
+  cabin_block_3x2: { width: 768, height: 512, bbox: { x: 0, y: 0, width: 768, height: 512 } },
+  cabin_cross_3x3: { width: 768, height: 768, bbox: { x: 0, y: 0, width: 768, height: 768 } },
+  cabin_notch_3x2: { width: 768, height: 512, bbox: { x: 0, y: 0, width: 768, height: 512 } },
+  cabin_t_3x2: { width: 768, height: 512, bbox: { x: 0, y: 0, width: 768, height: 512 } },
+  cabin_u_3x2: { width: 768, height: 512, bbox: { x: 0, y: 0, width: 768, height: 512 } },
+  cabin_zig_3x2: { width: 768, height: 512, bbox: { x: 0, y: 0, width: 768, height: 512 } }
 };
 
 const panelAssetStates: Record<PanelState, "ideal" | "damaged" | "heavyDamage" | "debris"> = {

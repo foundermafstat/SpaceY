@@ -1,0 +1,81 @@
+{
+  "format": "png",
+  "layerSize": [
+    1024,
+    512
+  ],
+  "methodology": "image-asset-generation-methodology.md",
+  "source": "/assets/generated/full-design/backgrounds/source/background-layers-source.png",
+  "layers": {
+    "deep_space_background_dark": {
+      "src": "/assets/generated/full-design/backgrounds/layers/deep_space_background_dark.png",
+      "grid": {
+        "col": 0,
+        "row": 0
+      }
+    },
+    "nebula_layer_blue": {
+      "src": "/assets/generated/full-design/backgrounds/layers/nebula_layer_blue.png",
+      "grid": {
+        "col": 1,
+        "row": 0
+      }
+    },
+    "nebula_layer_purple": {
+      "src": "/assets/generated/full-design/backgrounds/layers/nebula_layer_purple.png",
+      "grid": {
+        "col": 2,
+        "row": 0
+      }
+    },
+    "far_stars_layer": {
+      "src": "/assets/generated/full-design/backgrounds/layers/far_stars_layer.png",
+      "grid": {
+        "col": 3,
+        "row": 0
+      }
+    },
+    "close_stars_layer": {
+      "src": "/assets/generated/full-design/backgrounds/layers/close_stars_layer.png",
+      "grid": {
+        "col": 4,
+        "row": 0
+      }
+    },
+    "asteroid_debris_layer": {
+      "src": "/assets/generated/full-design/backgrounds/layers/asteroid_debris_layer.png",
+      "grid": {
+        "col": 0,
+        "row": 1
+      }
+    },
+    "dust_particles_layer": {
+      "src": "/assets/generated/full-design/backgrounds/layers/dust_particles_layer.png",
+      "grid": {
+        "col": 1,
+        "row": 1
+      }
+    },
+    "battlefield_grid_subtle": {
+      "src": "/assets/generated/full-design/backgrounds/layers/battlefield_grid_subtle.png",
+      "grid": {
+        "col": 2,
+        "row": 1
+      }
+    },
+    "space_clouds_soft": {
+      "src": "/assets/generated/full-design/backgrounds/layers/space_clouds_soft.png",
+      "grid": {
+        "col": 3,
+        "row": 1
+      }
+    },
+    "distant_planet_silhouette": {
+      "src": "/assets/generated/full-design/backgrounds/layers/distant_planet_silhouette.png",
+      "grid": {
+        "col": 4,
+        "row": 1
+      }
+    }
+  }
+}

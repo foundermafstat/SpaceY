@@ -24,8 +24,8 @@ export default function BattlePage() {
   }, [addReward]);
 
   return (
-    <main className="app-shell">
-      <section className="mobile-frame">
+    <main className="app-shell game-shell">
+      <section className="mobile-frame game-frame game-frame--battle">
         <div className="battle-host">
           {blockers.length === 0 && <BattleCanvas build={build} onResult={handleResult} />}
           <div className="battle-overlay">

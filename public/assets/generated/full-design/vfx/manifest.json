@@ -1,0 +1,476 @@
+{
+  "format": "png",
+  "cellSize": 256,
+  "methodology": "image-asset-generation-methodology.md",
+  "sheets": {
+    "engine-vfx": {
+      "alphaSheet": "/assets/generated/full-design/vfx/sheets-alpha/engine-vfx-alpha.png",
+      "columns": 4,
+      "rows": 3,
+      "items": [
+        "engine_glow_small_blue",
+        "engine_glow_medium_blue",
+        "engine_glow_large_blue",
+        "engine_glow_orange",
+        "engine_glow_purple",
+        "engine_plume_short",
+        "engine_plume_medium",
+        "engine_plume_long",
+        "engine_ignition_flash",
+        "engine_overdrive_plume",
+        "side_thruster_burst",
+        "reverse_thruster_burst"
+      ]
+    },
+    "projectiles": {
+      "alphaSheet": "/assets/generated/full-design/vfx/sheets-alpha/projectiles-alpha.png",
+      "columns": 4,
+      "rows": 3,
+      "items": [
+        "bullet_kinetic_small",
+        "bullet_kinetic_large",
+        "railgun_beam_line",
+        "laser_beam_core",
+        "laser_beam_outer_glow",
+        "plasma_projectile_small",
+        "plasma_projectile_large",
+        "missile_projectile",
+        "missile_smoke_trail",
+        "emp_wave_ring",
+        "electric_arc_segment",
+        "flak_projectile"
+      ]
+    },
+    "impacts": {
+      "alphaSheet": "/assets/generated/full-design/vfx/sheets-alpha/impacts-alpha.png",
+      "columns": 5,
+      "rows": 2,
+      "items": [
+        "hit_spark_small",
+        "hit_spark_medium",
+        "hit_spark_large",
+        "shield_hit_ring",
+        "armor_hit_flash",
+        "laser_burn_mark",
+        "plasma_splash",
+        "emp_hit_electric_noise",
+        "missile_impact_flash",
+        "debris_spark_burst"
+      ]
+    },
+    "explosions-debris": {
+      "alphaSheet": "/assets/generated/full-design/vfx/sheets-alpha/explosions-debris-alpha.png",
+      "columns": 7,
+      "rows": 2,
+      "items": [
+        "explosion_small_sprite_sheet",
+        "explosion_medium_sprite_sheet",
+        "explosion_large_sprite_sheet",
+        "reactor_explosion_sprite_sheet",
+        "plasma_explosion_sprite_sheet",
+        "missile_explosion_sprite_sheet",
+        "shockwave_ring",
+        "smoke_puff_small",
+        "smoke_puff_large",
+        "burning_debris_chunk",
+        "metal_fragment_01",
+        "metal_fragment_02",
+        "metal_fragment_03",
+        "metal_fragment_04"
+      ]
+    }
+  },
+  "items": {
+    "engine_glow_small_blue": {
+      "src": "/assets/generated/full-design/vfx/items/engine_glow_small_blue.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 0,
+        "row": 0
+      }
+    },
+    "engine_glow_medium_blue": {
+      "src": "/assets/generated/full-design/vfx/items/engine_glow_medium_blue.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 1,
+        "row": 0
+      }
+    },
+    "engine_glow_large_blue": {
+      "src": "/assets/generated/full-design/vfx/items/engine_glow_large_blue.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 2,
+        "row": 0
+      }
+    },
+    "engine_glow_orange": {
+      "src": "/assets/generated/full-design/vfx/items/engine_glow_orange.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 3,
+        "row": 0
+      }
+    },
+    "engine_glow_purple": {
+      "src": "/assets/generated/full-design/vfx/items/engine_glow_purple.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 4,
+        "row": 0
+      }
+    },
+    "engine_plume_short": {
+      "src": "/assets/generated/full-design/vfx/items/engine_plume_short.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 5,
+        "row": 0
+      }
+    },
+    "engine_plume_medium": {
+      "src": "/assets/generated/full-design/vfx/items/engine_plume_medium.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 6,
+        "row": 0
+      }
+    },
+    "engine_plume_long": {
+      "src": "/assets/generated/full-design/vfx/items/engine_plume_long.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 7,
+        "row": 0
+      }
+    },
+    "engine_ignition_flash": {
+      "src": "/assets/generated/full-design/vfx/items/engine_ignition_flash.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 8,
+        "row": 0
+      }
+    },
+    "engine_overdrive_plume": {
+      "src": "/assets/generated/full-design/vfx/items/engine_overdrive_plume.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 9,
+        "row": 0
+      }
+    },
+    "side_thruster_burst": {
+      "src": "/assets/generated/full-design/vfx/items/side_thruster_burst.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 10,
+        "row": 0
+      }
+    },
+    "reverse_thruster_burst": {
+      "src": "/assets/generated/full-design/vfx/items/reverse_thruster_burst.png",
+      "sheet": "engine-vfx",
+      "atlas": {
+        "col": 11,
+        "row": 0
+      }
+    },
+    "bullet_kinetic_small": {
+      "src": "/assets/generated/full-design/vfx/items/bullet_kinetic_small.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 0,
+        "row": 1
+      }
+    },
+    "bullet_kinetic_large": {
+      "src": "/assets/generated/full-design/vfx/items/bullet_kinetic_large.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 1,
+        "row": 1
+      }
+    },
+    "railgun_beam_line": {
+      "src": "/assets/generated/full-design/vfx/items/railgun_beam_line.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 2,
+        "row": 1
+      }
+    },
+    "laser_beam_core": {
+      "src": "/assets/generated/full-design/vfx/items/laser_beam_core.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 3,
+        "row": 1
+      }
+    },
+    "laser_beam_outer_glow": {
+      "src": "/assets/generated/full-design/vfx/items/laser_beam_outer_glow.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 4,
+        "row": 1
+      }
+    },
+    "plasma_projectile_small": {
+      "src": "/assets/generated/full-design/vfx/items/plasma_projectile_small.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 5,
+        "row": 1
+      }
+    },
+    "plasma_projectile_large": {
+      "src": "/assets/generated/full-design/vfx/items/plasma_projectile_large.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 6,
+        "row": 1
+      }
+    },
+    "missile_projectile": {
+      "src": "/assets/generated/full-design/vfx/items/missile_projectile.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 7,
+        "row": 1
+      }
+    },
+    "missile_smoke_trail": {
+      "src": "/assets/generated/full-design/vfx/items/missile_smoke_trail.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 8,
+        "row": 1
+      }
+    },
+    "emp_wave_ring": {
+      "src": "/assets/generated/full-design/vfx/items/emp_wave_ring.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 9,
+        "row": 1
+      }
+    },
+    "electric_arc_segment": {
+      "src": "/assets/generated/full-design/vfx/items/electric_arc_segment.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 10,
+        "row": 1
+      }
+    },
+    "flak_projectile": {
+      "src": "/assets/generated/full-design/vfx/items/flak_projectile.png",
+      "sheet": "projectiles",
+      "atlas": {
+        "col": 11,
+        "row": 1
+      }
+    },
+    "hit_spark_small": {
+      "src": "/assets/generated/full-design/vfx/items/hit_spark_small.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 0,
+        "row": 2
+      }
+    },
+    "hit_spark_medium": {
+      "src": "/assets/generated/full-design/vfx/items/hit_spark_medium.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 1,
+        "row": 2
+      }
+    },
+    "hit_spark_large": {
+      "src": "/assets/generated/full-design/vfx/items/hit_spark_large.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 2,
+        "row": 2
+      }
+    },
+    "shield_hit_ring": {
+      "src": "/assets/generated/full-design/vfx/items/shield_hit_ring.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 3,
+        "row": 2
+      }
+    },
+    "armor_hit_flash": {
+      "src": "/assets/generated/full-design/vfx/items/armor_hit_flash.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 4,
+        "row": 2
+      }
+    },
+    "laser_burn_mark": {
+      "src": "/assets/generated/full-design/vfx/items/laser_burn_mark.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 5,
+        "row": 2
+      }
+    },
+    "plasma_splash": {
+      "src": "/assets/generated/full-design/vfx/items/plasma_splash.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 6,
+        "row": 2
+      }
+    },
+    "emp_hit_electric_noise": {
+      "src": "/assets/generated/full-design/vfx/items/emp_hit_electric_noise.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 7,
+        "row": 2
+      }
+    },
+    "missile_impact_flash": {
+      "src": "/assets/generated/full-design/vfx/items/missile_impact_flash.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 8,
+        "row": 2
+      }
+    },
+    "debris_spark_burst": {
+      "src": "/assets/generated/full-design/vfx/items/debris_spark_burst.png",
+      "sheet": "impacts",
+      "atlas": {
+        "col": 9,
+        "row": 2
+      }
+    },
+    "explosion_small_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/explosion_small_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 10,
+        "row": 2
+      }
+    },
+    "explosion_medium_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/explosion_medium_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 11,
+        "row": 2
+      }
+    },
+    "explosion_large_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/explosion_large_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 0,
+        "row": 3
+      }
+    },
+    "reactor_explosion_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/reactor_explosion_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 1,
+        "row": 3
+      }
+    },
+    "plasma_explosion_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/plasma_explosion_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 2,
+        "row": 3
+      }
+    },
+    "missile_explosion_sprite_sheet": {
+      "src": "/assets/generated/full-design/vfx/items/missile_explosion_sprite_sheet.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 3,
+        "row": 3
+      }
+    },
+    "shockwave_ring": {
+      "src": "/assets/generated/full-design/vfx/items/shockwave_ring.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 4,
+        "row": 3
+      }
+    },
+    "smoke_puff_small": {
+      "src": "/assets/generated/full-design/vfx/items/smoke_puff_small.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 5,
+        "row": 3
+      }
+    },
+    "smoke_puff_large": {
+      "src": "/assets/generated/full-design/vfx/items/smoke_puff_large.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 6,
+        "row": 3
+      }
+    },
+    "burning_debris_chunk": {
+      "src": "/assets/generated/full-design/vfx/items/burning_debris_chunk.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 7,
+        "row": 3
+      }
+    },
+    "metal_fragment_01": {
+      "src": "/assets/generated/full-design/vfx/items/metal_fragment_01.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 8,
+        "row": 3
+      }
+    },
+    "metal_fragment_02": {
+      "src": "/assets/generated/full-design/vfx/items/metal_fragment_02.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 9,
+        "row": 3
+      }
+    },
+    "metal_fragment_03": {
+      "src": "/assets/generated/full-design/vfx/items/metal_fragment_03.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 10,
+        "row": 3
+      }
+    },
+    "metal_fragment_04": {
+      "src": "/assets/generated/full-design/vfx/items/metal_fragment_04.png",
+      "sheet": "explosions-debris",
+      "atlas": {
+        "col": 11,
+        "row": 3
+      }
+    }
+  },
+  "atlas": {
+    "src": "/assets/generated/full-design/vfx/vfx-full-design-atlas.png",
+    "columns": 12,
+    "rows": 4,
+    "cellWidth": 256,
+    "cellHeight": 256
+  }
+}

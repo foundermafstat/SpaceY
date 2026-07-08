@@ -3,8 +3,8 @@ import HomeSceneCanvas from "@/components/home/HomeSceneCanvas";
 
 export default function HomePage() {
   return (
-    <main className="app-shell">
-      <section className="mobile-frame home-scene-frame">
+    <main className="app-shell game-shell">
+      <section className="mobile-frame game-frame game-frame--home home-scene-frame">
         <div className="home-scene-host">
           <HomeSceneCanvas />
           <div className="home-scene-overlay">

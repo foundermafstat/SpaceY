@@ -4,7 +4,15 @@ import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
 import type { TextStyleFontWeight } from "pixi.js";
 import { getEnemyDef, type EnemyDef, type EnemyKind } from "@/game/data/enemies";
-import { getFrame, getModule, getTransformedCells } from "@/game/ship/build";
+import {
+  getCabin,
+  getFrame,
+  getInstalledCabinPosition,
+  getModule,
+  getPanel,
+  getTransformedCells,
+  rotateCell
+} from "@/game/ship/build";
 import { createShipRuntime, type ShipRuntime } from "@/game/ship/runtime";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getWorldMount, clampToScreenEdge, type Vec } from "@/game/battle/math";
@@ -45,10 +53,12 @@ import {
 import { applyRuntimeDamage } from "@/game/battle/systems/DamageSystem";
 import {
   battleVfxAtlas,
+  cabinAtlas,
   getModuleSpriteKey,
   hoverAtlas,
   moduleAtlas,
   moduleStateAtlas,
+  panelAtlas,
   weaponAtlas,
   weaponStateAtlas,
   type BattleVfxSpriteKey,
@@ -56,7 +66,7 @@ import {
   type ModuleSpriteKey,
   type WeaponSpriteKey
 } from "@/game/assets/moduleSprites";
-import type { ModuleDef, ShipBuild, WeaponDef } from "@/game/types";
+import type { CabinDef, GridCell, InstalledPanel, ModuleDef, PanelDef, PanelState, ShipBuild, WeaponDef } from "@/game/types";
 
 const BACKGROUND_SCENE = { width: 2400, height: 3600 };
 const SPACE_TILE_SCALE = 0.8;
@@ -186,25 +196,131 @@ type EnemyMarker = {
   distance: Text;
 };
 
+type ModuleDamageState = "ideal" | "lightDamage" | "heavyDamage" | "debris";
+type StateTextureMap<T extends string> = Record<ModuleDamageState, Record<T, Texture>>;
+
+const BATTLE_PANEL_SPRITE_IDS = [
+  "single_1",
+  "bar_2h",
+  "bar_2v",
+  "bar_3h",
+  "bar_4h",
+  "block_2x2",
+  "corner_l_2x2",
+  "tee_3x2",
+  "cross_3x3",
+  "long_l_3x3",
+  "zig_3x3",
+  "c_2x3",
+  "long_corner_2x3",
+  "block_tail_2x3"
+] as const;
+type BattlePanelSpriteKey = (typeof BATTLE_PANEL_SPRITE_IDS)[number];
+
+const BATTLE_CABIN_SPRITE_IDS = [
+  "cabin_1x1",
+  "cabin_1x2",
+  "cabin_2x1",
+  "cabin_2x2",
+  "cabin_3x1",
+  "cabin_block_3x2",
+  "cabin_cross_3x3",
+  "cabin_notch_3x2",
+  "cabin_t_3x2",
+  "cabin_u_3x2",
+  "cabin_zig_3x2"
+] as const;
+type BattleCabinSpriteKey = (typeof BATTLE_CABIN_SPRITE_IDS)[number];
+
+const BATTLE_STRUCTURE_STATE_FOLDERS: Record<ModuleDamageState, string> = {
+  ideal: "ideal",
+  lightDamage: "damaged",
+  heavyDamage: "heavyDamage",
+  debris: "debris"
+};
+
+const PANEL_VISUAL_STATE: Record<PanelState, ModuleDamageState> = {
+  ideal: "ideal",
+  damaged: "lightDamage",
+  critical: "heavyDamage",
+  debris: "debris"
+};
+
+const BATTLE_PANEL_SPRITE_ASSETS: Record<BattlePanelSpriteKey, { width: number; height: number }> = {
+  single_1: { width: 1, height: 1 },
+  bar_2h: { width: 2, height: 1 },
+  bar_2v: { width: 1, height: 2 },
+  bar_3h: { width: 3, height: 1 },
+  bar_4h: { width: 4, height: 1 },
+  block_2x2: { width: 2, height: 2 },
+  corner_l_2x2: { width: 2, height: 2 },
+  tee_3x2: { width: 3, height: 2 },
+  cross_3x3: { width: 3, height: 3 },
+  long_l_3x3: { width: 3, height: 3 },
+  zig_3x3: { width: 3, height: 3 },
+  c_2x3: { width: 2, height: 3 },
+  long_corner_2x3: { width: 2, height: 3 },
+  block_tail_2x3: { width: 2, height: 3 }
+};
+
+const BATTLE_PANEL_ASSET_CELL_TRANSFORMS: Record<
+  string,
+  (
+    cell: { x: number; y: number },
+    source: { width: number; height: number },
+    asset: { width: number; height: number }
+  ) => { x: number; y: number }
+> = {
+  corner_l: (cell, _source, asset) => ({ x: cell.x, y: asset.height - 1 - cell.y }),
+  corner_j: (cell, _source, asset) => ({
+    x: asset.width - 1 - cell.x,
+    y: asset.height - 1 - cell.y
+  }),
+  tee_tail: (cell, _source, asset) => ({ x: cell.x, y: asset.height - 1 - cell.y }),
+  zig_s: (cell, source, asset) => ({
+    x: asset.width - 1 - scaleIndex(cell.x, source.width, asset.width),
+    y: scaleIndex(cell.y, source.height, asset.height)
+  }),
+  long_j: (cell, source, asset) => ({
+    x: asset.width - 1 - scaleIndex(cell.x, source.width, asset.width),
+    y: scaleIndex(cell.y, source.height, asset.height)
+  })
+};
+
 type AtlasTextures = {
   background: Texture;
   planetImages: Texture[];
   modules: StateTextureMap<ModuleSpriteKey>;
   weapons: StateTextureMap<WeaponSpriteKey>;
+  panels: StateTextureMap<BattlePanelSpriteKey>;
+  cabins: StateTextureMap<BattleCabinSpriteKey>;
   hover: Record<HoverSpriteKey, Texture>;
   battleVfx: Record<BattleVfxSpriteKey, Texture>;
   aiExplosionAnimations: Record<ExplosionAnimationKey, Texture[]>;
 };
 
-type ModuleDamageState = "ideal" | "lightDamage" | "heavyDamage" | "debris";
-type StateTextureMap<T extends string> = Record<ModuleDamageState, Record<T, Texture>>;
-type ShipVisualPart = {
+type ShipVisualModulePart = {
+  kind: "module";
   module: ModuleDef;
   sprite: Sprite;
   weaponBaseKey?: WeaponSpriteKey;
   turret?: Sprite;
   weaponTurretKey?: WeaponSpriteKey;
 };
+type ShipVisualPanelPart = {
+  kind: "panel";
+  panel: PanelDef;
+  sprite: Sprite;
+  panelSpriteKey: BattlePanelSpriteKey;
+  localCell: GridCell;
+};
+type ShipVisualCabinPart = {
+  kind: "cabin";
+  cabin: CabinDef;
+  sprite: Sprite;
+  cabinSpriteKey: BattleCabinSpriteKey;
+};
+type ShipVisualPart = ShipVisualModulePart | ShipVisualPanelPart | ShipVisualCabinPart;
 
 type ShipVisual = {
   container: Container;
@@ -920,14 +1036,26 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 async function loadAtlasTextures(): Promise<AtlasTextures> {
   const backgroundSrc = SPACE_TILE_SRCS[Math.floor(Math.random() * SPACE_TILE_SRCS.length)];
   const planetSrcs = pickBattlePlanetSources();
-  const [background, planetImages, moduleStateBase, weaponStateBase, hoverBase, battleVfxBase, explosionBase] = await Promise.all([
+  const [
+    background,
+    planetImages,
+    moduleStateBase,
+    weaponStateBase,
+    hoverBase,
+    battleVfxBase,
+    explosionBase,
+    panelTextures,
+    cabinTextures
+  ] = await Promise.all([
     Assets.load<Texture>(backgroundSrc),
     Promise.all(planetSrcs.map((src) => Assets.load<Texture>(src))),
     Assets.load<Texture>(moduleStateAtlas.src),
     Assets.load<Texture>(weaponStateAtlas.src),
     Assets.load<Texture>(hoverAtlas.src),
     Assets.load<Texture>(battleVfxAtlas.src),
-    Assets.load<Texture>("/assets/generated/ai/explosion-ai-effects-atlas.png")
+    Assets.load<Texture>("/assets/generated/ai/explosion-ai-effects-atlas.png"),
+    loadStructureTextures(panelAtlas.src, BATTLE_PANEL_SPRITE_IDS),
+    loadStructureTextures(cabinAtlas.src, BATTLE_CABIN_SPRITE_IDS)
   ]);
 
   return {
@@ -935,10 +1063,30 @@ async function loadAtlasTextures(): Promise<AtlasTextures> {
     planetImages,
     modules: sliceStateAtlas(moduleStateBase, moduleAtlas),
     weapons: sliceStateAtlas(weaponStateBase, weaponAtlas),
+    panels: panelTextures,
+    cabins: cabinTextures,
     hover: sliceAtlas(hoverBase, hoverAtlas),
     battleVfx: sliceAtlas(battleVfxBase, battleVfxAtlas, 18),
     aiExplosionAnimations: sliceExplosionAnimations(explosionBase)
   };
+}
+
+async function loadStructureTextures<T extends string>(
+  basePath: string,
+  spriteIds: readonly T[]
+): Promise<StateTextureMap<T>> {
+  const stateEntries = await Promise.all(
+    (Object.entries(BATTLE_STRUCTURE_STATE_FOLDERS) as [ModuleDamageState, string][]).map(async ([state, folder]) => {
+      const textures = {} as Record<T, Texture>;
+      await Promise.all(
+        spriteIds.map(async (spriteId) => {
+          textures[spriteId] = await Assets.load<Texture>(`${basePath}/${folder}/${spriteId}.webp`);
+        })
+      );
+      return [state, textures] as const;
+    })
+  );
+  return Object.fromEntries(stateEntries) as StateTextureMap<T>;
 }
 
 function pickBattlePlanetSources() {
@@ -1012,11 +1160,51 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
   const engineMounts: Vec[] = [];
   const parts: ShipVisualPart[] = [];
   const frame = getFrame(build.frameId);
+  const cabin = build.cabinId ? getCabin(build.cabinId) : null;
   const cell = 26;
-  const centerX = (frame.size.width - 1) / 2;
-  const centerY = (frame.size.height - 1) / 2;
+  const gridSize = cabin?.gridSize ?? frame.size;
+  const centerX = (gridSize.width - 1) / 2;
+  const centerY = (gridSize.height - 1) / 2;
+
+  (build.panels ?? []).forEach((installed) => {
+    const panel = getPanel(installed.panelId);
+    const panelSpriteKey = getBattlePanelSpriteKey(panel);
+    const panelState = PANEL_VISUAL_STATE[installed.state] ?? "ideal";
+    getTransformedCells(panel, installed.position, installed.rotation).forEach((shipCell) => {
+      const localCell = getPanelLocalCell(panel, installed, shipCell) ?? { x: 0, y: 0 };
+      const x = (shipCell.x - centerX) * cell;
+      const y = (shipCell.y - centerY) * cell;
+      const sprite = new Sprite(getPanelCellTexture(textures.panels[panelState][panelSpriteKey], panel, localCell));
+      sprite.anchor.set(0.5);
+      sprite.width = cell * 1.34;
+      sprite.height = cell * 1.34;
+      sprite.angle = installed.rotation;
+      sprite.position.set(x, y);
+      container.addChild(sprite);
+      parts.push({ kind: "panel", panel, sprite, panelSpriteKey, localCell });
+    });
+  });
+
+  if (cabin) {
+    const cabinPosition = getInstalledCabinPosition(build);
+    const cabinSpriteKey = getBattleCabinSpriteKey(cabin);
+    if (cabinPosition) {
+      const cabinRotation = build.cabinRotation ?? 0;
+      const center = getRotatedRectCenter(cabinPosition, cabin.assetGridSize, cabinRotation);
+      const sprite = new Sprite(textures.cabins.ideal[cabinSpriteKey]);
+      sprite.anchor.set(0.5);
+      sprite.width = cabin.assetGridSize.width * cell * 1.26;
+      sprite.height = cabin.assetGridSize.height * cell * 1.26;
+      sprite.angle = cabinRotation;
+      sprite.position.set((center.x - centerX) * cell, (center.y - centerY) * cell);
+      container.addChild(sprite);
+      parts.push({ kind: "cabin", cabin, sprite, cabinSpriteKey });
+    }
+  }
+
   build.modules.forEach((installed) => {
     const module = getModule(installed.moduleId);
+    if (build.cabinId && module.type === "core") return;
     getTransformedCells(module, installed.position, installed.rotation).forEach((shipCell) => {
       const x = (shipCell.x - centerX) * cell;
       const y = (shipCell.y - centerY) * cell;
@@ -1053,9 +1241,9 @@ function buildShipGraphic(build: ShipBuild, textures: AtlasTextures): ShipVisual
         if (module.id === "missile_pod") turret.tint = 0xffd080;
         container.addChild(turret);
         turrets.set(installed.instanceId, turret);
-        parts.push({ module, sprite, weaponBaseKey, turret, weaponTurretKey });
+        parts.push({ kind: "module", module, sprite, weaponBaseKey, turret, weaponTurretKey });
       } else {
-        parts.push({ module, sprite });
+        parts.push({ kind: "module", module, sprite });
       }
     });
   });
@@ -1073,6 +1261,14 @@ function getShipDamageState(hp: number, maxHp: number): ModuleDamageState {
 function applyShipDamageState(visual: ShipVisual, textures: AtlasTextures, state: ModuleDamageState) {
   if (visual.damageState === state) return;
   visual.parts.forEach((part) => {
+    if (part.kind === "panel") {
+      part.sprite.texture = getPanelCellTexture(textures.panels[state][part.panelSpriteKey], part.panel, part.localCell);
+      return;
+    }
+    if (part.kind === "cabin") {
+      part.sprite.texture = textures.cabins[state][part.cabinSpriteKey];
+      return;
+    }
     if (part.weaponBaseKey) {
       part.sprite.texture = textures.weapons[state][part.weaponBaseKey];
       if (part.turret && part.weaponTurretKey) {
@@ -1083,6 +1279,131 @@ function applyShipDamageState(visual: ShipVisual, textures: AtlasTextures, state
     part.sprite.texture = textures.modules[state][getModuleSpriteKey(part.module)];
   });
   visual.damageState = state;
+}
+
+function getBattlePanelSpriteKey(panel: PanelDef): BattlePanelSpriteKey {
+  return (BATTLE_PANEL_SPRITE_IDS as readonly string[]).includes(panel.spriteId)
+    ? (panel.spriteId as BattlePanelSpriteKey)
+    : "single_1";
+}
+
+function getBattleCabinSpriteKey(cabin: CabinDef): BattleCabinSpriteKey {
+  return cabin.spriteId && (BATTLE_CABIN_SPRITE_IDS as readonly string[]).includes(cabin.spriteId)
+    ? (cabin.spriteId as BattleCabinSpriteKey)
+    : "cabin_1x1";
+}
+
+function getPanelCellTexture(base: Texture, panel: PanelDef, localCell: GridCell) {
+  const panelSpriteKey = getBattlePanelSpriteKey(panel);
+  const asset = BATTLE_PANEL_SPRITE_ASSETS[panelSpriteKey];
+  const assetCell = getBattlePanelAssetCell(panel, localCell, asset);
+  const sourceFrame = base.frame;
+  const frameWidth = sourceFrame.width / asset.width;
+  const frameHeight = sourceFrame.height / asset.height;
+
+  return new Texture({
+    source: base.source,
+    frame: new Rectangle(
+      sourceFrame.x + assetCell.x * frameWidth,
+      sourceFrame.y + assetCell.y * frameHeight,
+      frameWidth,
+      frameHeight
+    )
+  });
+}
+
+function getBattlePanelAssetCell(
+  panel: PanelDef,
+  localCell: GridCell,
+  asset: { width: number; height: number }
+) {
+  const bounds = panel.shape.cells.reduce(
+    (acc, cell) => ({
+      minX: Math.min(acc.minX, cell.x),
+      minY: Math.min(acc.minY, cell.y),
+      maxX: Math.max(acc.maxX, cell.x),
+      maxY: Math.max(acc.maxY, cell.y)
+    }),
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+  );
+  const panelWidth = bounds.maxX - bounds.minX + 1;
+  const panelHeight = bounds.maxY - bounds.minY + 1;
+  const normalized = {
+    x: localCell.x - bounds.minX,
+    y: localCell.y - bounds.minY
+  };
+  const source = { width: panelWidth, height: panelHeight };
+  const transform = BATTLE_PANEL_ASSET_CELL_TRANSFORMS[panel.id];
+
+  if (transform) {
+    return clampAssetCell(transform(normalized, source, asset), asset);
+  }
+  if (asset.width === panelWidth && asset.height === panelHeight) {
+    return clampAssetCell(normalized, asset);
+  }
+  if (asset.width === panelHeight && asset.height === panelWidth) {
+    return clampAssetCell({ x: normalized.y, y: normalized.x }, asset);
+  }
+
+  return clampAssetCell(
+    {
+      x: scaleIndex(normalized.x, panelWidth, asset.width),
+      y: scaleIndex(normalized.y, panelHeight, asset.height)
+    },
+    asset
+  );
+}
+
+function getPanelLocalCell(panel: PanelDef, installed: InstalledPanel, cell: GridCell) {
+  const offset = {
+    x: cell.x - installed.position.x,
+    y: cell.y - installed.position.y
+  };
+  return panel.shape.cells.find((shapeCell) => {
+    const rotated = rotateCell(shapeCell, installed.rotation);
+    return rotated.x === offset.x && rotated.y === offset.y;
+  });
+}
+
+function getRotatedRectCenter(
+  position: GridCell,
+  size: { width: number; height: number },
+  rotation: 0 | 90 | 180 | 270
+) {
+  const cells = Array.from({ length: size.width * size.height }, (_, index) => ({
+    x: index % size.width,
+    y: Math.floor(index / size.width)
+  }));
+  const bounds = cells.reduce(
+    (acc, cell) => {
+      const rotated = rotateCell(cell, rotation);
+      const x = position.x + rotated.x;
+      const y = position.y + rotated.y;
+      return {
+        minX: Math.min(acc.minX, x),
+        minY: Math.min(acc.minY, y),
+        maxX: Math.max(acc.maxX, x),
+        maxY: Math.max(acc.maxY, y)
+      };
+    },
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+  );
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2
+  };
+}
+
+function scaleIndex(value: number, sourceSize: number, targetSize: number) {
+  if (sourceSize <= 1 || targetSize <= 1) return 0;
+  return Math.round((value / (sourceSize - 1)) * (targetSize - 1));
+}
+
+function clampAssetCell(cell: GridCell, asset: { width: number; height: number }) {
+  return {
+    x: Math.max(0, Math.min(asset.width - 1, cell.x)),
+    y: Math.max(0, Math.min(asset.height - 1, cell.y))
+  };
 }
 
 function getWeaponBaseKey(moduleId: string): WeaponSpriteKey {

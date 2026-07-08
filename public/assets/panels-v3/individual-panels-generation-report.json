@@ -1,0 +1,13 @@
+{
+  "generatedAt": "2026-07-06T12:43:27.018488+00:00",
+  "methodology": "individual imagegen panel source sheets; exact tetris silhouette used only for alpha normalization",
+  "sourceDirectory": "public/assets/panels-v3/source/panels-individual",
+  "contactSheet": "public/assets/panels-v3/individual-panels-contact-sheet.png",
+  "panelCount": 14,
+  "stateCount": 4,
+  "outputCount": 56,
+  "validation": {
+    "ok": true,
+    "errors": []
+  }
+}

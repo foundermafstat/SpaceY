@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-07-06",
+  "methodology": "image-asset-generation-methodology.md",
+  "sourceDesignDocs": [
+    "design-doc.md#18",
+    "design-doc2.md#15"
+  ],
+  "outputRoot": "/assets/generated/full-design",
+  "newGeneratedPackages": {
+    "panels": {
+      "manifest": "/assets/generated/full-design/panels/manifest.json",
+      "atlas": "/assets/generated/full-design/panels/panels-full-design-atlas.png",
+      "count": 10
+    },
+    "mvpElements": {
+      "manifest": "/assets/generated/full-design/mvp-elements/manifest.json",
+      "atlas": "/assets/generated/full-design/mvp-elements/mvp-elements-atlas.png",
+      "count": 4
+    },
+    "activeMultipartWeapons": {
+      "manifest": "/assets/generated/full-design/weapons/manifest.json",
+      "atlas": "/assets/generated/full-design/weapons/weapons-multipart-atlas.png",
+      "assetCount": 15,
+      "partStateCount": 240
+    },
+    "engines": {
+      "manifest": "/assets/generated/full-design/engines/manifest.json",
+      "atlas": "/assets/generated/full-design/engines/engines-atlas.png",
+      "count": 12
+    },
+    "vfx": {
+      "manifest": "/assets/generated/full-design/vfx/manifest.json",
+      "atlas": "/assets/generated/full-design/vfx/vfx-full-design-atlas.png",
+      "count": 48
+    },
+    "ui": {
+      "manifest": "/assets/generated/full-design/ui/manifest.json",
+      "atlas": "/assets/generated/full-design/ui/ui-full-design-atlas.png",
+      "count": 20
+    },
+    "backgrounds": {
+      "manifest": "/assets/generated/full-design/backgrounds/manifest.json",
+      "count": 10
+    }
+  },
+  "reusedGeneratedCatalogs": {
+    "frames": {
+      "manifest": "/assets/generated/frame-catalog-atlas.json",
+      "atlas": "/assets/generated/frame-catalog-atlas.png",
+      "count": 40
+    },
+    "hullArmorEnergyShieldAndLegacyWeapons": {
+      "manifest": "/assets/generated/asset-catalog.json",
+      "atlas": "/assets/generated/module-catalog-states-atlas.png",
+      "count": 90
+    }
+  },
+  "notes": [
+    "Weapons in full-design/weapons are generated as multipart active assets: base_mount, turret_body, barrel, active_subpart for each state.",
+    "Engine base sprites intentionally do not include active thrust flames; thrust/glow/plume sprites are in full-design/vfx.",
+    "Rejected source sheets are preserved under rejected folders and are not referenced as final assets."
+  ]
+}

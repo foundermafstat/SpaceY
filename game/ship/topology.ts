@@ -1,7 +1,6 @@
 import {
   cellKey,
   getElement,
-  getInstalledPanelConnectors,
   getInstalledCabinCells,
   getModule,
   getPanel,
@@ -24,13 +23,6 @@ const sideDeltas: Record<PanelConnectorSide, GridCell> = {
   right: { x: 1, y: 0 },
   bottom: { x: 0, y: 1 },
   left: { x: -1, y: 0 }
-};
-
-const oppositeSide: Record<PanelConnectorSide, PanelConnectorSide> = {
-  top: "bottom",
-  right: "left",
-  bottom: "top",
-  left: "right"
 };
 
 export function buildShipTopology(build: ShipBuild): ShipTopologyGraph {
@@ -67,26 +59,14 @@ export function buildShipTopology(build: ShipBuild): ShipTopologyGraph {
 
   for (const installed of build.panels ?? []) {
     const fromNode = panelNode(installed.instanceId);
-    for (const connector of getInstalledPanelConnectors(installed)) {
-      const delta = sideDeltas[connector.side];
-      const neighborCell = {
-        x: connector.cell.x + delta.x,
-        y: connector.cell.y + delta.y
-      };
-      const toNode = panelCells.get(cellKey(neighborCell));
-      if (!toNode || toNode === fromNode) continue;
-      const panel = getPanel(installed.panelId);
-      const matching = getInstalledPanelConnectors(
-        build.panels.find((candidate) => panelNode(candidate.instanceId) === toNode)!
-      ).some(
-        (candidate) =>
-          candidate.cell.x === neighborCell.x &&
-          candidate.cell.y === neighborCell.y &&
-          candidate.side === oppositeSide[connector.side] &&
-          candidate.id === connector.id
-      );
-      if (!matching) continue;
-      edges.push(makeEdge(fromNode, toNode, "structural", panel.networks));
+    const panel = getPanel(installed.panelId);
+    const cells = getTransformedCells(panel, installed.position, installed.rotation);
+    for (const cell of cells) {
+      for (const delta of Object.values(sideDeltas)) {
+        const toNode = panelCells.get(cellKey({ x: cell.x + delta.x, y: cell.y + delta.y }));
+        if (!toNode || toNode === fromNode) continue;
+        edges.push(makeEdge(fromNode, toNode, "structural", panel.networks));
+      }
     }
   }
 

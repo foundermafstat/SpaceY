@@ -1,0 +1,130 @@
+{
+  "generatedAt": "2026-07-06T13:33:49.324493+00:00",
+  "methodology": "individual imagegen command-cabin source sheets; tetris mask only enforces final silhouette and dimensions",
+  "outputCount": 88,
+  "cabinCount": 11,
+  "states": [
+    "ideal",
+    "damaged",
+    "heavyDamage",
+    "debris"
+  ],
+  "contactSheet": "/assets/modules/cabins-tetris-contact-sheet.png",
+  "runtimeContactSheet": "/assets/cabins-v2/cabin-contact-sheet.png",
+  "bounds": {
+    "cabin_1x1": {
+      "width": 256,
+      "height": 256,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 256
+      }
+    },
+    "cabin_1x2": {
+      "width": 256,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 256,
+        "height": 512
+      }
+    },
+    "cabin_2x1": {
+      "width": 512,
+      "height": 256,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 512,
+        "height": 256
+      }
+    },
+    "cabin_3x1": {
+      "width": 768,
+      "height": 256,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 256
+      }
+    },
+    "cabin_2x2": {
+      "width": 512,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 512,
+        "height": 512
+      }
+    },
+    "cabin_t_3x2": {
+      "width": 768,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 512
+      }
+    },
+    "cabin_cross_3x3": {
+      "width": 768,
+      "height": 768,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 768
+      }
+    },
+    "cabin_u_3x2": {
+      "width": 768,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 512
+      }
+    },
+    "cabin_block_3x2": {
+      "width": 768,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 512
+      }
+    },
+    "cabin_notch_3x2": {
+      "width": 768,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 512
+      }
+    },
+    "cabin_zig_3x2": {
+      "width": 768,
+      "height": 512,
+      "bbox": {
+        "x": 0,
+        "y": 0,
+        "width": 768,
+        "height": 512
+      }
+    }
+  },
+  "validation": {
+    "ok": true,
+    "errors": []
+  }
+}

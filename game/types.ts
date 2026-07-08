@@ -20,7 +20,7 @@ export type DamageType =
 
 export type SocketType = "none" | "hard" | "power" | "weapon" | "engine" | "utility";
 export type Rotation = 0 | 90 | 180 | 270;
-export type BuildMode = "cabins" | "panels" | "modules";
+export type BuildMode = "structure" | "modules";
 export type PanelState = "ideal" | "damaged" | "critical" | "debris";
 export type PanelConnectorSide = "top" | "right" | "bottom" | "left";
 export type ShipBuildSchemaVersion = 2 | 3 | 4;

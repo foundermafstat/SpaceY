@@ -1,0 +1,607 @@
+{
+  "set": "SpaceY crew portraits",
+  "assetType": "square game UI crew portrait",
+  "count": 48,
+  "format": "png",
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "sourceMode": "built-in image_gen, one prompt per portrait",
+  "factions": {
+    "Azure Vanguard": {
+      "range": "crew_01-crew_12",
+      "palette": "dark graphite, titanium, cyan/blue bridge lighting"
+    },
+    "Ember Corsairs": {
+      "range": "crew_13-crew_26",
+      "palette": "black graphite, ember red, burnt orange, brass, warm ship lighting"
+    },
+    "Verdant Covenant": {
+      "range": "crew_27-crew_38",
+      "palette": "deep green, violet, graphite, pearlescent white, organic ship lighting"
+    },
+    "Solaris Archive": {
+      "range": "crew_39-crew_48",
+      "palette": "white, gold, pale blue, clean graphite, bright archive lighting"
+    }
+  },
+  "portraits": [
+    {
+      "id": "crew_01",
+      "slug": "starfighter_pilot",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "starfighter pilot",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_01_starfighter_pilot.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_02",
+      "slug": "fleet_captain",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "fleet captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_02_fleet_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_03",
+      "slug": "amphibian_navigator",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "amphibian navigator",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_03_amphibian_navigator.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_04",
+      "slug": "cybernetic_engineer",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "cybernetic engineer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_04_cybernetic_engineer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_05",
+      "slug": "asteroid_miner_pilot",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "asteroid miner pilot",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_05_asteroid_miner_pilot.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_06",
+      "slug": "avian_recon_scout",
+      "faction": "Azure Vanguard",
+      "identity": "unspecified",
+      "role": "avian recon scout",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_06_avian_recon_scout.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_07",
+      "slug": "woman_tactical_officer",
+      "faction": "Azure Vanguard",
+      "identity": "woman",
+      "role": "tactical officer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_07_woman_tactical_officer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_08",
+      "slug": "man_mercenary_captain",
+      "faction": "Azure Vanguard",
+      "identity": "man",
+      "role": "mercenary captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_08_man_mercenary_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_09",
+      "slug": "nonbinary_plantlike_xenobiologist",
+      "faction": "Azure Vanguard",
+      "identity": "nonbinary",
+      "role": "plantlike xenobiologist",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_09_nonbinary_plantlike_xenobiologist.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_10",
+      "slug": "woman_combat_medic",
+      "faction": "Azure Vanguard",
+      "identity": "woman",
+      "role": "combat medic",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_10_woman_combat_medic.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_11",
+      "slug": "man_android_helmsman",
+      "faction": "Azure Vanguard",
+      "identity": "man",
+      "role": "android helmsman",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_11_man_android_helmsman.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_12",
+      "slug": "nonbinary_crystalline_comms",
+      "faction": "Azure Vanguard",
+      "identity": "nonbinary",
+      "role": "crystalline comms",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_12_nonbinary_crystalline_comms.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_13",
+      "slug": "woman_smuggler_pilot",
+      "faction": "Ember Corsairs",
+      "identity": "woman",
+      "role": "smuggler pilot",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_13_woman_smuggler_pilot.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_14",
+      "slug": "man_ex_navy_gunner",
+      "faction": "Ember Corsairs",
+      "identity": "man",
+      "role": "ex navy gunner",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_14_man_ex_navy_gunner.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_15",
+      "slug": "nonbinary_data_analyst",
+      "faction": "Ember Corsairs",
+      "identity": "nonbinary",
+      "role": "data analyst",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_15_nonbinary_data_analyst.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_16",
+      "slug": "woman_reptilian_captain",
+      "faction": "Ember Corsairs",
+      "identity": "woman",
+      "role": "reptilian captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_16_woman_reptilian_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_17",
+      "slug": "ember_woman_corsair_captain",
+      "faction": "Ember Corsairs",
+      "identity": "woman",
+      "role": "corsair captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_17_ember_woman_corsair_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_18",
+      "slug": "ember_man_plasma_racer",
+      "faction": "Ember Corsairs",
+      "identity": "man",
+      "role": "plasma racer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_18_ember_man_plasma_racer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_19",
+      "slug": "ember_nonbinary_salvage_broker",
+      "faction": "Ember Corsairs",
+      "identity": "nonbinary",
+      "role": "salvage broker",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_19_ember_nonbinary_salvage_broker.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_20",
+      "slug": "ember_man_insectoid_boarding_officer",
+      "faction": "Ember Corsairs",
+      "identity": "man",
+      "role": "insectoid boarding officer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_20_ember_man_insectoid_boarding_officer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_21",
+      "slug": "ember_woman_reactor_mechanic",
+      "faction": "Ember Corsairs",
+      "identity": "woman",
+      "role": "reactor mechanic",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_21_ember_woman_reactor_mechanic.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_22",
+      "slug": "ember_nonbinary_nebula_navigator",
+      "faction": "Ember Corsairs",
+      "identity": "nonbinary",
+      "role": "nebula navigator",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_22_ember_nonbinary_nebula_navigator.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_23",
+      "slug": "ember_man_field_surgeon",
+      "faction": "Ember Corsairs",
+      "identity": "man",
+      "role": "field surgeon",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_23_ember_man_field_surgeon.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_24",
+      "slug": "ember_woman_alien_nebula_raider",
+      "faction": "Ember Corsairs",
+      "identity": "woman",
+      "role": "alien nebula raider",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_24_ember_woman_alien_nebula_raider.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_25",
+      "slug": "ember_nonbinary_alien_signal_hacker",
+      "faction": "Ember Corsairs",
+      "identity": "nonbinary",
+      "role": "alien signal hacker",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_25_ember_nonbinary_alien_signal_hacker.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_26",
+      "slug": "ember_man_heavy_quartermaster",
+      "faction": "Ember Corsairs",
+      "identity": "man",
+      "role": "heavy quartermaster",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_26_ember_man_heavy_quartermaster.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_27",
+      "slug": "verdant_woman_alien_diplomat",
+      "faction": "Verdant Covenant",
+      "identity": "woman",
+      "role": "alien diplomat",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_27_verdant_woman_alien_diplomat.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_28",
+      "slug": "verdant_nonbinary_xenotech_pilot",
+      "faction": "Verdant Covenant",
+      "identity": "nonbinary",
+      "role": "xenotech pilot",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_28_verdant_nonbinary_xenotech_pilot.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_29",
+      "slug": "verdant_man_cephalopod_captain",
+      "faction": "Verdant Covenant",
+      "identity": "man",
+      "role": "cephalopod captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_29_verdant_man_cephalopod_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_30",
+      "slug": "verdant_woman_coral_engineer",
+      "faction": "Verdant Covenant",
+      "identity": "woman",
+      "role": "coral engineer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_30_verdant_woman_coral_engineer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_31",
+      "slug": "verdant_nonbinary_avian_oracle",
+      "faction": "Verdant Covenant",
+      "identity": "nonbinary",
+      "role": "avian oracle",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_31_verdant_nonbinary_avian_oracle.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_32",
+      "slug": "verdant_man_bio_armor_marine",
+      "faction": "Verdant Covenant",
+      "identity": "man",
+      "role": "bio armor marine",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_32_verdant_man_bio_armor_marine.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_33",
+      "slug": "verdant_woman_android_xenolinguist",
+      "faction": "Verdant Covenant",
+      "identity": "woman",
+      "role": "android xenolinguist",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_33_verdant_woman_android_xenolinguist.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_34",
+      "slug": "verdant_nonbinary_reptilian_healer",
+      "faction": "Verdant Covenant",
+      "identity": "nonbinary",
+      "role": "reptilian healer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_34_verdant_nonbinary_reptilian_healer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_35",
+      "slug": "verdant_man_plantlike_scout",
+      "faction": "Verdant Covenant",
+      "identity": "man",
+      "role": "plantlike scout",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_35_verdant_man_plantlike_scout.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_36",
+      "slug": "verdant_woman_starwhale_liaison",
+      "faction": "Verdant Covenant",
+      "identity": "woman",
+      "role": "starwhale liaison",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_36_verdant_woman_starwhale_liaison.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_37",
+      "slug": "verdant_nonbinary_gelatinous_technician",
+      "faction": "Verdant Covenant",
+      "identity": "nonbinary",
+      "role": "gelatinous technician",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_37_verdant_nonbinary_gelatinous_technician.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_38",
+      "slug": "verdant_man_crystalline_envoy",
+      "faction": "Verdant Covenant",
+      "identity": "man",
+      "role": "crystalline envoy",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_38_verdant_man_crystalline_envoy.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_39",
+      "slug": "solaris_woman_admiral",
+      "faction": "Solaris Archive",
+      "identity": "woman",
+      "role": "admiral",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_39_solaris_woman_admiral.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_40",
+      "slug": "solaris_man_quantum_physicist",
+      "faction": "Solaris Archive",
+      "identity": "man",
+      "role": "quantum physicist",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_40_solaris_man_quantum_physicist.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_41",
+      "slug": "solaris_nonbinary_zero_gravity_pilot",
+      "faction": "Solaris Archive",
+      "identity": "nonbinary",
+      "role": "zero gravity pilot",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_41_solaris_nonbinary_zero_gravity_pilot.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_42",
+      "slug": "solaris_woman_alien_archivist",
+      "faction": "Solaris Archive",
+      "identity": "woman",
+      "role": "alien archivist",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_42_solaris_woman_alien_archivist.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_43",
+      "slug": "solaris_man_solar_monk_captain",
+      "faction": "Solaris Archive",
+      "identity": "man",
+      "role": "solar monk captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_43_solaris_man_solar_monk_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_44",
+      "slug": "solaris_nonbinary_android_curator",
+      "faction": "Solaris Archive",
+      "identity": "nonbinary",
+      "role": "android curator",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_44_solaris_nonbinary_android_curator.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_45",
+      "slug": "solaris_woman_honor_guard",
+      "faction": "Solaris Archive",
+      "identity": "woman",
+      "role": "honor guard",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_45_solaris_woman_honor_guard.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_46",
+      "slug": "solaris_man_solar_engineer",
+      "faction": "Solaris Archive",
+      "identity": "man",
+      "role": "solar engineer",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_46_solaris_man_solar_engineer.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_47",
+      "slug": "solaris_nonbinary_quantum_navigator",
+      "faction": "Solaris Archive",
+      "identity": "nonbinary",
+      "role": "quantum navigator",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_47_solaris_nonbinary_quantum_navigator.png",
+      "size": [
+        1254,
+        1254
+      ]
+    },
+    {
+      "id": "crew_48",
+      "slug": "solaris_man_eclipse_captain",
+      "faction": "Solaris Archive",
+      "identity": "man",
+      "role": "eclipse captain",
+      "path": "public/assets/generated/crew-portraits/portraits/crew_48_solaris_man_eclipse_captain.png",
+      "size": [
+        1254,
+        1254
+      ]
+    }
+  ]
+}

@@ -1,110 +1,114 @@
-import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import {
+  SlicedBanner,
+  SlicedButton,
+  SlicedCard,
+  SlicedInputStack,
+  SlicedPanel,
+  SlicedStatic
+} from "@/components/sci-fi-ui/SlicedUi";
 
-const buttonKinds = [
-  ["neutral", "Neutral"],
-  ["success", "Success"],
-  ["danger", "Failure"]
-] as const;
+function Slot({ left, top, children }: { left: number; top: number; children: ReactNode }) {
+  return (
+    <div className="sliced-slot" style={{ left, top } as CSSProperties}>
+      {children}
+    </div>
+  );
+}
 
 export default function UiKitPage() {
   return (
-    <main className="app-shell">
-      <section className="ui-kit-screen">
-        <header className="ui-kit-topbar">
-          <div>
-            <strong>Hangar UI Kit</strong>
-            <span>sprite-sliced interface test</span>
-          </div>
-          <Link className="sprite-button neutral" href="/battle">
-            <span className="sprite-button-left" />
-            <span className="sprite-button-mid">Battle</span>
-            <span className="sprite-button-right" />
-          </Link>
-        </header>
+    <main className="sci-sheet-page">
+      <section className="sliced-component-sheet" aria-label="Pixel-perfect sci-fi React components">
+        <Slot left={248} top={82}>
+          <SlicedStatic name="mini-tabs" />
+        </Slot>
 
-        <section className="ui-kit-grid">
-          <div className="ui-kit-card">
-            <h2>Buttons</h2>
-            <div className="ui-kit-row">
-              {buttonKinds.map(([kind, label]) => (
-                <button className={`sprite-button ${kind}`} key={kind}>
-                  <span className="sprite-button-left" />
-                  <span className="sprite-button-mid">{label}</span>
-                  <span className="sprite-button-right" />
-                </button>
-              ))}
-            </div>
-            <button className="sprite-button neutral wide">
-              <span className="sprite-button-left" />
-              <span className="sprite-button-mid">Wide seamless repeated center</span>
-              <span className="sprite-button-right" />
-            </button>
-          </div>
+        <Slot left={420} top={82}>
+          <SlicedButton side="left">Confirm</SlicedButton>
+        </Slot>
+        <Slot left={660} top={82}>
+          <SlicedButton side="right">Deploy</SlicedButton>
+        </Slot>
+        <Slot left={420} top={130}>
+          <SlicedButton side="left" variant="dark">Cancel</SlicedButton>
+        </Slot>
+        <Slot left={660} top={130}>
+          <SlicedButton side="right" variant="dark">Options</SlicedButton>
+        </Slot>
 
-          <div className="ui-kit-card">
-            <h2>Form</h2>
-            <label className="sprite-input">
-              <span>CALLSIGN</span>
-              <input defaultValue="IRIS-07" />
-            </label>
-            <label className="sprite-dropdown">
-              <span>MODULE</span>
-              <select defaultValue="reactor">
-                <option value="reactor">Small reactor</option>
-                <option value="engine">Ion engine</option>
-                <option value="laser">Laser turret</option>
-              </select>
-            </label>
-            <label className="sprite-checkbox">
-              <input type="checkbox" defaultChecked />
-              <span className="sprite-checkbox-box" />
-              Auto repair protocol
-            </label>
-          </div>
+        <Slot left={245} top={210}>
+          <SlicedStatic name="controls-strip" />
+        </Slot>
+        <Slot left={655} top={202}>
+          <SlicedInputStack
+            emailProps={{ defaultValue: "Ultra-Knight@gmail.com" }}
+            passwordProps={{ defaultValue: "starframe" }}
+          />
+        </Slot>
 
-          <div className="ui-kit-card">
-            <h2>Bars</h2>
-            <div className="sprite-progress" style={{ "--value": "64%" } as CSSProperties}>
-              <span />
-            </div>
-            <div className="sprite-slider" style={{ "--value": "58%" } as CSSProperties}>
-              <span />
-            </div>
-          </div>
+        <Slot left={136} top={520}>
+          <SlicedPanel title="Settings" variant="large">
+            <p>Reusable panel body. Content stays code-native while the frame is pixel-sliced.</p>
+          </SlicedPanel>
+        </Slot>
+        <Slot left={786} top={520}>
+          <SlicedPanel variant="side">
+            <SlicedButton side="left">Next</SlicedButton>
+          </SlicedPanel>
+        </Slot>
+        <Slot left={176} top={960}>
+          <SlicedPanel title="Login" variant="medium">
+            <p>Modal shell with exact reference chrome.</p>
+          </SlicedPanel>
+        </Slot>
+        <Slot left={194} top={1248}>
+          <SlicedPanel variant="tall">
+            <p>Inventory panel.</p>
+          </SlicedPanel>
+        </Slot>
 
-          <div className="sprite-popup">
-            <h2>Popup Window</h2>
-            <p>
-              Heavy panel frame for modal content. Corners and borders are sourced from the generated hangar sprite kit.
-            </p>
-            <div className="ui-kit-row">
-              <button className="sprite-button danger">
-                <span className="sprite-button-left" />
-                <span className="sprite-button-mid">Cancel</span>
-                <span className="sprite-button-right" />
-              </button>
-              <button className="sprite-button success">
-                <span className="sprite-button-left" />
-                <span className="sprite-button-mid">Confirm</span>
-                <span className="sprite-button-right" />
-              </button>
-            </div>
-          </div>
-        </section>
+        <Slot left={535} top={1138}>
+          <SlicedCard side="left">
+            <span>?</span>
+          </SlicedCard>
+        </Slot>
+        <Slot left={672} top={1138}>
+          <SlicedCard side="right">
+            <span>?</span>
+          </SlicedCard>
+        </Slot>
+        <Slot left={542} top={1406}>
+          <SlicedStatic name="panel-card-stack" />
+        </Slot>
 
-        <nav className="sprite-bottom-nav" aria-label="Demo navigation">
-          <a>Hangar</a>
-          <a className="active">Loadout</a>
-          <a>Battle</a>
-          <a>Market</a>
-        </nav>
-
-        <section className="ui-kit-sheet">
-          <h2>Generated Reference + Seamless Technical Kit</h2>
-          <img src="/assets/ui/hangar-ui-seamless-reference.png" alt="Generated hangar UI reference" />
-          <img src="/assets/ui/scale9-kit/_contact.png" alt="Scale9 UI kit" />
-        </section>
+        <Slot left={194} top={1642}>
+          <SlicedStatic name="icons-row" />
+        </Slot>
+        <Slot left={158} top={1780}>
+          <SlicedBanner label="VICTORY" />
+        </Slot>
+        <Slot left={618} top={1822}>
+          <SlicedBanner label="DEFEAT" variant="defeat" />
+        </Slot>
+        <Slot left={178} top={2018}>
+          <SlicedStatic name="progress-long" />
+        </Slot>
+        <Slot left={284} top={2178}>
+          <SlicedStatic name="double-bars" />
+        </Slot>
+        <Slot left={326} top={2286}>
+          <SlicedStatic name="small-panels" />
+        </Slot>
+        <Slot left={250} top={2548}>
+          <SlicedStatic name="ruler" />
+        </Slot>
+        <Slot left={246} top={2660}>
+          <SlicedStatic name="hud-top" />
+        </Slot>
+        <Slot left={260} top={2800}>
+          <SlicedStatic name="hud-bottom" />
+        </Slot>
       </section>
     </main>
   );
