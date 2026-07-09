@@ -1,5 +1,5 @@
-import Link from "next/link";
 import HomeSceneCanvas from "@/components/home/HomeSceneCanvas";
+import { UiLinkButton } from "@/components/ui-kit/UiButton";
 
 export default function HomePage() {
   return (
@@ -9,12 +9,12 @@ export default function HomePage() {
           <HomeSceneCanvas />
           <div className="home-scene-overlay">
             <div className="home-scene-actions">
-              <Link className="button" href="/battle">
-                Бой
-              </Link>
-              <Link className="button primary" href="/hangar">
-                Ангар
-              </Link>
+              <UiLinkButton href="/battle" variant="secondary">
+                Battle
+              </UiLinkButton>
+              <UiLinkButton href="/hangar" variant="primary">
+                Hangar
+              </UiLinkButton>
             </div>
           </div>
         </div>

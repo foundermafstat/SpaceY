@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
-import Link from "next/link";
 import { createDraggable, type Draggable } from "animejs";
+import { UiButton, UiButtonLabel, UiLinkButton } from "@/components/ui-kit/UiButton";
 import { cabinDefs } from "@/game/data/cabins";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
@@ -562,13 +562,13 @@ export default function HangarPage() {
               <MiniStat label="DPS" value={stats.dps.toFixed(1)} />
             </div>
             {canTestBattle ? (
-              <Link className="button primary" href="/battle">
+              <UiLinkButton href="/battle" size="sm" variant="primary">
                 Test Battle
-              </Link>
+              </UiLinkButton>
             ) : (
-              <span className="button primary disabled" aria-disabled="true">
+              <UiButtonLabel size="sm" variant="primary">
                 Blocked
-              </span>
+              </UiButtonLabel>
             )}
           </header>
 
@@ -720,21 +720,21 @@ export default function HangarPage() {
               </div>
             </div>
             <div className="hangar-zoom-controls" aria-label="Scene zoom">
-              <button className="button" disabled={zoomIndex === 0} onClick={() => setZoomIndex((value) => Math.max(0, value - 1))}>
+              <UiButton disabled={zoomIndex === 0} onClick={() => setZoomIndex((value) => Math.max(0, value - 1))} size="icon" variant="secondary">
                 -
-              </button>
+              </UiButton>
               <span>{Math.round(zoom * 100)}%</span>
-              <button className="button" disabled={zoomIndex === zoomSteps.length - 1} onClick={() => setZoomIndex((value) => Math.min(zoomSteps.length - 1, value + 1))}>
+              <UiButton disabled={zoomIndex === zoomSteps.length - 1} onClick={() => setZoomIndex((value) => Math.min(zoomSteps.length - 1, value + 1))} size="icon" variant="secondary">
                 +
-              </button>
+              </UiButton>
             </div>
             <div className="hangar-actions">
-              <button className="button" onClick={rotateSelected}>
+              <UiButton onClick={rotateSelected} size="sm" variant="secondary">
                 Rotate {rotation}°
-              </button>
-              <button className="button danger" onClick={resetBuild}>
+              </UiButton>
+              <UiButton onClick={resetBuild} size="sm" variant="secondary">
                 Reset
-              </button>
+              </UiButton>
             </div>
           </section>
 

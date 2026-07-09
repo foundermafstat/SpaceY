@@ -1,12 +1,12 @@
 import type { CSSProperties, ReactNode } from "react";
 import {
   SlicedBanner,
-  SlicedButton,
   SlicedCard,
   SlicedInputStack,
   SlicedPanel,
   SlicedStatic
 } from "@/components/sci-fi-ui/SlicedUi";
+import { UiButton } from "@/components/ui-kit/UiButton";
 
 function Slot({ left, top, children }: { left: number; top: number; children: ReactNode }) {
   return (
@@ -25,16 +25,16 @@ export default function UiKitPage() {
         </Slot>
 
         <Slot left={420} top={82}>
-          <SlicedButton side="left">Confirm</SlicedButton>
+          <UiButton variant="primary">Deploy</UiButton>
         </Slot>
         <Slot left={660} top={82}>
-          <SlicedButton side="right">Deploy</SlicedButton>
+          <UiButton side="right" variant="primary">Confirm</UiButton>
         </Slot>
-        <Slot left={420} top={130}>
-          <SlicedButton side="left" variant="dark">Cancel</SlicedButton>
+        <Slot left={420} top={146}>
+          <UiButton variant="secondary">Options</UiButton>
         </Slot>
-        <Slot left={660} top={130}>
-          <SlicedButton side="right" variant="dark">Options</SlicedButton>
+        <Slot left={660} top={146}>
+          <UiButton side="right" variant="secondary">Cancel</UiButton>
         </Slot>
 
         <Slot left={245} top={210}>
@@ -54,7 +54,7 @@ export default function UiKitPage() {
         </Slot>
         <Slot left={786} top={520}>
           <SlicedPanel variant="side">
-            <SlicedButton side="left">Next</SlicedButton>
+            <UiButton size="sm" variant="primary">Next</UiButton>
           </SlicedPanel>
         </Slot>
         <Slot left={176} top={960}>
