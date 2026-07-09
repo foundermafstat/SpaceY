@@ -4,30 +4,57 @@ import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture, TilingSprite } from "@/game/render/three/three2d";
 import { angleDelta, clamp, distance, getWorldMount, type Vec } from "@/game/battle/math";
 import { applyShipPhysics } from "@/game/battle/shipPhysics";
-import { PLANET_SRCS, SPACE_TILE_SCALE, pickSpaceTileSource } from "@/game/render/spaceScene/constants";
+import {
+  HOME_COSMIC_GLOW_CONFIGS,
+  HOME_PLANET_LAYOUTS,
+  PLANET_GLOW_COLORS,
+  PLANET_SRCS,
+  SPACE_TILE_SCALE,
+  pickSpaceTileSource
+} from "@/game/render/spaceScene/constants";
 import { addLayers, createLayerSet } from "@/game/render/spaceScene/layers";
-import { getModule } from "@/game/ship/build";
+import { cloneShipBuild, shipBuildPresets } from "@/game/data/shipPresets";
+import {
+  getCabin,
+  getInstalledCabinPosition,
+  getModule,
+  getPanel,
+  getTransformedCells
+} from "@/game/ship/build";
 import { calculateShipStats } from "@/game/ship/stats";
 import {
   battleVfxAtlas,
+  cabinAtlas,
   moduleAtlas,
   moduleStateAtlas,
+  panelAtlas,
   weaponAtlas,
   weaponStateAtlas,
   type BattleVfxSpriteKey,
   type ModuleSpriteKey,
   type WeaponSpriteKey
 } from "@/game/assets/moduleSprites";
-import type { ShipBuild, WeaponDef } from "@/game/types";
+import type { CabinDef, GridCell, PanelDef, Rotation, WeaponDef } from "@/game/types";
 
-const LOGO_SRC = "/assets/spacey/spacey-debris-logo.png";
+const LOGO_SRC = "/assets/spacey/spacey-debris-logo-epic.png";
 const PIECE_SRCS = Array.from(
   { length: 32 },
   (_, index) => `/assets/spacey/pieces/spacey-debris-piece-${String(index + 1).padStart(2, "0")}.png`
 );
 const SPACE_BOUNDS = { width: 1500, height: 2400 };
+const PLANET_GLOW_PADDING_FACTOR = 0.08;
+const PLANET_GLOW_SOFT_BLUR_FACTOR = 0.025;
+const PLANET_GLOW_TIGHT_BLUR_FACTOR = 0.009;
+const FRONT_PLANET_GLOW_WIDTH_MULTIPLIER = 2.35;
+const FRONT_PLANET_GLOW_ALPHA_MULTIPLIER = 1.18;
+const HOME_LOGO_VISUAL_SCALE = 1.2;
+const HOME_SHIP_VISUAL_SCALE = 1.2;
+const HOME_ACTION_RATE_MULTIPLIER = 1.58;
+const HOME_PROJECTILE_SPEED_MULTIPLIER = 1.48;
+const HOME_EXPLOSION_SIZE_MULTIPLIER = 1.18;
 const HOME_LAYER_ORDER = [
   "background",
+  "glows",
   "planets",
   "farStars",
   "closeStars",
@@ -41,7 +68,54 @@ const HOME_LAYER_ORDER = [
 ] as const;
 
 type AttackType = "kinetic" | "plasma" | "missile" | "laser";
-type PlanetTexture = { texture: Texture };
+type PlanetTexture = { glowColor: number; texture: Texture };
+const HOME_PANEL_SPRITE_IDS = [
+  "single_1",
+  "bar_2h",
+  "bar_2v",
+  "bar_3h",
+  "bar_4h",
+  "block_2x2",
+  "corner_l_2x2",
+  "tee_3x2",
+  "cross_3x3",
+  "long_l_3x3",
+  "zig_3x3",
+  "c_2x3",
+  "long_corner_2x3",
+  "block_tail_2x3"
+] as const;
+type HomePanelSpriteKey = (typeof HOME_PANEL_SPRITE_IDS)[number];
+const HOME_PANEL_SPRITE_ASSETS: Record<HomePanelSpriteKey, { width: number; height: number }> = {
+  single_1: { width: 1, height: 1 },
+  bar_2h: { width: 2, height: 1 },
+  bar_2v: { width: 1, height: 2 },
+  bar_3h: { width: 3, height: 1 },
+  bar_4h: { width: 4, height: 1 },
+  block_2x2: { width: 2, height: 2 },
+  corner_l_2x2: { width: 2, height: 2 },
+  tee_3x2: { width: 3, height: 2 },
+  cross_3x3: { width: 3, height: 3 },
+  long_l_3x3: { width: 3, height: 3 },
+  zig_3x3: { width: 3, height: 3 },
+  c_2x3: { width: 2, height: 3 },
+  long_corner_2x3: { width: 2, height: 3 },
+  block_tail_2x3: { width: 2, height: 3 }
+};
+const HOME_CABIN_SPRITE_IDS = [
+  "cabin_1x1",
+  "cabin_1x2",
+  "cabin_2x1",
+  "cabin_2x2",
+  "cabin_3x1",
+  "cabin_block_3x2",
+  "cabin_cross_3x3",
+  "cabin_notch_3x2",
+  "cabin_t_3x2",
+  "cabin_u_3x2",
+  "cabin_zig_3x2"
+] as const;
+type HomeCabinSpriteKey = (typeof HOME_CABIN_SPRITE_IDS)[number];
 type AlphaBounds = {
   sourceWidth: number;
   sourceHeight: number;
@@ -55,14 +129,6 @@ type AlphaBounds = {
   offsetY: number;
   alpha: Uint8ClampedArray;
 };
-type ShipPart = {
-  kind: "module" | "weapon";
-  key: ModuleSpriteKey | WeaponSpriteKey;
-  turretKey?: WeaponSpriteKey;
-  x: number;
-  y: number;
-};
-type ShipLayout = { attackType: AttackType; parts: ShipPart[] };
 type WeaponSpec = { base: WeaponSpriteKey; turret: WeaponSpriteKey; tint: number };
 type WeaponMount = Vec & { attackType: AttackType; weapon: WeaponDef; cooldown: number; turret?: Sprite };
 
@@ -81,6 +147,8 @@ type HomeTextures = {
   pieces: Texture[];
   modules: Record<ModuleSpriteKey, Texture>;
   weapons: Record<WeaponSpriteKey, Texture>;
+  panels: Record<HomePanelSpriteKey, Texture>;
+  cabins: Record<HomeCabinSpriteKey, Texture>;
   battleVfx: Record<BattleVfxSpriteKey, Texture>;
 };
 
@@ -153,13 +221,36 @@ type DriftingPiece = {
 };
 
 type RotatingPlanet = Container & {
-  baseX: number;
-  baseY: number;
-  driftAmplitude: number;
+  glow: Sprite;
+  image: Sprite;
+  alphaBase: number;
+  baseXFactor: number;
+  baseYFactor: number;
   driftPhase: number;
   driftSpeed: number;
+  driftXFactor: number;
+  driftYFactor: number;
+  glowAlphaBoost: number;
   baseRotation: number;
+  heightFactor: number;
+  maxWidthFactor: number;
   spinSpeed: number;
+  widthFactor: number;
+};
+
+type CosmicGlow = Container & {
+  alphaBase: number;
+  baseRotation: number;
+  baseScale: number;
+  baseXFactor: number;
+  baseYFactor: number;
+  driftPhase: number;
+  driftSpeed: number;
+  driftXFactor: number;
+  driftYFactor: number;
+  pulsePhase: number;
+  pulseSpeed: number;
+  rotationSpeed: number;
 };
 
 export default function HomeSceneCanvas() {
@@ -214,10 +305,11 @@ export default function HomeSceneCanvas() {
       spaceTile.tileScale.set(SPACE_TILE_SCALE);
       layers.background.addChild(spaceTile);
 
+      seedCosmicGlows(layers.glows, app.screen.width, app.screen.height, rng);
       seedStars(layers.farStars, 135, 0.15, 1.15, rng);
       seedStars(layers.closeStars, 70, 0.28, 1.9, rng);
       seedDust(layers.debris, 44, rng);
-      seedPlanet(layers.planets, textures.planetImages, app.screen.width, app.screen.height, rng);
+      seedPlanets(layers.planets, textures.planetImages, rng);
 
       const logo = new Sprite(textures.logo);
       logo.anchor.set(0.5);
@@ -226,7 +318,7 @@ export default function HomeSceneCanvas() {
       const logoHits = new Container();
       layers.logo.addChild(logoHits);
 
-      const shipCount = reducedMotion ? 6 : 12;
+      const shipCount = reducedMotion ? 8 : 16;
       const ships = Array.from({ length: shipCount }, (_, index) =>
         makeShip(app.screen.width, app.screen.height, rng, textures, index % 3)
       );
@@ -280,7 +372,7 @@ export default function HomeSceneCanvas() {
 
       function onLogoHit(pos: Vec, attackType: AttackType) {
         hitCount += 1;
-        screenShake = Math.max(screenShake, attackType === "missile" ? 0.62 : 0.34);
+        screenShake = Math.max(screenShake, attackType === "missile" ? 0.76 : 0.42);
         logoPulse = 1;
         spawnImpact(particles, tempSprites, layers.vfx, textures.battleVfx, pos, attackType);
         spawnExplosion(
@@ -290,10 +382,11 @@ export default function HomeSceneCanvas() {
           textures.battleVfx,
           pos,
           attackType,
-          attackType === "missile" ? 46 : attackType === "plasma" ? 38 : attackType === "laser" ? 26 : 32
+          (attackType === "missile" ? 56 : attackType === "plasma" ? 46 : attackType === "laser" ? 32 : 40) *
+          HOME_EXPLOSION_SIZE_MULTIPLIER
         );
         drawLogoCrack(logoHits, logo, textures.logoBounds, pos, rng);
-        const pieceCount = attackType === "missile" ? 3 : 2;
+        const pieceCount = attackType === "missile" ? 5 : 3;
         for (let i = 0; i < pieceCount; i += 1) {
           if (pieces.length > 44) removeOldPiece(pieces);
           spawnLogoPiece(pieces, layers.vfx, textures.pieces, pos, logo, rng);
@@ -315,19 +408,24 @@ export default function HomeSceneCanvas() {
 
 async function loadHomeTextures(): Promise<HomeTextures> {
   const backgroundSrc = pickSpaceTileSource();
-  const [[background, logo, battleVfxBase, moduleBase, weaponBase, ...rest], logoBounds] = await Promise.all([
+  const [[background, logo, battleVfxBase, moduleBase, weaponBase, panelTextures, cabinTextures, ...rest], logoBounds] = await Promise.all([
     Promise.all([
       Assets.load<Texture>(backgroundSrc),
       Assets.load<Texture>(LOGO_SRC),
       Assets.load<Texture>(battleVfxAtlas.src),
       Assets.load<Texture>(moduleStateAtlas.src),
       Assets.load<Texture>(weaponStateAtlas.src),
+      loadStructureTextures(panelAtlas.src, HOME_PANEL_SPRITE_IDS),
+      loadStructureTextures(cabinAtlas.src, HOME_CABIN_SPRITE_IDS),
       ...PLANET_SRCS.map((src) => Assets.load<Texture>(src)),
       ...PIECE_SRCS.map((src) => Assets.load<Texture>(src))
     ]),
     measureImageAlphaBounds(LOGO_SRC)
   ]);
-  const planetImages = rest.slice(0, PLANET_SRCS.length).map((texture) => ({ texture }));
+  const planetImages = rest.slice(0, PLANET_SRCS.length).map((texture, index) => ({
+    glowColor: PLANET_GLOW_COLORS[index] ?? 0x8fdfff,
+    texture
+  }));
   const pieces = rest.slice(PLANET_SRCS.length);
 
   return {
@@ -338,12 +436,14 @@ async function loadHomeTextures(): Promise<HomeTextures> {
     pieces,
     modules: sliceAtlas(moduleBase, moduleAtlas),
     weapons: sliceAtlas(weaponBase, weaponAtlas),
+    panels: panelTextures,
+    cabins: cabinTextures,
     battleVfx: sliceBattleVfx(battleVfxBase)
   };
 }
 
 function layoutLogo(logo: Sprite, width: number, height: number, time: number, bounds: AlphaBounds) {
-  const targetWidth = Math.min(width * 0.94, 420);
+  const targetWidth = Math.min(width * 0.96, 420 * HOME_LOGO_VISUAL_SCALE);
   const scale = targetWidth / logo.texture.width;
   const targetY = Math.max(110, height * 0.22);
   const startY = -logo.texture.height * scale * 0.7;
@@ -457,13 +557,36 @@ function updateBackground(
   spaceTile.width = width;
   spaceTile.height = height;
   spaceTile.tilePosition.set(time * -8, time * 5);
-  layers.planets.position.set(Math.sin(time * 0.018) * 28, Math.cos(time * 0.014) * 18);
+  layers.glows.position.set(Math.sin(time * 0.014) * 18, Math.cos(time * 0.011) * 12);
+  layers.glows.children.forEach((child) => {
+    const glow = child as CosmicGlow;
+    if (typeof glow.pulseSpeed !== "number") return;
+    glow.position.set(
+      width * glow.baseXFactor + Math.sin(time * glow.driftSpeed + glow.driftPhase) * width * glow.driftXFactor,
+      height * glow.baseYFactor + Math.cos(time * glow.driftSpeed + glow.driftPhase) * height * glow.driftYFactor
+    );
+    glow.alpha = glow.alphaBase * (0.72 + Math.sin(time * glow.pulseSpeed + glow.pulsePhase) * 0.28);
+    glow.rotation = glow.baseRotation + Math.sin(time * glow.rotationSpeed + glow.driftPhase) * 0.16;
+    glow.scale.set(glow.baseScale * (0.96 + Math.sin(time * glow.pulseSpeed * 0.62 + glow.pulsePhase) * 0.04));
+  });
+  layers.planets.position.set(Math.sin(time * 0.018) * 18, Math.cos(time * 0.014) * 12);
   layers.planets.children.forEach((child) => {
     const planet = child as RotatingPlanet;
     if (typeof planet.driftSpeed === "number") {
+      const targetDiameter = Math.min(
+        Math.max(width * planet.widthFactor, height * planet.heightFactor),
+        width * planet.maxWidthFactor
+      );
+      planet.image.scale.set(targetDiameter / planet.image.texture.width);
+      planet.image.alpha = 1;
+      planet.glow.scale.set(targetDiameter / planet.image.texture.width);
+      planet.glow.alpha = Math.min(
+        0.98,
+        planet.alphaBase * planet.glowAlphaBoost * (1.08 + Math.sin(time * 0.18 + planet.driftPhase) * 0.12)
+      );
       planet.position.set(
-        planet.baseX + Math.sin(time * planet.driftSpeed + planet.driftPhase) * planet.driftAmplitude,
-        planet.baseY
+        width * planet.baseXFactor + Math.sin(time * planet.driftSpeed + planet.driftPhase) * width * planet.driftXFactor,
+        height * planet.baseYFactor + Math.cos(time * planet.driftSpeed + planet.driftPhase) * height * planet.driftYFactor
       );
     }
     if (typeof planet.spinSpeed === "number") {
@@ -502,10 +625,10 @@ function updateShips(
   onLogoHit: (pos: Vec, attackType: AttackType) => void
 ) {
   ships.forEach((ship, index) => {
-    ship.orbitAngle += dt * (0.18 + index * 0.012);
+    ship.orbitAngle += dt * (0.25 + index * 0.016);
     const enemy = findNearestEnemy(ship, ships);
-    const focus = enemy && (index + Math.floor(time * 0.55)) % 3 !== 0 ? enemy.pos : logo.center;
-    const focusEase = Math.min(1, dt * 0.72);
+    const focus = enemy && (index + Math.floor(time * 0.8)) % 3 !== 0 ? enemy.pos : logo.center;
+    const focusEase = Math.min(1, dt * 0.92);
     ship.moveFocus.x += (focus.x - ship.moveFocus.x) * focusEase;
     ship.moveFocus.y += (focus.y - ship.moveFocus.y) * focusEase;
     const orbitDistance = Math.max(ship.orbitRadius * (enemy ? 0.78 : 1), logo.width * 0.58 + 74);
@@ -519,7 +642,7 @@ function updateShips(
     const dy = target.y - ship.pos.y;
     const dist = Math.max(1, Math.hypot(dx, dy));
     const desiredAngle = Math.atan2(dy, dx);
-    const power = clamp(dist / Math.max(180, ship.orbitRadius * 0.45), 0.32, 0.88);
+    const power = clamp(dist / Math.max(160, ship.orbitRadius * 0.4), 0.42, 1);
     applyHomeShipPhysics(ship, desiredAngle, power, dt);
   });
 
@@ -552,7 +675,7 @@ function updateShips(
       const logoInRange = logo.active && logoDist <= weaponMount.weapon.range + logoReach;
       if (!enemyInRange && !logoInRange) return;
 
-      const targetShip = enemy && enemyInRange && (rng() < 0.64 || !logoInRange) ? enemy : undefined;
+      const targetShip = enemy && enemyInRange && (rng() < 0.72 || !logoInRange) ? enemy : undefined;
       const target = targetShip
         ? {
           x: targetShip.pos.x + (rng() - 0.5) * targetShip.radius * 0.55,
@@ -561,9 +684,9 @@ function updateShips(
         : randomLogoBoundaryPoint(logo, rng);
 
       const turretAligned = rotateTurretToTarget(weaponMount, ship.heading, ship.pos, target, dt);
-      if (!turretAligned || weaponMount.cooldown > 0 || projectiles.length >= 70) return;
+      if (!turretAligned || weaponMount.cooldown > 0 || projectiles.length >= 130) return;
 
-      weaponMount.cooldown = Math.max(0.12, 1 / weaponMount.weapon.fireRate);
+      weaponMount.cooldown = Math.max(0.07, 1 / (weaponMount.weapon.fireRate * HOME_ACTION_RATE_MULTIPLIER));
       fireAtLogo(ship, weaponMount, target, targetShip, textures, projectiles, particles, tempSprites, layers, time, onLogoHit);
     });
   });
@@ -702,13 +825,13 @@ function fireAtLogo(
   const dx = target.x - origin.x;
   const dy = target.y - origin.y;
   const dist = Math.max(1, Math.hypot(dx, dy));
-  const speed = weapon.weapon.projectileSpeed ?? 460;
+  const speed = (weapon.weapon.projectileSpeed ?? 460) * HOME_PROJECTILE_SPEED_MULTIPLIER;
   const direction = { x: dx / dist, y: dy / dist };
   const color = getAttackColor(attackType);
   const body = new Sprite(textures.battleVfx[getProjectileSpriteKey(attackType)]);
   body.anchor.set(0.5);
-  body.width = attackType === "missile" ? 34 : 28;
-  body.height = attackType === "missile" ? 18 : 16;
+  body.width = attackType === "missile" ? 40 : 32;
+  body.height = attackType === "missile" ? 21 : 18;
   body.rotation = Math.atan2(dy, dx);
   if (attackType === "missile") body.tint = 0xffd08a;
   if (attackType === "plasma") body.tint = 0xb77cff;
@@ -720,7 +843,7 @@ function fireAtLogo(
     previous: { ...origin },
     vel: { x: direction.x * speed, y: direction.y * speed },
     direction,
-    acceleration: attackType === "missile" ? Math.max(150, speed * 0.42) : 0,
+    acceleration: attackType === "missile" ? Math.max(240, speed * 0.52) : 0,
     target,
     body,
     trail,
@@ -880,101 +1003,91 @@ function updateTempSprites(tempSprites: TempSprite[], dt: number) {
 function makeShip(width: number, height: number, rng: () => number, textures: HomeTextures, team: number): Ship {
   const body = new Container();
   const accent = [0x49d7ff, 0x9b5cff, 0xff9b42, 0x53e7a4][Math.floor(rng() * 4)];
-  const layouts: ShipLayout[] = [
-    {
-      attackType: "kinetic",
-      parts: [
-        { kind: "module", key: "core", x: 0, y: 0 },
-        { kind: "module", key: "hull", x: -1, y: 0 },
-        { kind: "module", key: "hull", x: 1, y: 0 },
-        { kind: "weapon", key: "autocannonBase", turretKey: "autocannonTurret", x: 0, y: -1 },
-        { kind: "module", key: "ionEngine", x: 0, y: 1 }
-      ]
-    },
-    {
-      attackType: "laser",
-      parts: [
-        { kind: "module", key: "core", x: 0, y: 0 },
-        { kind: "module", key: "reactor", x: 0, y: 1 },
-        { kind: "weapon", key: "laserBase", turretKey: "laserTurret", x: -1, y: -1 },
-        { kind: "weapon", key: "laserBase", turretKey: "laserTurret", x: 1, y: -1 },
-        { kind: "module", key: "sideThruster", x: -1, y: 1 },
-        { kind: "module", key: "sideThruster", x: 1, y: 1 }
-      ]
-    },
-    {
-      attackType: "plasma",
-      parts: [
-        { kind: "module", key: "core", x: 0, y: 0 },
-        { kind: "module", key: "battery", x: -1, y: 0 },
-        { kind: "module", key: "reactor", x: 1, y: 0 },
-        { kind: "weapon", key: "plasmaBase", turretKey: "plasmaTurret", x: 0, y: -1 },
-        { kind: "module", key: "plasmaThruster", x: -1, y: 1 },
-        { kind: "module", key: "plasmaThruster", x: 1, y: 1 }
-      ]
-    },
-    {
-      attackType: "missile",
-      parts: [
-        { kind: "module", key: "core", x: 0, y: 0 },
-        { kind: "module", key: "armor", x: -1, y: 0 },
-        { kind: "module", key: "armor", x: 1, y: 0 },
-        { kind: "weapon", key: "missileBase", turretKey: "missileTurret", x: -1, y: -1 },
-        { kind: "weapon", key: "missileBase", turretKey: "missileTurret", x: 1, y: -1 },
-        { kind: "module", key: "ionEngine", x: 0, y: 1 }
-      ]
-    }
-  ];
-  const layout = layouts[Math.floor(rng() * layouts.length)];
+  const build = cloneShipBuild(shipBuildPresets[Math.floor(rng() * shipBuildPresets.length)]);
+  const cabin = build.cabinId ? getCabin(build.cabinId) : null;
+  const gridSize = cabin?.gridSize ?? { width: 5, height: 6 };
+  const centerX = (gridSize.width - 1) / 2;
+  const centerY = (gridSize.height - 1) / 2;
   const cell = 24 + rng() * 4;
-  const moduleCount = layout.parts.length;
-  const statModules: ShipBuild["modules"] = [];
+  const moduleCount = build.modules.length + (build.panels?.length ?? 0) + (cabin ? 1 : 0);
   const weaponMounts: WeaponMount[] = [];
   const engineMounts: Vec[] = [];
-  layout.parts.forEach((part) => {
-    const weaponType = part.kind === "weapon" ? pickGeneratedWeaponType(layout.attackType, rng) : layout.attackType;
-    statModules.push({
-      instanceId: `home-${statModules.length}`,
-      moduleId: getStatModuleId(part, weaponType),
-      position: { x: part.x + 2, y: part.y + 2 },
-      rotation: 0
-    });
-    const weaponSpec = part.kind === "weapon" ? getWeaponSpec(weaponType) : null;
+
+  build.panels.forEach((installed) => {
+    const panel = getPanel(installed.panelId);
+    const spriteKey = getHomePanelSpriteKey(panel);
+    const asset = HOME_PANEL_SPRITE_ASSETS[spriteKey];
+    const cells = getTransformedCells(panel, installed.position, installed.rotation);
+    const center = getCellsCenter(cells);
+    const sprite = new Sprite(textures.panels[spriteKey]);
+    sprite.anchor.set(0.5);
+    sprite.width = asset.width * cell * 1.32;
+    sprite.height = asset.height * cell * 1.32;
+    sprite.angle = installed.rotation;
+    sprite.position.set((center.x - centerX) * cell, (center.y - centerY) * cell);
+    sprite.alpha = 0.92;
+    body.addChild(sprite);
+  });
+
+  if (cabin) {
+    const cabinPosition = getInstalledCabinPosition(build);
+    if (cabinPosition) {
+      const cabinSpriteKey = getHomeCabinSpriteKey(cabin);
+      const cabinCenter = getCabinCenter(cabin, cabinPosition, build.cabinRotation ?? 0);
+      const sprite = new Sprite(textures.cabins[cabinSpriteKey]);
+      sprite.anchor.set(0.5);
+      sprite.width = cabin.assetGridSize.width * cell * 1.28;
+      sprite.height = cabin.assetGridSize.height * cell * 1.28;
+      sprite.angle = build.cabinRotation ?? 0;
+      sprite.position.set((cabinCenter.x - centerX) * cell, (cabinCenter.y - centerY) * cell);
+      body.addChild(sprite);
+    }
+  }
+
+  let primaryAttackType: AttackType = "kinetic";
+  build.modules.forEach((installed) => {
+    const module = getModule(installed.moduleId);
+    if (build.cabinId && module.type === "core") return;
+    const x = (installed.position.x - centerX) * cell;
+    const y = (installed.position.y - centerY) * cell;
+    const weaponType = module.weapon ? getAttackTypeForModule(installed.moduleId) : null;
+    const weaponSpec = weaponType ? getWeaponSpec(weaponType) : null;
     const sprite = new Sprite(
       weaponSpec
         ? textures.weapons[weaponSpec.base]
-        : textures.modules[part.key as ModuleSpriteKey]
+        : textures.modules[getModuleSpriteKeyForHome(installed.moduleId)]
     );
     sprite.anchor.set(0.5);
-    sprite.width = cell * (part.kind === "weapon" ? 1.45 : 1.6);
-    sprite.height = cell * (part.kind === "weapon" ? 1.45 : 1.6);
-    sprite.position.set(part.x * cell, part.y * cell);
-    if (part.key === "plasmaThruster") sprite.tint = 0xd8a0ff;
-    if (part.key === "ionEngine") sprite.tint = 0x9fe7ff;
+    sprite.width = cell * (weaponSpec ? 1.42 : 1.28);
+    sprite.height = cell * (weaponSpec ? 1.42 : 1.28);
+    sprite.position.set(x, y);
+    sprite.angle = installed.rotation;
+    if (module.type === "engine") sprite.tint = installed.moduleId === "plasma_thruster" ? 0xd8a0ff : 0x9fe7ff;
     if (weaponSpec) sprite.tint = weaponSpec.tint;
     body.addChild(sprite);
 
-    if (weaponSpec) {
+    if (weaponSpec && weaponType) {
+      primaryAttackType = weaponType;
       const turret = new Sprite(textures.weapons[weaponSpec.turret]);
       turret.anchor.set(0.5);
       turret.width = cell * 1.22;
       turret.height = cell * 1.22;
-      turret.position.set(part.x * cell, part.y * cell);
+      turret.position.set(x, y);
       turret.tint = weaponSpec.tint;
       body.addChild(turret);
       weaponMounts.push({
-        x: part.x * cell,
-        y: part.y * cell - cell * 0.68,
+        x,
+        y: y - cell * 0.7,
         attackType: weaponType,
         weapon: BATTLE_WEAPON_LAWS[weaponType],
-        cooldown: rng() * 0.8,
+        cooldown: rng() * 0.42,
         turret
       });
-    } else if (part.key === "ionEngine" || part.key === "sideThruster" || part.key === "plasmaThruster") {
-      engineMounts.push({ x: part.x * cell, y: part.y * cell });
+    } else if (module.type === "engine") {
+      engineMounts.push({ x, y });
     }
   });
-  body.scale.set(0.7 + rng() * 0.28);
+  body.scale.set((0.7 + rng() * 0.28) * HOME_SHIP_VISUAL_SCALE);
 
   const side = Math.floor(rng() * 4);
   const pos = side === 0
@@ -989,17 +1102,10 @@ function makeShip(width: number, height: number, rng: () => number, textures: Ho
   const dy = moveFocus.y - pos.y;
   const dist = Math.max(1, Math.hypot(dx, dy));
   const tangent = rng() < 0.5 ? -1 : 1;
-  const stats = calculateShipStats({
-    schemaVersion: 3,
-    id: "home-scene-ship",
-    name: "Home Scene Ship",
-    frameId: moduleCount <= 5 ? "enemy_drone_frame" : moduleCount >= 8 ? "enemy_bomber_frame" : "enemy_raider_frame",
-    panels: [],
-    modules: statModules
-  });
+  const stats = calculateShipStats(build);
   const acceleration = Math.max(30, stats.acceleration * 70);
-  const maxSpeed = stats.maxSpeed;
-  const turnRate = Math.max(1.5, stats.turnRate);
+  const maxSpeed = stats.maxSpeed * 1.08;
+  const turnRate = Math.max(1.8, stats.turnRate * 1.08);
   const initialSpeed = maxSpeed * (0.32 + rng() * 0.16);
   const initialVel = {
     x: (dx / dist) * initialSpeed + (-dy / dist) * tangent * (12 + rng() * 18),
@@ -1018,38 +1124,16 @@ function makeShip(width: number, height: number, rng: () => number, textures: Ho
     flightRotation,
     orbitAngle: rng() * Math.PI * 2,
     orbitRadius: Math.min(width, height) * (0.42 + rng() * 0.18),
-    attackType: layout.attackType,
+    attackType: primaryAttackType,
     acceleration,
     maxSpeed,
     turnRate,
     moduleCount,
     engineColor: accent,
-    radius: cell * body.scale.x * 2.25,
+    radius: cell * body.scale.x * 2.85,
     weaponMounts,
     engineMounts
   };
-}
-
-function pickGeneratedWeaponType(primary: AttackType, rng: () => number): AttackType {
-  if (rng() < 0.62) return primary;
-  const types: AttackType[] = ["kinetic", "laser", "plasma", "missile"];
-  return types[Math.floor(rng() * types.length)];
-}
-
-function getStatModuleId(part: ShipPart, weaponType: AttackType) {
-  if (part.kind === "weapon") {
-    if (weaponType === "laser") return "laser_turret";
-    if (weaponType === "plasma") return "plasma_cannon";
-    if (weaponType === "missile") return "missile_pod";
-    return "autocannon";
-  }
-  if (part.key === "core") return "core_mk1";
-  if (part.key === "armor") return "light_armor";
-  if (part.key === "reactor" || part.key === "battery") return "small_reactor";
-  if (part.key === "plasmaThruster") return "plasma_thruster";
-  if (part.key === "sideThruster") return "side_thruster";
-  if (part.key === "ionEngine") return "ion_engine";
-  return "hull_block";
 }
 
 function getWeaponSpec(attackType: AttackType): WeaponSpec {
@@ -1065,6 +1149,61 @@ function getWeaponSpec(attackType: AttackType): WeaponSpec {
   return { base: "autocannonBase", turret: "autocannonTurret", tint: 0xb8d8ff };
 }
 
+function getAttackTypeForModule(moduleId: string): AttackType {
+  const damageType = getModule(moduleId).weapon?.damageType;
+  if (damageType === "energy") return "laser";
+  if (damageType === "plasma") return "plasma";
+  if (damageType === "explosive") return "missile";
+  return "kinetic";
+}
+
+function getModuleSpriteKeyForHome(moduleId: string): ModuleSpriteKey {
+  const module = getModule(moduleId);
+  if (module.type === "core") return "core";
+  if (module.type === "armor") return "armor";
+  if (module.type === "reactor") return "reactor";
+  if (module.type === "shield") return "shield";
+  if (module.type === "battery") return "battery";
+  if (module.type === "engine") {
+    if (moduleId === "plasma_thruster") return "plasmaThruster";
+    if (moduleId === "side_thruster") return "sideThruster";
+    return "ionEngine";
+  }
+  return "hull";
+}
+
+function getHomePanelSpriteKey(panel: PanelDef): HomePanelSpriteKey {
+  return (HOME_PANEL_SPRITE_IDS as readonly string[]).includes(panel.spriteId)
+    ? (panel.spriteId as HomePanelSpriteKey)
+    : "single_1";
+}
+
+function getHomeCabinSpriteKey(cabin: CabinDef): HomeCabinSpriteKey {
+  return cabin.spriteId && (HOME_CABIN_SPRITE_IDS as readonly string[]).includes(cabin.spriteId)
+    ? (cabin.spriteId as HomeCabinSpriteKey)
+    : "cabin_1x1";
+}
+
+function getCellsCenter(cells: GridCell[]) {
+  const bounds = cells.reduce(
+    (acc, cell) => ({
+      minX: Math.min(acc.minX, cell.x),
+      minY: Math.min(acc.minY, cell.y),
+      maxX: Math.max(acc.maxX, cell.x),
+      maxY: Math.max(acc.maxY, cell.y)
+    }),
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+  );
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2
+  };
+}
+
+function getCabinCenter(cabin: CabinDef, position: GridCell, rotation: Rotation) {
+  return getCellsCenter(getTransformedCells(cabin, position, rotation));
+}
+
 function spawnEngineGlows(
   particles: Particle[],
   layer: Container,
@@ -1078,11 +1217,12 @@ function spawnEngineGlows(
 ) {
   const mounts = engineMounts.length > 0 ? engineMounts : [{ x: 0, y: 28 }];
   mounts.forEach((mount) => {
+    if (rng() > 0.58) return;
     const world = getWorldMount(pos, visualRotation, mount, scale);
     const nozzleX = world.x - Math.cos(thrustRotation) * 10 * scale;
     const nozzleY = world.y - Math.sin(thrustRotation) * 10 * scale;
-    const outerLength = (20 + power * 22) * scale;
-    const outerHalf = (4 + power * 4) * scale;
+    const outerLength = (13 + power * 16) * scale;
+    const outerHalf = (3.2 + power * 3.2) * scale;
     const innerLength = outerLength * 0.62;
     const innerHalf = outerHalf * 0.42;
     const flame = new Graphics()
@@ -1090,16 +1230,16 @@ function spawnEngineGlows(
       .lineTo(-outerLength, 0)
       .lineTo(0, outerHalf)
       .closePath()
-      .fill({ color: 0xff9b42, alpha: 0.22 + power * 0.18 })
+      .fill({ color: 0xff9b42, alpha: 0.14 + power * 0.13 })
       .moveTo(0, -innerHalf)
       .lineTo(-innerLength, 0)
       .lineTo(0, innerHalf)
       .closePath()
-      .fill({ color: 0x6ceaff, alpha: 0.2 + power * 0.18 });
+      .fill({ color: 0x6ceaff, alpha: 0.13 + power * 0.13 });
     flame.position.set(nozzleX, nozzleY);
     flame.rotation = thrustRotation;
     layer.addChild(flame);
-    setTimeout(() => flame.destroy(), 100);
+    setTimeout(() => flame.destroy(), 70);
 
     if (rng() < 0.45) {
       const trailDistance = outerLength * (0.45 + rng() * 0.55);
@@ -1147,15 +1287,15 @@ function spawnImpact(
     spawnVfxSprite(tempSprites, layer, textures.kineticImpact, pos, 18, 0.12, 0xffffff, 0.72, 0.16);
     spawnVfxSprite(tempSprites, layer, textures.armorImpact, pos, 14, 0.11, 0xffd7a1, 0.44, 0.12);
   }
-  const sparks = attackType === "missile" ? 8 : attackType === "plasma" ? 7 : 5;
+  const sparks = attackType === "missile" ? 15 : attackType === "plasma" ? 13 : 9;
   for (let i = 0; i < sparks; i += 1) {
     const angle = Math.random() * Math.PI * 2;
-    const speed = 58 + Math.random() * (attackType === "missile" ? 150 : 112);
+    const speed = 86 + Math.random() * (attackType === "missile" ? 210 : 162);
     addParticle(particles, layer, {
       pos: { ...pos },
       vel: { x: Math.cos(angle) * speed, y: Math.sin(angle) * speed },
-      life: 0.22 + Math.random() * 0.22,
-      size: 1 + Math.random() * (attackType === "missile" ? 1.8 : 1.35),
+      life: 0.24 + Math.random() * 0.28,
+      size: 1.15 + Math.random() * (attackType === "missile" ? 2.2 : 1.7),
       color: i % 3 === 0 ? 0xffffff : color,
       alpha: 0.58,
       kind: "spark"
@@ -1175,9 +1315,11 @@ function spawnExplosion(
   const tint = attackType === "kinetic" ? 0xffd7a1 : getAttackColor(attackType);
   if (attackType === "missile") {
     spawnVfxSprite(tempSprites, layer, textures.largeExplosion, pos, size, 0.26, 0xffb35c, 0.82, 0.3);
+    spawnVfxSprite(tempSprites, layer, textures.mediumExplosion, pos, size * 0.72, 0.2, 0xffd08a, 0.6, 0.24);
     spawnVfxSprite(tempSprites, layer, textures.debrisCluster, pos, size * 0.58, 0.22, 0xffffff, 0.58, 0.18);
   } else if (attackType === "plasma") {
     spawnVfxSprite(tempSprites, layer, textures.smallExplosion, pos, size, 0.24, 0xb66cff, 0.74, 0.34);
+    spawnVfxSprite(tempSprites, layer, textures.mediumExplosion, pos, size * 0.78, 0.2, 0xd4a4ff, 0.48, 0.28);
     spawnVfxSprite(tempSprites, layer, textures.shieldImpact, pos, size * 0.68, 0.2, tint, 0.42, 0.18);
   } else if (attackType === "laser") {
     spawnVfxSprite(tempSprites, layer, textures.kineticImpact, pos, size, 0.14, 0x8ff8ff, 0.78, 0.18);
@@ -1435,7 +1577,7 @@ function drawProjectileTrail(projectile: Projectile) {
   const speed = Math.max(1, Math.hypot(projectile.vel.x, projectile.vel.y));
   const nx = projectile.vel.x / speed;
   const ny = projectile.vel.y / speed;
-  const tail = projectile.smoke ? 42 : 28;
+  const tail = projectile.smoke ? 54 : 38;
   projectile.trail.clear();
   for (let i = 0; i < 3; i += 1) {
     const start = 8 + i * (tail / 3);
@@ -1471,28 +1613,133 @@ function seedDust(layer: Container, count: number, rng: () => number) {
   layer.position.set(SPACE_BOUNDS.width * 0.5, SPACE_BOUNDS.height * 0.5);
 }
 
-function seedPlanet(layer: Container, planets: PlanetTexture[], width: number, height: number, rng: () => number) {
-  const selected = planets[Math.floor(rng() * planets.length)];
-  const root = new Container() as RotatingPlanet;
-  const planet = new Sprite(selected.texture);
-  const targetDiameter = Math.max(width * 1.46, height * 0.82);
-  const scale = targetDiameter / planet.texture.width;
-  const planetHeight = planet.texture.height * scale;
-  planet.anchor.set(0.5);
-  planet.scale.set(scale);
-  planet.alpha = 1;
-  root.addChild(planet);
-  root.baseRotation = rng() * Math.PI * 2;
-  root.spinSpeed = (rng() < 0.5 ? -1 : 1) * (0.0012 + rng() * 0.0018);
-  root.rotation = root.baseRotation;
-  const side = rng() < 0.5 ? -1 : 1;
-  root.baseX = width * 0.5 + side * width * (0.18 + rng() * 0.16);
-  root.baseY = height - planetHeight * (0.03 + rng() * 0.09);
-  root.driftAmplitude = width * (0.028 + rng() * 0.025);
-  root.driftSpeed = 0.006 + rng() * 0.006;
-  root.driftPhase = rng() * Math.PI * 2;
-  root.position.set(root.baseX, root.baseY);
-  layer.addChild(root);
+function seedCosmicGlows(layer: Container, width: number, height: number, rng: () => number) {
+  const viewportScale = Math.max(width, height) / 1280;
+  HOME_COSMIC_GLOW_CONFIGS.forEach((config) => {
+    const glow = new Container() as CosmicGlow;
+    const radiusX = randomRange(config.radiusX, rng);
+    const radiusY = randomRange(config.radiusY, rng);
+    const alphaBase = randomRange(config.alpha, rng);
+    for (let i = 0; i < 5; i += 1) {
+      const layerRatio = 1 - i * 0.15;
+      const layerAlpha = alphaBase * (0.12 + i * 0.05);
+      const haze = new Graphics()
+        .ellipse(0, 0, radiusX * layerRatio, radiusY * layerRatio)
+        .fill({ color: config.color, alpha: layerAlpha });
+      glow.addChild(haze);
+    }
+
+    glow.alphaBase = alphaBase;
+    glow.baseRotation = rng() * Math.PI;
+    glow.baseScale = viewportScale * (0.88 + rng() * 0.24);
+    glow.baseXFactor = randomRange(config.xFactor, rng);
+    glow.baseYFactor = randomRange(config.yFactor, rng);
+    glow.driftPhase = rng() * Math.PI * 2;
+    glow.driftSpeed = randomRange(config.driftSpeed, rng);
+    glow.driftXFactor = randomRange(config.driftXFactor, rng);
+    glow.driftYFactor = randomRange(config.driftYFactor, rng);
+    glow.pulsePhase = rng() * Math.PI * 2;
+    glow.pulseSpeed = randomRange(config.pulseSpeed, rng);
+    glow.rotationSpeed = randomRange(config.rotationSpeed, rng);
+    glow.rotation = glow.baseRotation;
+    glow.scale.set(glow.baseScale);
+    layer.addChild(glow);
+  });
+}
+
+function seedPlanets(layer: Container, planets: PlanetTexture[], rng: () => number) {
+  const selectedPlanets = [...planets].sort(() => rng() - 0.5).slice(0, HOME_PLANET_LAYOUTS.length);
+  const primarySide = rng() < 0.5 ? -1 : 1;
+  HOME_PLANET_LAYOUTS.forEach((layout, index) => {
+    const selected = selectedPlanets[index] ?? planets[index % planets.length];
+    const root = new Container() as RotatingPlanet;
+    const planet = new Sprite(selected.texture);
+    const glow = createPlanetGlow(
+      selected.texture,
+      selected.glowColor,
+      index === 0 ? FRONT_PLANET_GLOW_WIDTH_MULTIPLIER : 1
+    );
+    planet.anchor.set(0.5);
+    root.glow = glow;
+    root.image = planet;
+    root.addChild(glow);
+    root.addChild(planet);
+    const side = index === 0 ? primarySide : -primarySide;
+    const edgeOffset = randomRange(layout.edgeOffset, rng);
+    root.alphaBase = randomRange(layout.alpha, rng);
+    root.baseXFactor = side < 0 ? edgeOffset : 1 - edgeOffset;
+    root.baseYFactor = randomRange(layout.yFactor, rng);
+    root.baseRotation = rng() * Math.PI * 2;
+    root.driftPhase = rng() * Math.PI * 2;
+    root.driftSpeed = randomRange(layout.driftSpeed, rng);
+    root.driftXFactor = randomRange(layout.driftXFactor, rng);
+    root.driftYFactor = randomRange(layout.driftYFactor, rng);
+    root.glowAlphaBoost = index === 0 ? FRONT_PLANET_GLOW_ALPHA_MULTIPLIER : 1;
+    root.heightFactor = randomRange(layout.heightFactor, rng);
+    root.maxWidthFactor = layout.maxWidthFactor;
+    root.spinSpeed = (rng() < 0.5 ? -1 : 1) * randomRange(layout.spinSpeed, rng);
+    root.widthFactor = randomRange(layout.widthFactor, rng);
+    root.rotation = root.baseRotation;
+    layer.addChild(root);
+  });
+}
+
+function createPlanetGlow(texture: Texture, color: number, widthMultiplier = 1) {
+  const sourceWidth = texture.width;
+  const sourceHeight = texture.height;
+  const maxSize = Math.max(sourceWidth, sourceHeight);
+  const padding = Math.ceil(maxSize * PLANET_GLOW_PADDING_FACTOR * widthMultiplier);
+  const softBlur = Math.max(8, Math.ceil(maxSize * PLANET_GLOW_SOFT_BLUR_FACTOR * widthMultiplier));
+  const tightBlur = Math.max(3, Math.ceil(maxSize * PLANET_GLOW_TIGHT_BLUR_FACTOR * widthMultiplier));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(sourceWidth + padding * 2);
+  canvas.height = Math.ceil(sourceHeight + padding * 2);
+  const context = canvas.getContext("2d");
+  if (!context) return new Sprite(Texture.fromCanvas(canvas));
+
+  const red = (color >> 16) & 0xff;
+  const green = (color >> 8) & 0xff;
+  const blue = color & 0xff;
+  const rgba = (alpha: number) => `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  const drawMask = (target: CanvasRenderingContext2D) => {
+    target.drawImage(
+      texture.source.image,
+      texture.frame.x,
+      texture.frame.y,
+      texture.frame.width,
+      texture.frame.height,
+      padding,
+      padding,
+      sourceWidth,
+      sourceHeight
+    );
+  };
+  const drawGlowLayer = (blur: number, alpha: number) => {
+    const layer = document.createElement("canvas");
+    layer.width = canvas.width;
+    layer.height = canvas.height;
+    const layerContext = layer.getContext("2d");
+    if (!layerContext) return;
+    layerContext.filter = `blur(${blur}px)`;
+    drawMask(layerContext);
+    layerContext.globalCompositeOperation = "source-in";
+    layerContext.fillStyle = rgba(alpha);
+    layerContext.fillRect(0, 0, layer.width, layer.height);
+    context.drawImage(layer, 0, 0);
+  };
+
+  drawGlowLayer(softBlur, 0.62);
+  drawGlowLayer(tightBlur, 0.86);
+  context.globalCompositeOperation = "destination-out";
+  drawMask(context);
+
+  const glow = new Sprite(Texture.fromCanvas(canvas));
+  glow.anchor.set(0.5);
+  return glow;
+}
+
+function randomRange(range: readonly [number, number], rng: () => number) {
+  return range[0] + (range[1] - range[0]) * rng();
 }
 
 function sliceBattleVfx(base: Texture) {
@@ -1534,6 +1781,13 @@ function sliceAtlas<T extends string>(
     });
   });
   return textures;
+}
+
+async function loadStructureTextures<T extends string>(baseSrc: string, ids: readonly T[]) {
+  const entries = await Promise.all(
+    ids.map(async (id) => [id, await Assets.load<Texture>(`${baseSrc}/ideal/${id}.webp`)] as const)
+  );
+  return Object.fromEntries(entries) as Record<T, Texture>;
 }
 
 function getProjectileSpriteKey(attackType: AttackType): BattleVfxSpriteKey {
