@@ -1,4 +1,4 @@
-import type { Sprite } from "pixi.js";
+import type { Sprite } from "@/game/render/three/three2d";
 import {
   createRuntimeWeaponState,
   type RuntimeWeaponState

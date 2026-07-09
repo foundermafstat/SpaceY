@@ -14,11 +14,17 @@ export function rotateTowards(current: number, target: number, maxDelta: number)
   return current + Math.sign(delta) * maxDelta;
 }
 
-export function getWorldMount(pos: Vec, rotation: number, mount: Vec) {
+export function getWorldMount(pos: Vec, rotation: number, mount: Vec, scale = 1) {
+  const x = mount.x * scale;
+  const y = mount.y * scale;
   return {
-    x: pos.x + Math.cos(rotation) * mount.x - Math.sin(rotation) * mount.y,
-    y: pos.y + Math.sin(rotation) * mount.x + Math.cos(rotation) * mount.y
+    x: pos.x + Math.cos(rotation) * x - Math.sin(rotation) * y,
+    y: pos.y + Math.sin(rotation) * x + Math.cos(rotation) * y
   };
+}
+
+export function distance(a: Vec, b: Vec) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 export function clampToScreenEdge(x: number, y: number, width: number, height: number, padding: number) {

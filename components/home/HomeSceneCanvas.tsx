@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture, TilingSprite } from "pixi.js";
+import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture, TilingSprite } from "@/game/render/three/three2d";
+import { angleDelta, clamp, distance, getWorldMount, type Vec } from "@/game/battle/math";
+import { applyShipPhysics } from "@/game/battle/shipPhysics";
+import { PLANET_SRCS, SPACE_TILE_SCALE, pickSpaceTileSource } from "@/game/render/spaceScene/constants";
+import { addLayers, createLayerSet } from "@/game/render/spaceScene/layers";
 import { getModule } from "@/game/ship/build";
 import { calculateShipStats } from "@/game/ship/stats";
 import {
@@ -17,34 +21,25 @@ import {
 import type { ShipBuild, WeaponDef } from "@/game/types";
 
 const LOGO_SRC = "/assets/spacey/spacey-debris-logo.png";
-const SPACE_TILE_SCALE = 0.8;
-const SPACE_TILE_SRCS = [
-  "/assets/backgrounds/deep-space-tile-01.webp",
-  "/assets/backgrounds/deep-space-tile-02.webp",
-  "/assets/backgrounds/deep-space-tile-03.webp",
-  "/assets/backgrounds/deep-space-tile-04.webp",
-  "/assets/backgrounds/deep-space-tile-05.webp",
-  "/assets/backgrounds/deep-space-tile-06.webp",
-  "/assets/backgrounds/deep-space-tile-07.webp",
-  "/assets/backgrounds/deep-space-tile-08.webp"
-];
-const PLANET_SRCS = [
-  "/assets/backgrounds/planets/planet-ice.webp",
-  "/assets/backgrounds/planets/planet-lava.webp",
-  "/assets/backgrounds/planets/planet-purple.webp",
-  "/assets/backgrounds/planets/planet-cyan.webp",
-  "/assets/backgrounds/planets/planet-desert.webp",
-  "/assets/backgrounds/planets/planet-toxic.webp",
-  "/assets/backgrounds/planets/planet-metal.webp",
-  "/assets/backgrounds/planets/planet-storm.webp"
-];
 const PIECE_SRCS = Array.from(
   { length: 32 },
   (_, index) => `/assets/spacey/pieces/spacey-debris-piece-${String(index + 1).padStart(2, "0")}.png`
 );
 const SPACE_BOUNDS = { width: 1500, height: 2400 };
+const HOME_LAYER_ORDER = [
+  "background",
+  "planets",
+  "farStars",
+  "closeStars",
+  "debris",
+  "engineVfx",
+  "ships",
+  "projectiles",
+  "logo",
+  "vfx",
+  "screen"
+] as const;
 
-type Vec = { x: number; y: number };
 type AttackType = "kinetic" | "plasma" | "missile" | "laser";
 type PlanetTexture = { texture: Texture };
 type AlphaBounds = {
@@ -207,32 +202,8 @@ export default function HomeSceneCanvas() {
 
       const rng = createRng((Date.now() ^ Math.floor(performance.now() * 1000)) >>> 0);
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const layers = {
-        background: new Container(),
-        planets: new Container(),
-        farStars: new Container(),
-        closeStars: new Container(),
-        debris: new Container(),
-        engineVfx: new Container(),
-        ships: new Container(),
-        projectiles: new Container(),
-        vfx: new Container(),
-        logo: new Container(),
-        screen: new Container()
-      };
-      app.stage.addChild(
-        layers.background,
-        layers.planets,
-        layers.farStars,
-        layers.closeStars,
-        layers.debris,
-        layers.engineVfx,
-        layers.ships,
-        layers.projectiles,
-        layers.logo,
-        layers.vfx,
-        layers.screen
-      );
+      const layers = createLayerSet(HOME_LAYER_ORDER);
+      addLayers(app.stage, layers, HOME_LAYER_ORDER);
 
       const spaceTile = new TilingSprite({
         texture: textures.background,
@@ -343,7 +314,7 @@ export default function HomeSceneCanvas() {
 }
 
 async function loadHomeTextures(): Promise<HomeTextures> {
-  const backgroundSrc = SPACE_TILE_SRCS[Math.floor(Math.random() * SPACE_TILE_SRCS.length)];
+  const backgroundSrc = pickSpaceTileSource();
   const [[background, logo, battleVfxBase, moduleBase, weaponBase, ...rest], logoBounds] = await Promise.all([
     Promise.all([
       Assets.load<Texture>(backgroundSrc),
@@ -504,34 +475,17 @@ function updateBackground(
   layers.debris.position.set(Math.sin(time * 0.22) * 28, time * 7 + shake * 2);
 }
 
-function angleDelta(from: number, to: number) {
-  return Math.atan2(Math.sin(to - from), Math.cos(to - from));
-}
-
-function rotateTowards(current: number, target: number, maxDelta: number) {
-  const delta = angleDelta(current, target);
-  if (Math.abs(delta) <= maxDelta) return target;
-  return current + Math.sign(delta) * maxDelta;
-}
-
 function applyHomeShipPhysics(ship: Ship, desiredDirection: number, inputPower: number, dt: number) {
-  const power = Math.min(1, Math.max(0, inputPower));
-  if (power > 0.05) {
-    ship.flightRotation = rotateTowards(ship.flightRotation, desiredDirection, ship.turnRate * dt);
-    ship.vel.x += Math.cos(desiredDirection) * ship.acceleration * power * dt;
-    ship.vel.y += Math.sin(desiredDirection) * ship.acceleration * power * dt;
-  }
-
-  const speed = Math.hypot(ship.vel.x, ship.vel.y);
-  if (speed > ship.maxSpeed) {
-    ship.vel.x = (ship.vel.x / speed) * ship.maxSpeed;
-    ship.vel.y = (ship.vel.y / speed) * ship.maxSpeed;
-  }
-
-  ship.vel.x *= 0.99;
-  ship.vel.y *= 0.99;
-  ship.pos.x += ship.vel.x * dt;
-  ship.pos.y += ship.vel.y * dt;
+  const state = {
+    pos: ship.pos,
+    vel: ship.vel,
+    rotation: ship.flightRotation,
+    acceleration: ship.acceleration,
+    maxSpeed: ship.maxSpeed,
+    turnRate: ship.turnRate
+  };
+  applyShipPhysics(state, desiredDirection, inputPower, dt);
+  ship.flightRotation = state.rotation;
 }
 
 function updateShips(
@@ -1171,15 +1125,6 @@ function spawnEngineGlows(
   });
 }
 
-function getWorldMount(pos: Vec, rotation: number, mount: Vec, scale = 1) {
-  const lx = mount.x * scale;
-  const ly = mount.y * scale;
-  return {
-    x: pos.x + Math.cos(rotation) * lx - Math.sin(rotation) * ly,
-    y: pos.y + Math.sin(rotation) * lx + Math.cos(rotation) * ly
-  };
-}
-
 function spawnImpact(
   particles: Particle[],
   tempSprites: TempSprite[],
@@ -1602,14 +1547,6 @@ function getAttackColor(attackType: AttackType) {
   if (attackType === "plasma") return 0x9b5cff;
   if (attackType === "laser") return 0x66e6ff;
   return 0x49d7ff;
-}
-
-function distance(a: Vec, b: Vec) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 
 function easeOutBack(value: number) {

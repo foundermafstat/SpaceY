@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "pixi.js";
-import type { TextStyleFontWeight } from "pixi.js";
+import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "@/game/render/three/three2d";
+import type { TextStyleFontWeight } from "@/game/render/three/three2d";
 import { getEnemyDef, type EnemyDef, type EnemyKind } from "@/game/data/enemies";
 import {
   getCabin,
@@ -16,6 +16,9 @@ import {
 import { createShipRuntime, type ShipRuntime } from "@/game/ship/runtime";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getWorldMount, clampToScreenEdge, type Vec } from "@/game/battle/math";
+import { SPACE_TILE_SCALE, pickPlanetSources, pickSpaceTileSource } from "@/game/render/spaceScene/constants";
+import { addLayers, createLayerSet } from "@/game/render/spaceScene/layers";
+import { makeSoftEllipseSprite } from "@/game/render/spaceScene/softSprites";
 import { applyShipPhysicsInput } from "@/game/battle/shipPhysics";
 import { findHitPart, projectileHitsShip, resolveShipCollisions } from "@/game/battle/collision";
 import { collectWeapons, rotateTurretToTarget, type WeaponState } from "@/game/battle/weapons";
@@ -69,27 +72,31 @@ import {
 import type { CabinDef, GridCell, InstalledPanel, ModuleDef, PanelDef, PanelState, ShipBuild, WeaponDef } from "@/game/types";
 
 const BACKGROUND_SCENE = { width: 2400, height: 3600 };
-const SPACE_TILE_SCALE = 0.8;
-const SPACE_TILE_SRCS = [
-  "/assets/backgrounds/deep-space-tile-01.webp",
-  "/assets/backgrounds/deep-space-tile-02.webp",
-  "/assets/backgrounds/deep-space-tile-03.webp",
-  "/assets/backgrounds/deep-space-tile-04.webp",
-  "/assets/backgrounds/deep-space-tile-05.webp",
-  "/assets/backgrounds/deep-space-tile-06.webp",
-  "/assets/backgrounds/deep-space-tile-07.webp",
-  "/assets/backgrounds/deep-space-tile-08.webp"
-];
-const PLANET_SRCS = [
-  "/assets/backgrounds/planets/planet-ice.webp",
-  "/assets/backgrounds/planets/planet-lava.webp",
-  "/assets/backgrounds/planets/planet-purple.webp",
-  "/assets/backgrounds/planets/planet-cyan.webp",
-  "/assets/backgrounds/planets/planet-desert.webp",
-  "/assets/backgrounds/planets/planet-toxic.webp",
-  "/assets/backgrounds/planets/planet-metal.webp",
-  "/assets/backgrounds/planets/planet-storm.webp"
-];
+const BATTLE_LAYER_ORDER = [
+  "background",
+  "farParticles",
+  "debris",
+  "engineVfx",
+  "ships",
+  "projectiles",
+  "impactVfx",
+  "explosions",
+  "uiWorld",
+  "screenVfx",
+  "hud"
+] as const;
+const BATTLE_BACKGROUND_LAYER_ORDER = [
+  "deep_space_background_dark",
+  "nebula_layer_blue",
+  "nebula_layer_purple",
+  "battle_planets_layer",
+  "far_stars_layer",
+  "close_stars_layer",
+  "asteroid_debris_layer",
+  "dust_particles_layer",
+  "battlefield_grid_subtle",
+  "space_clouds_soft"
+] as const;
 
 type BattleCanvasProps = {
   build: ShipBuild;
@@ -372,31 +379,8 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       });
       spaceTile.alpha = 0.5;
       spaceTile.tileScale.set(SPACE_TILE_SCALE);
-      const layers = {
-        background: new Container(),
-        farParticles: new Container(),
-        debris: new Container(),
-        ships: new Container(),
-        engineVfx: new Container(),
-        projectiles: new Container(),
-        impactVfx: new Container(),
-        explosions: new Container(),
-        uiWorld: new Container(),
-        screenVfx: new Container(),
-        hud: new Container()
-      };
-      const backgroundLayers = {
-        deep_space_background_dark: new Container(),
-        nebula_layer_blue: new Container(),
-        nebula_layer_purple: new Container(),
-        battle_planets_layer: new Container(),
-        far_stars_layer: new Container(),
-        close_stars_layer: new Container(),
-        asteroid_debris_layer: new Container(),
-        dust_particles_layer: new Container(),
-        battlefield_grid_subtle: new Container(),
-        space_clouds_soft: new Container()
-      };
+      const layers = createLayerSet(BATTLE_LAYER_ORDER);
+      const backgroundLayers = createLayerSet(BATTLE_BACKGROUND_LAYER_ORDER);
       const backgroundGradient = new Graphics();
       let backgroundGradientWidth = 0;
       let backgroundGradientHeight = 0;
@@ -409,32 +393,9 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       const damageFlash = new Graphics();
       refreshBackgroundGradient();
       backgroundLayers.deep_space_background_dark.addChild(backgroundGradient, spaceTile);
-      layers.background.addChild(
-        backgroundLayers.deep_space_background_dark,
-        backgroundLayers.nebula_layer_blue,
-        backgroundLayers.nebula_layer_purple,
-        backgroundLayers.battle_planets_layer,
-        backgroundLayers.far_stars_layer,
-        backgroundLayers.close_stars_layer,
-        backgroundLayers.asteroid_debris_layer,
-        backgroundLayers.dust_particles_layer,
-        backgroundLayers.battlefield_grid_subtle,
-        backgroundLayers.space_clouds_soft
-      );
+      addLayers(layers.background, backgroundLayers, BATTLE_BACKGROUND_LAYER_ORDER);
       layers.screenVfx.addChild(damageFlash);
-      app.stage.addChild(
-        layers.background,
-        layers.farParticles,
-        layers.debris,
-        layers.engineVfx,
-        layers.ships,
-        layers.projectiles,
-        layers.impactVfx,
-        layers.explosions,
-        layers.uiWorld,
-        layers.screenVfx,
-        layers.hud
-      );
+      addLayers(app.stage, layers, BATTLE_LAYER_ORDER);
       seedNebulaLayer(backgroundLayers.nebula_layer_blue, 0x1a5f9f, 0.08);
       seedNebulaLayer(backgroundLayers.nebula_layer_purple, 0x5c3b8f, 0.06);
       seedStarLayer(backgroundLayers.far_stars_layer, 140, 0.08, 1.2);
@@ -1034,7 +995,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 }
 
 async function loadAtlasTextures(): Promise<AtlasTextures> {
-  const backgroundSrc = SPACE_TILE_SRCS[Math.floor(Math.random() * SPACE_TILE_SRCS.length)];
+  const backgroundSrc = pickSpaceTileSource();
   const planetSrcs = pickBattlePlanetSources();
   const [
     background,
@@ -1090,8 +1051,7 @@ async function loadStructureTextures<T extends string>(
 }
 
 function pickBattlePlanetSources() {
-  const shuffled = [...PLANET_SRCS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 2 + Math.floor(Math.random() * 3));
+  return pickPlanetSources(2 + Math.floor(Math.random() * 3));
 }
 
 function sliceExplosionAnimations(base: Texture): Record<ExplosionAnimationKey, Texture[]> {
@@ -1520,30 +1480,28 @@ function drawDamageFlash(graphics: Graphics, width: number, height: number, puls
   if (pulse <= 0.01) return;
 
   const intensity = Math.min(1, pulse);
-  const edge = 28 + intensity * 52;
-  const steps = 10;
-  const stepSize = edge / steps;
+  const steps = 13;
+  const maxInset = 16 + intensity * 58;
+  const pulseWave = 0.82 + Math.sin(performance.now() * 0.018) * 0.18;
 
   for (let i = 0; i < steps; i += 1) {
-    const inset = i * stepSize;
-    const band = Math.ceil(stepSize) + 1;
-    const fade = 1 - i / steps;
-    const alpha = (0.03 + intensity * 0.18) * fade * fade;
+    const t = i / (steps - 1);
+    const inset = t * maxInset;
+    const alpha = (0.02 + intensity * 0.34) * (1 - t) * (1 - t) * pulseWave;
+    const lineWidth = Math.max(1, 4 - t * 2.6 + intensity * 1.4);
 
-    graphics
-      .rect(inset, inset, width - inset * 2, band)
-      .fill({ color: 0xff1028, alpha })
-      .rect(inset, height - inset - band, width - inset * 2, band)
-      .fill({ color: 0xff1028, alpha })
-      .rect(inset, inset, band, height - inset * 2)
-      .fill({ color: 0xff1028, alpha })
-      .rect(width - inset - band, inset, band, height - inset * 2)
-      .fill({ color: 0xff1028, alpha });
+    graphics.rect(inset, inset, width - inset * 2, height - inset * 2).stroke({
+      color: i < 3 ? 0xff3147 : 0xff6a7a,
+      alpha,
+      width: lineWidth
+    });
   }
 
-  graphics
-    .rect(0, 0, width, height)
-    .stroke({ color: 0xff596a, alpha: 0.2 + intensity * 0.38, width: 2 + intensity * 4 });
+  graphics.rect(0, 0, width, height).stroke({
+    color: 0xff8a9a,
+    alpha: (0.12 + intensity * 0.34) * pulseWave,
+    width: 1.5 + intensity * 2
+  });
 }
 
 function makeProjectile(
@@ -1660,9 +1618,12 @@ function seedBattlePlanets(layer: Container, textures: Texture[], width: number,
 
 function seedNebulaLayer(layer: Container, color: number, alpha: number) {
   for (let i = 0; i < 6; i += 1) {
-    const cloud = new Graphics()
-      .ellipse(0, 0, 280 + Math.random() * 360, 120 + Math.random() * 190)
-      .fill({ color, alpha: alpha * (0.55 + Math.random() * 0.45) });
+    const cloud = makeSoftEllipseSprite(
+      color,
+      560 + Math.random() * 720,
+      240 + Math.random() * 380,
+      alpha * (0.7 + Math.random() * 0.5)
+    );
     cloud.position.set(
       Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
       Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
@@ -1730,9 +1691,12 @@ function seedBattlefieldGrid(layer: Container) {
 
 function seedSpaceClouds(layer: Container) {
   for (let i = 0; i < 5; i += 1) {
-    const cloud = new Graphics()
-      .ellipse(0, 0, 360 + Math.random() * 420, 70 + Math.random() * 130)
-      .fill({ color: 0x9ab6d5, alpha: 0.025 + Math.random() * 0.02 });
+    const cloud = makeSoftEllipseSprite(
+      0x9ab6d5,
+      720 + Math.random() * 840,
+      140 + Math.random() * 260,
+      0.025 + Math.random() * 0.022
+    );
     cloud.position.set(
       Math.random() * BACKGROUND_SCENE.width - BACKGROUND_SCENE.width / 2,
       Math.random() * BACKGROUND_SCENE.height - BACKGROUND_SCENE.height / 2
