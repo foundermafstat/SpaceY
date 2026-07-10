@@ -80,7 +80,7 @@ button {
 }
 
 .app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 18px;
 }
 
@@ -99,7 +99,7 @@ button {
 
 .mobile-frame {
   width: min(100%, 430px);
-  min-height: calc(100vh - 36px);
+  min-height: calc(100dvh - 36px);
   margin: 0 auto;
   border: 1px solid var(--line);
   border-radius: 0;
@@ -129,7 +129,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  min-height: calc(100vh - 38px);
+  min-height: calc(100dvh - 38px);
   padding: 16px;
 }
 
@@ -138,7 +138,7 @@ button {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: 8px;
-  height: calc(100vh - 38px);
+  height: calc(100dvh - 38px);
   min-height: 0;
   overflow: hidden;
   padding: 10px;
@@ -432,7 +432,7 @@ button {
 
 .home-scene-host {
   position: relative;
-  min-height: calc(100vh - 38px);
+  min-height: calc(100dvh - 38px);
   overflow: hidden;
   background: linear-gradient(180deg, #000000 0%, #020814 48%, #04142b 100%);
 }
@@ -1047,7 +1047,7 @@ button {
 
 .battle-host {
   position: relative;
-  min-height: calc(100vh - 38px);
+  min-height: calc(100dvh - 38px);
   background: #03050c;
 }
 
@@ -1191,6 +1191,7 @@ button {
     height: 100%;
     min-height: 0;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .game-frame--hangar .module-drawer summary {
@@ -1202,9 +1203,11 @@ button {
   }
 
   .game-frame--hangar .preset-list {
+    flex: 0 1 96px;
     grid-auto-flow: row;
     grid-auto-rows: minmax(44px, auto);
     grid-template-columns: 1fr;
+    min-height: 44px;
     max-height: 96px;
     overflow-x: hidden;
     overflow-y: auto;
@@ -1212,7 +1215,7 @@ button {
 
   .game-frame--hangar .module-drawer[open] .module-list {
     position: static;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     grid-auto-flow: row;
     grid-auto-rows: minmax(58px, auto);
     grid-template-columns: 1fr;
@@ -1255,13 +1258,64 @@ button {
   }
 }
 
+@media (orientation: landscape) and (max-width: 700px) {
+  .game-frame--hangar .hangar-screen {
+    grid-template-columns: 128px minmax(0, 1fr) 164px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .game-frame--hangar .hangar-topbar {
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .game-frame--hangar .brand strong {
+    font-size: 13px;
+  }
+
+  .game-frame--hangar .hangar-stat-strip {
+    gap: 2px;
+  }
+
+  .game-frame--hangar .status-column {
+    padding: 5px;
+  }
+
+  .game-frame--hangar .module-drawer {
+    padding: 6px;
+  }
+
+  .game-frame--hangar .preset-list {
+    flex-basis: 74px;
+    max-height: 74px;
+  }
+
+  .game-frame--hangar .overlay-tabs {
+    top: 48px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(132px, calc(100% - 76px));
+  }
+}
+
+@media (orientation: landscape) and (max-width: 540px) {
+  .game-frame--hangar .hangar-screen {
+    grid-template-columns: 102px minmax(0, 1fr) 130px;
+  }
+
+  .game-frame--hangar .brand span,
+  .game-frame--hangar .module-drawer summary .small {
+    display: none;
+  }
+}
+
 @media (max-width: 440px) {
   .app-shell {
     padding: 0;
   }
 
   .mobile-frame {
-    min-height: 100vh;
+    min-height: 100dvh;
     border: 0;
     border-radius: 0;
   }
@@ -1274,7 +1328,7 @@ button {
   .screen,
   .battle-host,
   .home-scene-host {
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   .cell {

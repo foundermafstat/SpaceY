@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Texture, TilingSprite } from "@/game/render/three/three2d";
+import { observeElementSize } from "@/game/render/observeElementSize";
 import { angleDelta, clamp, distance, getWorldMount, type Vec } from "@/game/battle/math";
 import { applyShipPhysics } from "@/game/battle/shipPhysics";
 import {
@@ -263,12 +264,8 @@ export default function HomeSceneCanvas() {
 
     let destroyed = false;
     let initialized = false;
+    let stopObservingSize = () => {};
     const app = new Application();
-
-    const resize = () => {
-      if (!initialized) return;
-      app.renderer.resize(host.clientWidth, host.clientHeight);
-    };
 
     async function boot() {
       await app.init({
@@ -286,7 +283,9 @@ export default function HomeSceneCanvas() {
 
       initialized = true;
       currentHost.appendChild(app.canvas);
-      window.addEventListener("resize", resize);
+      stopObservingSize = observeElementSize(currentHost, ({ width, height }) => {
+        if (initialized) app.renderer.resize(width, height);
+      });
 
       const textures = await loadHomeTextures();
       if (destroyed) return;
@@ -398,7 +397,7 @@ export default function HomeSceneCanvas() {
 
     return () => {
       destroyed = true;
-      window.removeEventListener("resize", resize);
+      stopObservingSize();
       if (initialized) app.destroy();
     };
   }, []);

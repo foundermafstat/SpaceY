@@ -3,6 +3,14 @@
 import { useEffect, useRef } from "react";
 import { Application, Assets, Container, Graphics, Rectangle, Sprite, Text, Texture, TilingSprite } from "@/game/render/three/three2d";
 import type { TextStyleFontWeight } from "@/game/render/three/three2d";
+import {
+  createGameAudioLoop,
+  createGameAudioScope,
+  isGameAudioRunning,
+  preloadGameAudio,
+  unlockGameAudio
+} from "@/game/audio/gameAudio";
+import { observeElementSize } from "@/game/render/observeElementSize";
 import { getEnemyDef, type EnemyDef, type EnemyKind } from "@/game/data/enemies";
 import {
   getCabin,
@@ -346,15 +354,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
 
     let destroyed = false;
     let initialized = false;
+    let stopObservingSize = () => {};
     let battleAudio: ReturnType<typeof createBattleAudio> | null = null;
     const app = new Application();
     const host = hostRef.current;
     const stats = calculateShipStatsV2(build);
-    const resize = () => {
-      if (!initialized) return;
-      app.renderer.resize(host.clientWidth, host.clientHeight);
-    };
-
     async function boot() {
       await app.init({
         width: host.clientWidth,
@@ -369,8 +373,11 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       }
       initialized = true;
       host.appendChild(app.canvas);
-      window.addEventListener("resize", resize);
+      stopObservingSize = observeElementSize(host, ({ width, height }) => {
+        if (initialized) app.renderer.resize(width, height);
+      });
       const textures = await loadAtlasTextures();
+      if (destroyed) return;
 
       const spaceTile = new TilingSprite({
         texture: textures.background,
@@ -985,7 +992,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
     return () => {
       destroyed = true;
       resultRef.current = false;
-      window.removeEventListener("resize", resize);
+      stopObservingSize();
       battleAudio?.destroy();
       if (initialized) app.destroy();
     };
@@ -1960,26 +1967,15 @@ function createBattleAudio() {
     setEnginePower: (_power: number) => {},
     destroy: () => {}
   };
-  if (typeof Audio === "undefined") return emptyAudio;
+  if (typeof window === "undefined") return emptyAudio;
 
-  let unlocked = false;
+  let activationRequested = isGameAudioRunning();
+  let destroyed = false;
+  let unlocking: Promise<boolean> | null = null;
   const lastPlayed = new Map<BattleSoundKey, number>();
-  const oneShots = new Map<BattleSoundKey, HTMLAudioElement[]>();
-  const idle = new Audio(BATTLE_AUDIO.engineIdle);
-  const thrust = new Audio(BATTLE_AUDIO.engineThrust);
-
-  idle.loop = true;
-  thrust.loop = true;
-  idle.volume = 0;
-  thrust.volume = 0;
-  idle.preload = "auto";
-  thrust.preload = "auto";
-
-  const makeOneShot = (src: string) => {
-    const audio = new Audio(src);
-    audio.preload = "auto";
-    return audio;
-  };
+  const idle = createGameAudioLoop(BATTLE_AUDIO.engineIdle);
+  const thrust = createGameAudioLoop(BATTLE_AUDIO.engineThrust);
+  const oneShots = createGameAudioScope();
 
   const sources: Record<BattleSoundKey, string> = {
     autocannon: BATTLE_AUDIO.autocannon,
@@ -1993,47 +1989,54 @@ function createBattleAudio() {
     impactExplosive: BATTLE_AUDIO.impactExplosive
   };
 
-  (Object.keys(sources) as BattleSoundKey[]).forEach((key) => {
-    oneShots.set(key, [makeOneShot(sources[key]), makeOneShot(sources[key])]);
-  });
+  preloadGameAudio(Object.values(BATTLE_AUDIO));
 
-  function startLoop(audio: HTMLAudioElement) {
-    audio.play().catch(() => {});
+  function ensureUnlocked(userGesture = false) {
+    if (destroyed) return Promise.resolve(false);
+    if (unlocking && !userGesture) return unlocking;
+    if (!userGesture && !isGameAudioRunning()) return Promise.resolve(false);
+
+    const attempt = unlockGameAudio(userGesture ? { userGesture: true } : {})
+      .then((unlocked) => {
+        if (!unlocked || destroyed) return false;
+        void idle.start();
+        void thrust.start();
+        return true;
+      });
+    unlocking = attempt;
+    void attempt.finally(() => {
+      if (unlocking === attempt) unlocking = null;
+    });
+    return attempt;
   }
+
+  if (activationRequested) void ensureUnlocked();
 
   return {
     unlock: () => {
-      if (unlocked) return;
-      unlocked = true;
-      startLoop(idle);
-      startLoop(thrust);
+      activationRequested = true;
+      void ensureUnlocked(true);
     },
     play: (key: BattleSoundKey, volume = 1) => {
-      if (!unlocked) return;
+      if (!activationRequested && !isGameAudioRunning()) return;
       const now = performance.now();
       const minGap = key === "autocannon" || key === "laser" ? 70 : 120;
       if (now - (lastPlayed.get(key) ?? 0) < minGap) return;
       lastPlayed.set(key, now);
-
-      const pool = oneShots.get(key);
-      const audio = pool?.find((item) => item.paused || item.ended) ?? pool?.[0];
-      if (!audio) return;
-      audio.pause();
-      audio.currentTime = 0;
-      audio.volume = Math.min(1, volume);
-      audio.play().catch(() => {});
+      void ensureUnlocked().then((unlocked) => {
+        if (unlocked && !destroyed) void oneShots.play(sources[key], volume);
+      });
     },
     setEnginePower: (power: number) => {
-      if (!unlocked) return;
       const amount = Math.max(0, Math.min(1, power));
-      idle.volume = 0.16 * (1 - amount * 0.35);
-      thrust.volume = 0.42 * amount;
+      idle.setVolume(0.16 * (1 - amount * 0.35));
+      thrust.setVolume(0.42 * amount);
     },
     destroy: () => {
-      [idle, thrust, ...Array.from(oneShots.values()).flat()].forEach((audio) => {
-        audio.pause();
-        audio.currentTime = 0;
-      });
+      destroyed = true;
+      oneShots.stop();
+      idle.stop();
+      thrust.stop();
     }
   };
 }

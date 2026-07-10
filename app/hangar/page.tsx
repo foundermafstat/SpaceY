@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import { createDraggable, type Draggable } from "animejs";
 import { UiButton, UiButtonLabel, UiLinkButton } from "@/components/ui-kit/UiButton";
+import { playGameSound, preloadGameAudio } from "@/game/audio/gameAudio";
+import { observeElementSize } from "@/game/render/observeElementSize";
 import { cabinDefs } from "@/game/data/cabins";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
@@ -71,9 +73,8 @@ const overlayModes: Array<{ id: OverlayMode; label: string }> = [
   { id: "mass", label: "Mass" }
 ];
 const cabinPalette = cabinDefs.filter((item) => item.spriteId?.startsWith("cabin_"));
-const gridCellSize = 38;
+const defaultGridCellSize = 38;
 const gridGap = 3;
-const fallbackGridPitch = gridCellSize + gridGap;
 const cabinGraphicOverhang = 5;
 const panelGraphicOverhang = 5;
 const initialScenePosition = { x: 0, y: 0 };
@@ -95,17 +96,24 @@ const installSounds = {
     "/assets/audio/hangar-panel-install-06.mp3"
   ]
 };
+const installSoundSources = [...installSounds.module, ...installSounds.panel];
 
-function getCabinGraphicFrame(cabin: CabinDef, position: GridCell) {
-  const width = cabin.assetGridSize.width * gridCellSize + (cabin.assetGridSize.width - 1) * gridGap;
-  const height = cabin.assetGridSize.height * gridCellSize + (cabin.assetGridSize.height - 1) * gridGap;
+function getCabinGraphicFrame(
+  cabin: CabinDef,
+  position: GridCell,
+  cellSize: number,
+  gap: number
+) {
+  const pitch = cellSize + gap;
+  const width = cabin.assetGridSize.width * cellSize + (cabin.assetGridSize.width - 1) * gap;
+  const height = cabin.assetGridSize.height * cellSize + (cabin.assetGridSize.height - 1) * gap;
   const scale = 1 + (cabinGraphicOverhang * 2) / Math.min(width, height);
   const scaledWidth = width * scale;
   const scaledHeight = height * scale;
 
   return {
-    left: position.x * fallbackGridPitch - (scaledWidth - width) / 2,
-    top: position.y * fallbackGridPitch - (scaledHeight - height) / 2,
+    left: position.x * pitch - (scaledWidth - width) / 2,
+    top: position.y * pitch - (scaledHeight - height) / 2,
     width: scaledWidth,
     height: scaledHeight
   };
@@ -158,6 +166,7 @@ export default function HangarPage() {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [scenePosition, setScenePosition] = useState(initialScenePosition);
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("structure");
+  const [gridMetrics, setGridMetrics] = useState({ cellSize: defaultGridCellSize, gap: gridGap });
   const frame = getFrame(build.frameId);
   const cabin = build.cabinId ? getCabin(build.cabinId) : null;
   const buildGrid = getBuildGrid(build);
@@ -180,7 +189,10 @@ export default function HangarPage() {
   const cabinPosition = getInstalledCabinPosition(build);
   const zoom = zoomSteps[zoomIndex];
   const canTestBattle = blockers.length === 0;
-  const cabinGraphicFrame = cabin && cabinPosition ? getCabinGraphicFrame(cabin, cabinPosition) : null;
+  const gridPitch = gridMetrics.cellSize + gridMetrics.gap;
+  const cabinGraphicFrame = cabin && cabinPosition
+    ? getCabinGraphicFrame(cabin, cabinPosition, gridMetrics.cellSize, gridMetrics.gap)
+    : null;
   const panelGraphicCells = (build.panels ?? []).flatMap((installed) => {
     const panel = getPanel(installed.panelId);
     return getTransformedCells(panel, installed.position, installed.rotation).map((cell) => ({
@@ -196,9 +208,7 @@ export default function HangarPage() {
     const soundList = installSounds[kind];
     const index = installSoundIndexRef.current[kind];
     installSoundIndexRef.current[kind] = (index + 1) % soundList.length;
-    const audio = new Audio(soundList[index]);
-    audio.volume = 0.55;
-    void audio.play().catch(() => {});
+    void playGameSound(soundList[index], 0.55);
   }
 
   function clampScenePosition(x: number, y: number, nextZoom = zoom) {
@@ -411,7 +421,7 @@ export default function HangarPage() {
   function getGridPitch() {
     const grid = gridRef.current;
     const firstCell = grid?.querySelector<HTMLElement>("[data-grid-cell]");
-    if (!grid || !firstCell) return fallbackGridPitch;
+    if (!grid || !firstCell) return gridPitch;
     const styles = window.getComputedStyle(grid);
     return firstCell.offsetWidth + (Number.parseFloat(styles.columnGap) || 0);
   }
@@ -448,13 +458,37 @@ export default function HangarPage() {
   }
 
   useEffect(() => {
-    setScenePosition((current) => clampScenePosition(current.x, current.y, zoom));
-    const handleResize = () => {
-      setScenePosition((current) => clampScenePosition(current.x, current.y, zoom));
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    preloadGameAudio(installSoundSources);
+  }, []);
+
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    return observeElementSize(stage, () => {
+      setScenePosition((current) => {
+        const next = clampScenePosition(current.x, current.y, zoom);
+        return next.x === current.x && next.y === current.y ? current : next;
+      });
+    });
   }, [zoom]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    const firstCell = grid?.querySelector<HTMLElement>("[data-grid-cell]");
+    if (!grid || !firstCell) return;
+    return observeElementSize(grid, () => {
+      const styles = window.getComputedStyle(grid);
+      const nextMetrics = {
+        cellSize: firstCell.offsetWidth || defaultGridCellSize,
+        gap: Number.parseFloat(styles.columnGap) || gridGap
+      };
+      setGridMetrics((current) =>
+        current.cellSize === nextMetrics.cellSize && current.gap === nextMetrics.gap
+          ? current
+          : nextMetrics
+      );
+    });
+  }, [gridHeight, gridWidth]);
 
   useEffect(() => {
     const grid = gridRef.current;
@@ -535,6 +569,7 @@ export default function HangarPage() {
     build,
     buildMode,
     gridHeight,
+    gridPitch,
     gridWidth,
     installModule,
     installPanel,
@@ -689,10 +724,10 @@ export default function HangarPage() {
                       className="panel-graphic-cell"
                       style={{
                         ...getPanelCellSpriteStyle(graphic.panel, graphic.state, graphic.localCell),
-                        left: graphic.cell.x * fallbackGridPitch - panelGraphicOverhang,
-                        top: graphic.cell.y * fallbackGridPitch - panelGraphicOverhang,
-                        width: gridCellSize + panelGraphicOverhang * 2,
-                        height: gridCellSize + panelGraphicOverhang * 2
+                        left: graphic.cell.x * gridPitch - panelGraphicOverhang,
+                        top: graphic.cell.y * gridPitch - panelGraphicOverhang,
+                        width: gridMetrics.cellSize + panelGraphicOverhang * 2,
+                        height: gridMetrics.cellSize + panelGraphicOverhang * 2
                       }}
                     />
                   ))}
