@@ -1,6 +1,6 @@
 # Mission Elements Pilot Prompt Set
 
-Methodology source: `image-asset-generation-methodology.md`
+Methodology source: `docs/image-asset-generation-methodology.md`
 
 Shared prompt base:
 

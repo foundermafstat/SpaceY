@@ -4,7 +4,7 @@
     1024,
     512
   ],
-  "methodology": "image-asset-generation-methodology.md",
+  "methodology": "docs/image-asset-generation-methodology.md",
   "source": "/assets/generated/full-design/backgrounds/source/background-layers-source.png",
   "layers": {
     "deep_space_background_dark": {

@@ -1,6 +1,6 @@
 # SpaceY Full Design Asset Production Plan
 
-Methodology source: `image-asset-generation-methodology.md`
+Methodology source: `docs/image-asset-generation-methodology.md`
 
 Generated output root: `public/assets/generated/full-design`
 
@@ -49,8 +49,8 @@ Each weapon source sheet must separate `base`, `turret`, and `barrel` when the w
 
 ## Batch 04 - Remaining Modules
 
-Hull, armor, engines, energy, shield/defense modules from `design-doc.md` that are not covered by pilot/MVP batches.
+Hull, armor, engines, energy, shield/defense modules from `docs/design-doc.md` that are not covered by pilot/MVP batches.
 
 ## Batch 05 - VFX, Backgrounds, UI
 
-VFX, parallax background layers, and UI assets from `design-doc.md` sections 18.9-18.11.
+VFX, parallax background layers, and UI assets from `docs/design-doc.md` sections 18.9-18.11.

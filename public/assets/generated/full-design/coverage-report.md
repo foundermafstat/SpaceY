@@ -1,6 +1,6 @@
 # SpaceY Full Design Asset Coverage
 
-Methodology: `image-asset-generation-methodology.md`
+Methodology: `docs/image-asset-generation-methodology.md`
 
 ## New Full-Design Outputs
 

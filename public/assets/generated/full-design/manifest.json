@@ -1,9 +1,9 @@
 {
   "generatedAt": "2026-07-06",
-  "methodology": "image-asset-generation-methodology.md",
+  "methodology": "docs/image-asset-generation-methodology.md",
   "sourceDesignDocs": [
-    "design-doc.md#18",
-    "design-doc2.md#15"
+    "docs/design-doc.md#18",
+    "docs/design-doc2.md#15"
   ],
   "outputRoot": "/assets/generated/full-design",
   "newGeneratedPackages": {

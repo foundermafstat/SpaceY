@@ -7,7 +7,7 @@
   ],
   "perspective": "top-down orthographic with side-visible nozzle hardware",
   "style": "SpaceY dark graphite/titanium modular sci-fi asset style",
-  "methodology": "image-asset-generation-methodology.md",
+  "methodology": "docs/image-asset-generation-methodology.md",
   "states": [
     "ideal",
     "damaged",

@@ -1,7 +1,7 @@
 {
   "format": "png",
   "cellSize": 256,
-  "methodology": "image-asset-generation-methodology.md",
+  "methodology": "docs/image-asset-generation-methodology.md",
   "sheets": {
     "engine-vfx": {
       "alphaSheet": "/assets/generated/full-design/vfx/sheets-alpha/engine-vfx-alpha.png",
