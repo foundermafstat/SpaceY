@@ -12,15 +12,19 @@
 
 ## First server installation
 
-Create a dedicated read-only GitHub deploy key on the server. Keep the private
-key only on the server and add only its public key to the repository Deploy keys.
+Create a dedicated read-only GitHub deploy key on the server at
+`/root/.ssh/spacey_github_ed25519`. Keep the private key only on the server and
+add only `/root/.ssh/spacey_github_ed25519.pub` to the repository Deploy keys.
 
 After the deploy key has been added to GitHub:
 
 ```bash
 mkdir -p /var/www/js
-git clone git@github.com:foundermafstat/SpaceY.git /var/www/js/spacey
+GIT_SSH_COMMAND="ssh -i /root/.ssh/spacey_github_ed25519 -o IdentitiesOnly=yes" \
+  git clone git@github.com:foundermafstat/SpaceY.git /var/www/js/spacey
 cd /var/www/js/spacey
+git config core.sshCommand \
+  "ssh -i /root/.ssh/spacey_github_ed25519 -o IdentitiesOnly=yes"
 cp .env.production.example .env.production
 pnpm install --frozen-lockfile
 pnpm run typecheck
