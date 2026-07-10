@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { GameAudioUnlock } from "@/components/audio/GameAudioUnlock";
+import { TelegramMiniAppRuntime } from "@/components/telegram/TelegramMiniAppRuntime";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
+        <TelegramMiniAppRuntime />
         <GameAudioUnlock />
         {children}
       </body>
