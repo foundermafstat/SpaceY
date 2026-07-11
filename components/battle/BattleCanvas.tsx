@@ -13,6 +13,13 @@ import {
 import { observeElementSize } from "@/game/render/observeElementSize";
 import { getEnemyDef, type EnemyDef, type EnemyKind } from "@/game/data/enemies";
 import {
+  createMissionRuntime,
+  updateMissionRuntime,
+  type BattleTelemetry,
+  type MissionResult
+} from "@/game/mission/runtime";
+import type { MissionDef } from "@/game/mission/types";
+import {
   getCabin,
   getFrame,
   getInstalledCabinPosition,
@@ -108,7 +115,9 @@ const BATTLE_BACKGROUND_LAYER_ORDER = [
 
 type BattleCanvasProps = {
   build: ShipBuild;
-  onResult: (result: "victory" | "defeat") => void;
+  mission: MissionDef;
+  onResult: (result: MissionResult) => void;
+  onRuntimeChange: (telemetry: BattleTelemetry) => void;
 };
 
 type Enemy = {
@@ -345,7 +354,7 @@ type ShipVisual = {
   damageState: ModuleDamageState;
 };
 
-export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
+export default function BattleCanvas({ build, mission, onResult, onRuntimeChange }: BattleCanvasProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const resultRef = useRef(false);
 
@@ -444,6 +453,14 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         makeEnemy(getEnemyDef("raider"), 250, -460, textures),
         makeEnemy(getEnemyDef("bomber"), -260, -540, textures)
       ];
+      let missionRuntime = createMissionRuntime(
+        mission,
+        enemies.length,
+        createMissionAttemptId(mission.id)
+      );
+      let lastSimulationTickMs = performance.now();
+      let lastPublishedSecond = -1;
+      let lastPublishedEnemiesRemaining = enemies.length;
       enemies.forEach((enemy) => layers.ships.addChild(enemy.body));
       const enemyMarkers = enemies.map((enemy) => makeEnemyMarker(enemy));
       enemyMarkers.forEach((marker) => layers.uiWorld.addChild(marker.root));
@@ -493,6 +510,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       });
       app.stage.on("pointerup", releaseJoystick);
       app.stage.on("pointerupoutside", releaseJoystick);
+      publishTelemetry(true);
 
       function releaseJoystick() {
         joystick.active = false;
@@ -502,24 +520,73 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       }
 
       app.ticker.add(() => {
-        const dt = Math.min(app.ticker.deltaMS / 1000, 0.033);
         if (resultRef.current) return;
+        const simulationTickMs = performance.now();
+        let remainingFrameSec = Math.min(
+          0.25,
+          Math.max(0, (simulationTickMs - lastSimulationTickMs) / 1000)
+        );
+        lastSimulationTickMs = simulationTickMs;
 
-        updatePlayer(dt);
-        updateEnemies(dt);
-        resolveShipCollisions(player, ship.container, enemies);
-        updateWeapons(dt);
-        updateEnemyWeapons(dt);
-        updateProjectiles(dt);
-        updateParticles(dt);
-        updateCamera();
-        updateEnemyMarkers();
-        updateDamageFlash(dt);
+        while (remainingFrameSec > 0 && !resultRef.current) {
+          const dt = Math.min(remainingFrameSec, 0.033);
+          remainingFrameSec = Math.max(0, remainingFrameSec - dt);
 
-        if (screenShake > 0) screenShake = Math.max(0, screenShake - dt);
-        if (player.hp <= 0) finish("defeat");
-        if (enemies.every((enemy) => enemy.hp <= 0)) finish("victory");
+          updatePlayer(dt);
+          updateEnemies(dt);
+          resolveShipCollisions(player, ship.container, enemies);
+          updateWeapons(dt);
+          updateEnemyWeapons(dt);
+          updateProjectiles(dt);
+          updateParticles(dt);
+          updateCamera();
+          updateEnemyMarkers();
+          updateDamageFlash(dt);
+
+          if (screenShake > 0) screenShake = Math.max(0, screenShake - dt);
+          const enemiesRemaining = enemies.filter((enemy) => enemy.hp > 0).length;
+          const damagedPartIds = player.runtime.parts
+            .filter((part) => part.hp < part.maxHp)
+            .map((part) => part.id);
+          const detachedPartIds = player.runtime.parts
+            .filter((part) => part.detached)
+            .map((part) => part.id);
+          const runtimeUpdate = updateMissionRuntime(missionRuntime, {
+            deltaSec: dt,
+            playerAlive: player.hp > 0,
+            enemiesRemaining,
+            damageTaken: Math.max(0, player.maxHp - Math.max(0, player.hp)),
+            damagedPartIds,
+            detachedPartIds
+          });
+          missionRuntime = runtimeUpdate.state;
+          publishTelemetry(runtimeUpdate.result !== null);
+          if (runtimeUpdate.result) finish(runtimeUpdate.result);
+        }
       });
+
+      function publishTelemetry(force = false) {
+        const elapsedSecond = Math.floor(missionRuntime.elapsedSec);
+        if (
+          !force
+          && elapsedSecond === lastPublishedSecond
+          && missionRuntime.enemiesRemaining === lastPublishedEnemiesRemaining
+        ) {
+          return;
+        }
+        lastPublishedSecond = elapsedSecond;
+        lastPublishedEnemiesRemaining = missionRuntime.enemiesRemaining;
+        const telemetry: BattleTelemetry = {
+          runtime: missionRuntime,
+          vitals: {
+            hull: { current: Math.max(0, player.hp), max: player.maxHp },
+            shield: { current: player.shield.current, max: player.shield.capacity },
+            energy: { current: player.energy.current, max: player.energy.capacity },
+            heat: { current: player.heat.currentHeat, max: player.heat.heatCapacity }
+          }
+        };
+        onRuntimeChange(telemetry);
+      }
 
       function updatePlayer(dt: number) {
         const inputPower = Math.min(1, Math.hypot(joystick.value.x, joystick.value.y));
@@ -969,7 +1036,7 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
         });
       }
 
-      function finish(result: "victory" | "defeat") {
+      function finish(result: MissionResult) {
         if (resultRef.current) return;
         resultRef.current = true;
         audio.setEnginePower(0);
@@ -979,9 +1046,9 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
           layers.explosions,
           textures.battleVfx,
           textures.aiExplosionAnimations,
-          result === "defeat" ? "reactor" : "large",
+          result.outcome === "defeat" ? "reactor" : "large",
           player.pos,
-          result === "defeat" ? 70 : 30
+          result.outcome === "defeat" ? 70 : 30
         );
         onResult(result);
       }
@@ -996,9 +1063,16 @@ export default function BattleCanvas({ build, onResult }: BattleCanvasProps) {
       battleAudio?.destroy();
       if (initialized) app.destroy();
     };
-  }, [build, onResult]);
+  }, [build, mission, onResult, onRuntimeChange]);
 
   return <div ref={hostRef} className="battle-canvas" />;
+}
+
+function createMissionAttemptId(missionId: string) {
+  const randomId = typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.round(Math.random() * 1_000_000)}`;
+  return `${missionId}:${randomId}`;
 }
 
 async function loadAtlasTextures(): Promise<AtlasTextures> {

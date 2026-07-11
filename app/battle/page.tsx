@@ -3,11 +3,13 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { MissionObjectiveHud } from "@/components/battle/MissionObjectiveHud";
+import { MissionResultOverlay } from "@/components/battle/MissionResultOverlay";
 import { getMissionById } from "@/game/data/missions";
 import { evaluateMissionReadiness } from "@/game/mission/readiness";
+import type { BattleTelemetry, MissionResult } from "@/game/mission/runtime";
 import { useShipStore } from "@/game/store/shipStore";
 import { useShipStoreHydrated } from "@/game/store/useShipStoreHydrated";
-import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import { getBuildBlockers } from "@/game/ship/validation";
 
 const BattleCanvas = dynamic(() => import("@/components/battle/BattleCanvas"), {
@@ -17,9 +19,11 @@ const BattleCanvas = dynamic(() => import("@/components/battle/BattleCanvas"), {
 export default function BattlePage() {
   const build = useShipStore((state) => state.build);
   const selectedMissionId = useShipStore((state) => state.selectedMissionId);
+  const wallet = useShipStore((state) => state.wallet);
+  const completeMission = useShipStore((state) => state.completeMission);
   const storeHydrated = useShipStoreHydrated();
-  const [result, setResult] = useState<"victory" | "defeat" | null>(null);
-  const stats = useMemo(() => calculateShipStatsV2(build), [build]);
+  const [telemetry, setTelemetry] = useState<BattleTelemetry | null>(null);
+  const [result, setResult] = useState<MissionResult | null>(null);
   const blockers = useMemo(() => getBuildBlockers(build), [build]);
   const selectedMission = selectedMissionId ? getMissionById(selectedMissionId) : null;
   const missionReadiness = useMemo(
@@ -34,39 +38,29 @@ export default function BattlePage() {
     ?? missionReadiness?.blockers[0]?.message
     ?? "Select a contract before launch.";
 
-  const handleResult = useCallback((nextResult: "victory" | "defeat") => {
-    setResult(nextResult);
+  const handleResult = useCallback((nextResult: MissionResult) => {
+    setResult(selectedMission ? completeMission(selectedMission, nextResult) : nextResult);
+  }, [completeMission, selectedMission]);
+  const handleRuntimeChange = useCallback((nextTelemetry: BattleTelemetry) => {
+    setTelemetry(nextTelemetry);
   }, []);
 
   return (
     <main className="app-shell game-shell">
       <section className="mobile-frame game-frame game-frame--battle">
         <div className="battle-host">
-          {canStartBattle ? <BattleCanvas build={build} onResult={handleResult} /> : null}
+          {canStartBattle && selectedMission && !result ? (
+            <BattleCanvas
+              build={build}
+              key={selectedMission.id}
+              mission={selectedMission}
+              onResult={handleResult}
+              onRuntimeChange={handleRuntimeChange}
+            />
+          ) : null}
           <div className="battle-overlay">
-            {canStartBattle && selectedMission ? (
-              <div className="battle-hud panel">
-                <span className="mission-eyebrow">Active contract</span>
-                <strong>{selectedMission.name}</strong>
-                <span className="battle-objective">{selectedMission.objective.label}</span>
-                <span className="small">
-                  HP {stats.hp.toFixed(0)} · DPS {stats.dps.toFixed(1)} · accel{" "}
-                  {stats.acceleration.toFixed(2)}
-                </span>
-                <span className="small">
-                  EN {stats.energyBalance >= 0 ? "+" : ""}
-                  {stats.energyBalance.toFixed(0)}/s · buffer {Math.max(20, stats.powerStorage + stats.powerOutput * 2).toFixed(0)}
-                </span>
-                <span className="small">
-                  Heat {Math.max(0, stats.heat).toFixed(0)}/s · cooling {stats.heatDissipation.toFixed(0)}
-                </span>
-                <span className="small">
-                  Shield {stats.shieldCapacity.toFixed(0)} · regen {stats.shieldRegen.toFixed(1)}/s
-                </span>
-                <div className="bar" aria-label="Objective runtime pending">
-                  <span style={{ width: `${result === "defeat" ? 0 : 100}%` }} />
-                </div>
-              </div>
+            {canStartBattle && selectedMission && !result ? (
+              <MissionObjectiveHud mission={selectedMission} telemetry={telemetry} />
             ) : null}
             {!storeHydrated ? (
               <div className="result-panel panel">
@@ -88,24 +82,9 @@ export default function BattlePage() {
                 </div>
               </div>
             ) : null}
-            {result && (
-              <div className="result-panel panel">
-                <div className="panel-title">
-                  <h2>{result === "victory" ? "Victory" : "Ship Destroyed"}</h2>
-                  <span className="small">
-                    {result === "victory" ? "Mission rewards arrive with the result system." : "Review the build and try again."}
-                  </span>
-                </div>
-                <div className="footer-actions">
-                  <Link className="button" href="/hangar">
-                    Hangar
-                  </Link>
-                  <button className="button primary" onClick={() => window.location.reload()}>
-                    Retry
-                  </button>
-                </div>
-              </div>
-            )}
+            {result && selectedMission ? (
+              <MissionResultOverlay mission={selectedMission} result={result} wallet={wallet} />
+            ) : null}
           </div>
         </div>
       </section>

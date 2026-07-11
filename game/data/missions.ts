@@ -16,9 +16,9 @@ export const missionDefs = [
       "Recover valuable containers from an abandoned trade route before rival salvagers arrive.",
     durationSec: 90,
     objective: {
-      type: "collect_scrap",
-      target: 10,
-      label: "Collect 10 salvage containers"
+      type: "destroy_all",
+      target: 4,
+      label: "Clear 4 rival salvagers"
     },
     hardRequirements: {},
     recommendations: {
@@ -30,6 +30,8 @@ export const missionDefs = [
     enemyKinds: ["Pirate scout"],
     rewards: {
       credits: 300,
+      scrap: 12,
+      alloy: 1,
       bonuses: [{ kind: "common-panel-chance", label: "Chance for a common panel" }]
     }
   },
@@ -42,9 +44,9 @@ export const missionDefs = [
       "Protect a fragile client shipment along its route and keep attackers away until extraction.",
     durationSec: 120,
     objective: {
-      type: "protect_target",
-      target: 1,
-      label: "Protect the cargo until extraction"
+      type: "survive_seconds",
+      target: 120,
+      label: "Protect the cargo for 120 seconds"
     },
     hardRequirements: {
       requiredTags: ["escort-beacon"]
@@ -58,7 +60,9 @@ export const missionDefs = [
     enemyKinds: ["Missile pirate", "Attack drone"],
     rewards: {
       credits: 700,
-      bonuses: [{ kind: "reputation", label: "Reputation" }]
+      scrap: 12,
+      dataShards: 2,
+      bonuses: []
     }
   },
   {
@@ -70,7 +74,7 @@ export const missionDefs = [
       "Hold position against a volatile meteorite while the drilling cycle extracts its rare ore.",
     durationSec: 45,
     objective: {
-      type: "hold_position",
+      type: "survive_seconds",
       target: 45,
       label: "Hold drilling position for 45 seconds"
     },
@@ -87,8 +91,9 @@ export const missionDefs = [
     enemyKinds: ["Mining drone"],
     rewards: {
       credits: 500,
+      scrap: 12,
+      alloy: 5,
       bonuses: [
-        { kind: "ore", label: "Ore" },
         { kind: "rare-connector-chance", label: "Chance for a rare connector" }
       ]
     }

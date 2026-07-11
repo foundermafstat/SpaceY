@@ -19,8 +19,6 @@ export interface MissionObjective {
 
 export type MissionRewardBonusKind =
   | "common-panel-chance"
-  | "reputation"
-  | "ore"
   | "rare-connector-chance";
 
 export interface MissionRewardBonus {
@@ -30,8 +28,35 @@ export interface MissionRewardBonus {
 
 export interface MissionRewardPreview {
   credits: number;
+  scrap: number;
+  alloy?: number;
+  dataShards?: number;
   bonuses: readonly MissionRewardBonus[];
 }
+
+export type WalletCurrency = "credits" | "scrap" | "alloy" | "dataShards";
+
+export type PlayerWallet = Record<WalletCurrency, number>;
+
+export type MissionRewardRarity = "common" | "uncommon" | "superRare";
+
+export type MissionCurrencyRewardGrant = {
+  id: string;
+  kind: "currency";
+  currency: WalletCurrency;
+  amount: number;
+  label: string;
+};
+
+export type MissionItemRewardGrant = {
+  id: string;
+  kind: "item";
+  itemDefId: string;
+  label: string;
+  rarity: MissionRewardRarity;
+};
+
+export type MissionRewardGrant = MissionCurrencyRewardGrant | MissionItemRewardGrant;
 
 export type MissionCapability =
   | "dps"

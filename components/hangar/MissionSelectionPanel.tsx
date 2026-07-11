@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { UiButton } from "@/components/ui-kit/UiButton";
 import { getMissionById, missionDefs } from "@/game/data/missions";
 import { evaluateMissionReadiness } from "@/game/mission/readiness";
-import type { MissionId, MissionReadinessIssue } from "@/game/mission/types";
+import type { MissionDef, MissionId, MissionReadinessIssue } from "@/game/mission/types";
 import type { ShipBuild } from "@/game/types";
 
 type MissionSelectionPanelProps = {
@@ -96,7 +96,7 @@ export function MissionSelectionPanel({
               <strong>{mission.name}</strong>
               <span className="mission-card-objective">{mission.objective.label}</span>
               <span className="mission-card-meta">
-                {formatDuration(mission.durationSec)} · {mission.rewards.credits} Credits
+                {formatDuration(mission.durationSec)} · {mission.rewards.credits} Cr · {mission.rewards.scrap} Scrap
               </span>
               <span className="mission-card-action">{selected ? "Selected · View briefing" : "View briefing"}</span>
             </button>
@@ -137,7 +137,7 @@ export function MissionSelectionPanel({
             <div className="mission-briefing-summary">
               <span className={`mission-risk mission-risk--${previewMission.risk}`}>{previewMission.risk} risk</span>
               <span>{formatDuration(previewMission.durationSec)}</span>
-              <span>{previewMission.rewards.credits} Credits</span>
+              <span>{previewMission.rewards.credits} Cr + {previewMission.rewards.scrap} Scrap</span>
               <span className={previewReadiness.blockers.length ? "mission-state-blocked" : "mission-state-ready"}>
                 {previewReadiness.blockers.length ? "Launch blocked" : `${previewReadiness.score}% ready`}
               </span>
@@ -155,10 +155,7 @@ export function MissionSelectionPanel({
                   <div>
                     <dt>Reward preview</dt>
                     <dd>
-                      {previewMission.rewards.credits} Credits
-                      {previewMission.rewards.bonuses.length
-                        ? ` · ${previewMission.rewards.bonuses.map((bonus) => bonus.label).join(" · ")}`
-                        : ""}
+                      {formatRewardPreview(previewMission)}
                     </dd>
                   </div>
                   <div>
@@ -251,4 +248,14 @@ function formatDuration(durationSec: number) {
 
 function formatTag(tag: string) {
   return tag.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
+}
+
+function formatRewardPreview(mission: MissionDef) {
+  return [
+    `${mission.rewards.credits} Credits`,
+    `${mission.rewards.scrap} Scrap`,
+    mission.rewards.alloy ? `${mission.rewards.alloy} Alloy` : null,
+    mission.rewards.dataShards ? `${mission.rewards.dataShards} Data Shards` : null,
+    ...mission.rewards.bonuses.map((bonus) => bonus.label)
+  ].filter(Boolean).join(" · ");
 }

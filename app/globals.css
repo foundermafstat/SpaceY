@@ -238,6 +238,43 @@ button {
   line-height: 1;
 }
 
+.wallet-strip {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+}
+
+.wallet-strip-item {
+  min-width: 0;
+  padding: 4px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.055);
+  text-align: center;
+}
+
+.wallet-strip-item dt {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallet-strip-item dd {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: var(--cyan);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+}
+
 .button:hover {
   border-color: rgba(73, 215, 255, 0.52);
   background: rgba(73, 215, 255, 0.2);
@@ -1445,33 +1482,150 @@ button {
   padding: 14px;
 }
 
-.battle-hud {
+.mission-objective-hud {
   display: grid;
-  gap: 8px;
-  max-width: 240px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 10px;
+  width: min(360px, 100%);
+  padding: 11px 12px;
 }
 
-.battle-objective {
-  border-left: 2px solid var(--green);
+.mission-hud-heading {
+  min-width: 0;
+}
+
+.mission-hud-heading strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mission-hud-timer {
+  align-self: center;
+  color: var(--cyan);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mission-hud-objective-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
   padding-left: 7px;
+  border-left: 2px solid var(--green);
   color: #d8f7e9;
   font-size: 11px;
   line-height: 1.35;
 }
 
-.bar {
-  height: 10px;
+.mission-hud-objective-row > span {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.mission-hud-objective-row strong {
+  color: var(--green);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.mission-hud-progress,
+.mission-hud-vital-meter {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.bar > span {
+.mission-hud-progress {
+  grid-column: 1 / -1;
+  height: 6px;
+}
+
+.mission-hud-progress > span,
+.mission-hud-vital-meter > span {
   display: block;
   height: 100%;
   border-radius: 0;
   background: linear-gradient(90deg, var(--green), var(--cyan));
+  transition: width 180ms ease-out;
+}
+
+.mission-hud-meta {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.mission-hud-hazard {
+  display: block;
+  overflow: hidden;
+  color: var(--orange);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mission-hud-vitals {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin: 0;
+}
+
+.mission-hud-vital {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 4px;
+  min-width: 0;
+}
+
+.mission-hud-vital dt {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.mission-hud-vital dd {
+  margin: 0;
+  color: var(--cyan);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.mission-hud-vital-meter {
+  grid-column: 1 / -1;
+  height: 3px;
+}
+
+.mission-hud-vital[data-level="warning"] dd {
+  color: var(--orange);
+}
+
+.mission-hud-vital[data-level="warning"] .mission-hud-vital-meter > span {
+  background: var(--orange);
+}
+
+.mission-hud-vital[data-level="critical"] dd {
+  color: var(--red);
+}
+
+.mission-hud-vital[data-level="critical"] .mission-hud-vital-meter > span {
+  background: var(--red);
 }
 
 .result-panel {
@@ -1479,6 +1633,263 @@ button {
   width: min(100%, 340px);
   margin: auto 0;
   pointer-events: auto;
+}
+
+.mission-result-layer {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: rgba(2, 6, 16, 0.76);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.mission-result-overlay {
+  width: min(100%, 420px);
+  max-height: 100%;
+  margin: 0;
+  padding: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-color: rgba(73, 215, 255, 0.28);
+  background: var(--panel-strong);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+}
+
+.mission-result-overlay[data-outcome="victory"] {
+  border-color: rgba(83, 231, 164, 0.48);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 3px 0 0 var(--green);
+}
+
+.mission-result-overlay[data-outcome="defeat"] {
+  border-color: rgba(255, 89, 106, 0.48);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), inset 3px 0 0 var(--red);
+}
+
+.mission-result-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mission-result-header h2 {
+  margin: 3px 0 1px;
+  font-size: 18px;
+}
+
+.mission-result-header > div > strong {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.mission-result-state {
+  padding: 5px 7px;
+  border: 1px solid currentColor;
+  color: var(--cyan);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-outcome="victory"] .mission-result-state {
+  color: var(--green);
+}
+
+[data-outcome="defeat"] .mission-result-state {
+  color: var(--red);
+}
+
+.mission-result-reason {
+  margin: 8px 0 10px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.mission-result-body {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-result-summary,
+.mission-result-rewards {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.mission-result-objective {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 8px;
+  padding: 7px 8px;
+  border-left: 2px solid var(--cyan);
+  background: rgba(73, 215, 255, 0.06);
+}
+
+.mission-result-objective > span,
+.mission-result-objective > small {
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.mission-result-objective > strong {
+  grid-column: 1 / -1;
+  font-size: 11px;
+}
+
+.mission-result-objective > small {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.mission-result-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mission-result-metrics span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.mission-result-metrics strong {
+  color: var(--text);
+}
+
+.mission-result-damage,
+.mission-result-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.mission-result-damage strong,
+.mission-result-section-title strong {
+  color: var(--text);
+}
+
+.mission-reward-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mission-reward-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.mission-reward-list li strong {
+  color: var(--green);
+  font-size: 9px;
+  text-align: right;
+}
+
+.mission-reward-list li[data-kind="item"] strong {
+  color: var(--violet);
+  text-transform: uppercase;
+}
+
+.mission-result-empty {
+  margin: 0;
+  padding: 10px;
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 10px;
+  text-align: center;
+}
+
+.mission-reward-reveal-stage {
+  position: relative;
+  height: 128px;
+  overflow: hidden;
+  border: 1px solid rgba(155, 92, 255, 0.3);
+  background: radial-gradient(circle at 50% 50%, rgba(155, 92, 255, 0.18), rgba(3, 5, 12, 0.88));
+}
+
+.mission-reward-reveal-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  align-content: end;
+  justify-items: center;
+  padding: 8px;
+  background: linear-gradient(180deg, transparent 35%, rgba(3, 5, 12, 0.88));
+  pointer-events: none;
+  text-align: center;
+}
+
+.mission-reward-reveal-copy > span {
+  color: var(--violet);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.mission-reward-reveal-copy > strong {
+  font-size: 11px;
+}
+
+.mission-reward-replay {
+  margin-top: 4px;
+  padding: 2px 5px;
+  border: 1px solid rgba(73, 215, 255, 0.28);
+  background: rgba(3, 5, 12, 0.72);
+  color: var(--cyan);
+  cursor: pointer;
+  font-size: 8px;
+  pointer-events: auto;
+}
+
+.mission-result-wallet {
+  display: grid;
+  gap: 5px;
+}
+
+.mission-result-wallet > span {
+  color: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.mission-result-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mission-result-actions .button {
+  min-width: 0;
+  padding: 0 7px;
+  font-size: 10px;
 }
 
 .footer-actions {
@@ -1548,6 +1959,10 @@ button {
   }
 
   .game-frame--hangar .hangar-stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .game-frame--hangar .wallet-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1669,14 +2084,55 @@ button {
     padding: 10px;
   }
 
-  .game-frame--battle .battle-hud {
-    max-width: 220px;
-    gap: 5px;
+  .game-frame--battle .mission-objective-hud {
+    width: min(320px, 46vw);
+    gap: 3px 8px;
+    padding: 8px 10px;
+  }
+
+  .game-frame--battle .mission-hud-objective-row > span {
+    -webkit-line-clamp: 1;
+  }
+
+  .game-frame--battle .mission-hud-heading strong,
+  .game-frame--battle .mission-hud-timer {
+    font-size: 11px;
+  }
+
+  .game-frame--battle .mission-result-layer {
     padding: 10px;
   }
 
-  .game-frame--battle .battle-hud .small {
-    font-size: 10px;
+  .game-frame--battle .mission-result-overlay {
+    width: min(680px, 100%);
+    padding: 10px 12px;
+  }
+
+  .game-frame--battle .mission-result-header h2 {
+    font-size: 15px;
+  }
+
+  .game-frame--battle .mission-result-reason {
+    margin: 5px 0 7px;
+  }
+
+  .game-frame--battle .mission-result-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .game-frame--battle .mission-reward-reveal-stage {
+    height: 112px;
+  }
+}
+
+@media (max-width: 360px) {
+  .mission-objective-hud {
+    width: 100%;
+  }
+
+  .mission-hud-vital dt {
+    font-size: 7px;
   }
 }
 

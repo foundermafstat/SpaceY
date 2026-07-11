@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import { createDraggable, type Draggable } from "animejs";
 import { MissionSelectionPanel } from "@/components/hangar/MissionSelectionPanel";
+import { WalletStrip } from "@/components/hangar/WalletStrip";
 import { UiButton, UiButtonLabel, UiLinkButton } from "@/components/ui-kit/UiButton";
 import { playGameSound, preloadGameAudio } from "@/game/audio/gameAudio";
 import { observeElementSize } from "@/game/render/observeElementSize";
@@ -131,6 +132,7 @@ export default function HangarPage() {
     selectedModuleId,
     selectedPanelId,
     selectedMissionId,
+    wallet,
     rotation,
     setBuildMode,
     selectMission,
@@ -224,21 +226,42 @@ export default function HangarPage() {
 
   useEffect(() => {
     if (!storeHydrated) return;
-    if (window.location.hash === "#contracts" || !selectedMissionId) {
-      setHangarSection("contracts");
+    function syncSectionFromHash() {
+      const requestedSection = window.location.hash.slice(1);
+      if (requestedSection === "structure" || requestedSection === "modules") {
+        setBuildMode(requestedSection);
+        setHangarSection(requestedSection);
+      } else if (requestedSection === "contracts" || !selectedMissionId) {
+        setHangarSection("contracts");
+      }
     }
-  }, [selectedMissionId, storeHydrated]);
+    syncSectionFromHash();
+    window.addEventListener("hashchange", syncSectionFromHash);
+    return () => window.removeEventListener("hashchange", syncSectionFromHash);
+  }, [selectedMissionId, setBuildMode, storeHydrated]);
 
   function showBuildSection() {
     setHangarSection(buildMode);
-    if (window.location.hash === "#contracts") {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-    }
+    setHangarHash(buildMode);
+  }
+
+  function showContractsSection() {
+    setHangarSection("contracts");
+    setHangarHash("contracts");
   }
 
   function showBuildLayer(mode: "structure" | "modules") {
     setBuildMode(mode);
     setHangarSection(mode);
+    setHangarHash(mode);
+  }
+
+  function setHangarHash(section: HangarSection) {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#${section}`
+    );
   }
 
   function playInstallSound(kind: keyof typeof installSounds) {
@@ -643,6 +666,7 @@ export default function HangarPage() {
               <MiniStat label="SPD" value={stats.maxSpeed.toFixed(0)} />
               <MiniStat label="DPS" value={stats.dps.toFixed(1)} />
             </div>
+            <WalletStrip wallet={wallet} />
             {canLaunchContract ? (
               <UiLinkButton href="/battle" size="sm" variant="primary">
                 Launch Contract
@@ -844,7 +868,7 @@ export default function HangarPage() {
                 <button
                   aria-selected={hangarSection === "contracts"}
                   className={hangarSection === "contracts" ? "selected" : ""}
-                  onClick={() => setHangarSection("contracts")}
+                  onClick={showContractsSection}
                   role="tab"
                 >
                   Contracts

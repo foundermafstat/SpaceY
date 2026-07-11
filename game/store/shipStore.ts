@@ -6,6 +6,13 @@ import { defaultBuild } from "@/game/data/defaultBuild";
 import { isMissionId } from "@/game/data/missions";
 import { cloneShipBuild, shipBuildPresets } from "@/game/data/shipPresets";
 import {
+  applyMissionRewards,
+  EMPTY_PLAYER_WALLET,
+  normalizePlayerWallet,
+  resolveMissionResultRewards
+} from "@/game/mission/rewards";
+import type { MissionResult } from "@/game/mission/runtime";
+import {
   canInstallModule,
   canInstallPanel,
   canPlaceCabin,
@@ -18,7 +25,12 @@ import {
 } from "@/game/ship/build";
 import { installedModuleToElement } from "@/game/ship/domainCompat";
 import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship/migration";
-import type { MissionId } from "@/game/mission/types";
+import type {
+  MissionDef,
+  MissionId,
+  MissionItemRewardGrant,
+  PlayerWallet
+} from "@/game/mission/types";
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
 const rotations: Rotation[] = [0, 90, 180, 270];
@@ -30,8 +42,11 @@ type ShipState = {
   selectedModuleId: string;
   selectedPanelId: string;
   rotation: Rotation;
-  scrap: number;
+  wallet: PlayerWallet;
   selectedMissionId: MissionId | null;
+  lastMissionResult: MissionResult | null;
+  completedAttemptIds: string[];
+  pendingItemRewards: MissionItemRewardGrant[];
   setBuildMode: (mode: BuildMode) => void;
   selectMission: (id: MissionId) => void;
   clearMission: () => void;
@@ -48,20 +63,38 @@ type ShipState = {
   movePanel: (instanceId: string, position: { x: number; y: number }, rotation?: Rotation) => boolean;
   removePanel: (instanceId: string) => void;
   resetBuild: () => void;
-  addReward: (scrap: number) => void;
+  completeMission: (mission: MissionDef, result: MissionResult) => MissionResult;
+};
+
+type PersistedShipState = Omit<
+  Partial<ShipState>,
+  "completedAttemptIds" | "lastMissionResult" | "pendingItemRewards" | "wallet"
+> & {
+  completedAttemptIds?: unknown;
+  scrap?: unknown;
+  lastMissionResult?: unknown;
+  pendingItemRewards?: unknown;
+  wallet?: unknown;
 };
 
 function normalizePersistedState(persisted: unknown, current: ShipState): ShipState {
-  const state = persisted as Partial<ShipState>;
+  const state = persisted && typeof persisted === "object"
+    ? persisted as PersistedShipState
+    : {};
+  const { scrap: legacyScrap, ...persistedState } = state;
   return {
     ...current,
-    ...state,
+    ...persistedState,
     build: migrateShipBuild(state.build),
     buildMode: normalizeBuildMode(state.buildMode),
     selectedModuleId: state.selectedModuleId ?? "hull_block",
     selectedPanelId: state.selectedPanelId ?? "node_plate",
     rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0,
-    selectedMissionId: normalizeMissionId(state.selectedMissionId)
+    selectedMissionId: normalizeMissionId(state.selectedMissionId),
+    wallet: normalizePlayerWallet(state.wallet, legacyScrap),
+    lastMissionResult: normalizeMissionResult(state.lastMissionResult),
+    completedAttemptIds: normalizeStringIds(state.completedAttemptIds),
+    pendingItemRewards: normalizePendingItemRewards(state.pendingItemRewards)
   };
 }
 
@@ -75,6 +108,37 @@ function normalizeBuildMode(value: unknown): BuildMode {
   return "structure";
 }
 
+function normalizeMissionResult(value: unknown): MissionResult | null {
+  if (!value || typeof value !== "object") return null;
+  const result = value as Partial<MissionResult>;
+  if (typeof result.attemptId !== "string" || result.attemptId.length === 0) return null;
+  if (!isMissionId(result.missionId)) return null;
+  if (result.outcome !== "victory" && result.outcome !== "defeat") return null;
+  if (!Array.isArray(result.damagedPartIds) || !Array.isArray(result.detachedPartIds)) return null;
+  if (!Array.isArray(result.rewards)) return null;
+  return value as MissionResult;
+}
+
+function normalizeStringIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter(
+    (id): id is string => typeof id === "string" && id.length > 0 && id.length <= 128
+  ))];
+}
+
+function normalizePendingItemRewards(value: unknown): MissionItemRewardGrant[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((reward): reward is MissionItemRewardGrant => {
+    if (!reward || typeof reward !== "object") return false;
+    const item = reward as Partial<MissionItemRewardGrant>;
+    return item.kind === "item"
+      && typeof item.id === "string"
+      && typeof item.itemDefId === "string"
+      && typeof item.label === "string"
+      && (item.rarity === "common" || item.rarity === "uncommon" || item.rarity === "superRare");
+  });
+}
+
 export const useShipStore = create<ShipState>()(
   persist(
     (set, get) => ({
@@ -83,8 +147,11 @@ export const useShipStore = create<ShipState>()(
       selectedModuleId: "hull_block",
       selectedPanelId: "node_plate",
       rotation: 0,
-      scrap: 0,
+      wallet: { ...EMPTY_PLAYER_WALLET },
       selectedMissionId: null,
+      lastMissionResult: null,
+      completedAttemptIds: [],
+      pendingItemRewards: [],
       setBuildMode: (mode) => set({ buildMode: mode }),
       selectMission: (id) => set({ selectedMissionId: id }),
       clearMission: () => set({ selectedMissionId: null }),
@@ -287,22 +354,49 @@ export const useShipStore = create<ShipState>()(
           selectedPanelId: "node_plate",
           rotation: 0
         }),
-      addReward: (scrap) => set((state) => ({ scrap: state.scrap + scrap }))
+      completeMission: (mission, result) => {
+        const completedResult = resolveMissionResultRewards(mission, result);
+        const state = get();
+        if (state.completedAttemptIds.includes(completedResult.attemptId)) {
+          const priorResult = state.lastMissionResult?.attemptId === completedResult.attemptId
+            ? state.lastMissionResult
+            : { ...completedResult, rewards: [] };
+          set({ lastMissionResult: priorResult });
+          return priorResult;
+        }
+        const itemRewards = completedResult.rewards.filter(
+          (reward): reward is MissionItemRewardGrant => reward.kind === "item"
+        );
+        set({
+          lastMissionResult: completedResult,
+          wallet: applyMissionRewards(state.wallet, completedResult.rewards),
+          completedAttemptIds: [...state.completedAttemptIds, completedResult.attemptId],
+          pendingItemRewards: [...state.pendingItemRewards, ...itemRewards]
+        });
+        return completedResult;
+      }
     }),
     {
       name: "starframe-arena-ship",
       skipHydration: true,
       version: CURRENT_SHIP_BUILD_SCHEMA_VERSION,
       migrate: (persisted) => {
-        const state = persisted as Partial<ShipState>;
+        const state = persisted && typeof persisted === "object"
+          ? persisted as PersistedShipState
+          : {};
+        const { scrap: legacyScrap, ...persistedState } = state;
         return {
-          ...state,
+          ...persistedState,
           build: migrateShipBuild(state.build),
           buildMode: normalizeBuildMode(state.buildMode),
           selectedModuleId: state.selectedModuleId ?? "hull_block",
           selectedPanelId: state.selectedPanelId ?? "node_plate",
           rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0,
-          selectedMissionId: normalizeMissionId(state.selectedMissionId)
+          selectedMissionId: normalizeMissionId(state.selectedMissionId),
+          wallet: normalizePlayerWallet(state.wallet, legacyScrap),
+          lastMissionResult: normalizeMissionResult(state.lastMissionResult),
+          completedAttemptIds: normalizeStringIds(state.completedAttemptIds),
+          pendingItemRewards: normalizePendingItemRewards(state.pendingItemRewards)
         };
       },
       merge: (persisted, current) => normalizePersistedState(persisted, current)
