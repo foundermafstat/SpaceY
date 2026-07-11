@@ -1,0 +1,43 @@
+{
+  "name": "@spacey/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/src/index.js"
+    },
+    "./uuidv7": {
+      "types": "./src/uuidv7.ts",
+      "import": "./dist/src/uuidv7.js"
+    }
+  },
+  "scripts": {
+    "build": "pnpm run generate && tsc -p tsconfig.build.json",
+    "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test src/*.test.ts",
+    "db:seed": "tsx prisma/seed.ts",
+    "generate": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma generate --config prisma.config.ts",
+    "validate": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma validate --config prisma.config.ts",
+    "format": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma format --config prisma.config.ts",
+    "migrate:dev": "prisma migrate dev --config prisma.config.ts",
+    "migrate:deploy": "prisma migrate deploy --config prisma.config.ts",
+    "migrate:status": "prisma migrate status --config prisma.config.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.20.0",
+    "dotenv": "^17.4.2",
+    "prisma": "^7.8.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}

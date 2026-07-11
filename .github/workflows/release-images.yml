@@ -1,0 +1,314 @@
+name: release-images
+
+on:
+  workflow_run:
+    workflows: [platform-ci]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-images-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Verify gated release input
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-24.04
+    outputs:
+      api_url: ${{ steps.release.outputs.api_url }}
+      image_prefix: ${{ steps.release.outputs.image_prefix }}
+      sha: ${{ steps.release.outputs.sha }}
+      ws_url: ${{ steps.release.outputs.ws_url }}
+    env:
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
+      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+      NEXT_PUBLIC_BATTLE_WS_URL: ${{ vars.NEXT_PUBLIC_BATTLE_WS_URL }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+
+      - id: release
+        name: Fail closed on SHA and production public URLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+
+          node <<'NODE'
+          const required = [
+            ["NEXT_PUBLIC_API_URL", "https:"],
+            ["NEXT_PUBLIC_BATTLE_WS_URL", "wss:"]
+          ];
+
+          for (const [name, protocol] of required) {
+            const raw = process.env[name];
+            if (!raw) throw new Error(`${name} must be configured as a GitHub repository variable.`);
+            if (raw !== raw.trim() || /[\r\n]/.test(raw)) throw new Error(`${name} contains whitespace.`);
+            const url = new URL(raw);
+            if (url.protocol !== protocol) throw new Error(`${name} must use ${protocol}`);
+            if (url.username || url.password) throw new Error(`${name} must not contain credentials.`);
+          }
+          NODE
+
+          repository="${GITHUB_REPOSITORY,,}"
+          image_prefix="ghcr.io/${repository}"
+          printf 'api_url=%s\n' "$NEXT_PUBLIC_API_URL" >> "$GITHUB_OUTPUT"
+          printf 'image_prefix=%s\n' "$image_prefix" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+          printf 'ws_url=%s\n' "$NEXT_PUBLIC_BATTLE_WS_URL" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.service }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: game-web
+            filter: "@spacey/game-web"
+          - service: api
+            filter: "@spacey/api"
+          - service: battle-worker
+            filter: "@spacey/battle-worker"
+          - service: admin-web
+            filter: "@spacey/admin-web"
+          - service: admin-api
+            filter: "@spacey/admin-api"
+          - service: telegram-bot
+            filter: "@spacey/telegram-bot"
+          - service: jobs
+            filter: "@spacey/jobs"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 1
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: image
+        name: Resolve immutable image reference
+        shell: bash
+        env:
+          IMAGE_PREFIX: ${{ needs.prepare.outputs.image_prefix }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          name="${IMAGE_PREFIX}/${SERVICE}"
+          printf 'name=%s\n' "$name" >> "$GITHUB_OUTPUT"
+          printf 'tagged=%s:%s\n' "$name" "$RELEASE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse to move an existing exact-SHA tag
+        shell: bash
+        env:
+          TAGGED_IMAGE: ${{ steps.image.outputs.tagged }}
+        run: |
+          set -euo pipefail
+          set +e
+          inspect_output="$(docker buildx imagetools inspect "$TAGGED_IMAGE" 2>&1)"
+          inspect_status=$?
+          set -e
+          if [ "$inspect_status" -eq 0 ]; then
+            echo "Refusing to overwrite existing image tag: $TAGGED_IMAGE" >&2
+            exit 1
+          fi
+          if ! grep -Eiq 'not found|manifest unknown|does not exist' <<<"$inspect_output"; then
+            printf '%s\n' "$inspect_output" >&2
+            echo "Registry lookup failed; refusing to publish without proving tag absence." >&2
+            exit 1
+          fi
+
+      - id: build
+        name: Build and publish exact-SHA image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile.workspace
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.image.outputs.tagged }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.sha }}
+            org.opencontainers.image.title=spacey-${{ matrix.service }}
+          build-args: |
+            APP_FILTER=${{ matrix.filter }}
+            VCS_REF=${{ needs.prepare.outputs.sha }}
+            NEXT_PUBLIC_API_URL=${{ needs.prepare.outputs.api_url }}
+            NEXT_PUBLIC_BATTLE_WS_URL=${{ needs.prepare.outputs.ws_url }}
+            NEXT_PUBLIC_ALLOW_BROWSER_AUTH=false
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          provenance: mode=max
+
+      - name: Publish GitHub build provenance attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Verify published digest and OCI revision
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ steps.image.outputs.name }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker pull "${IMAGE}@${DIGEST}"
+          actual_revision="$(docker image inspect \
+            --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
+            "${IMAGE}@${DIGEST}")"
+          test "$actual_revision" = "$RELEASE_SHA"
+
+      - name: Prepare release evidence directory
+        run: mkdir -p image-record
+
+      - name: Generate image SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.image.outputs.name }}@${{ steps.build.outputs.digest }}
+          format: spdx-json
+          output-file: image-record/${{ matrix.service }}.spdx.json
+          upload-artifact: false
+
+      - name: Publish signed SBOM attestation
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: image-record/${{ matrix.service }}.spdx.json
+          push-to-registry: true
+
+      - name: Write immutable image record
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+          IMAGE: ${{ steps.image.outputs.name }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+          SERVICE: ${{ matrix.service }}
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg service "$SERVICE" \
+            --arg image "$IMAGE" \
+            --arg tag "$RELEASE_SHA" \
+            --arg digest "$DIGEST" \
+            --arg revision "$RELEASE_SHA" \
+            '{
+              service: $service,
+              image: $image,
+              tag: $tag,
+              taggedReference: ($image + ":" + $tag),
+              digest: $digest,
+              reference: ($image + "@" + $digest),
+              revision: $revision,
+              sbom: "signed GitHub SPDX attestation",
+              provenance: "BuildKit max plus signed GitHub build provenance attestation"
+            }' > "image-record/${SERVICE}.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-record-${{ matrix.service }}-${{ needs.prepare.outputs.sha }}
+          path: |
+            image-record/${{ matrix.service }}.json
+            image-record/${{ matrix.service }}.spdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+  manifest:
+    name: Publish release manifest
+    needs: [prepare, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-record-*-${{ needs.prepare.outputs.sha }}
+          path: image-records
+          merge-multiple: true
+
+      - name: Validate records and assemble release manifest
+        shell: bash
+        env:
+          API_URL: ${{ needs.prepare.outputs.api_url }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+          IMAGE_PREFIX: ${{ needs.prepare.outputs.image_prefix }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+          RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
+          WS_URL: ${{ needs.prepare.outputs.ws_url }}
+        run: |
+          set -euo pipefail
+          generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          mapfile -t records < <(find image-records -type f -name '*.json' ! -name '*.spdx.json' | sort)
+          test "${#records[@]}" -eq 7
+
+          jq -s \
+            --arg sha "$RELEASE_SHA" \
+            --arg prefix "$IMAGE_PREFIX" \
+            --arg apiUrl "$API_URL" \
+            --arg wsUrl "$WS_URL" \
+            --arg generatedAt "$generated_at" \
+            --arg ciRunId "$CI_RUN_ID" \
+            --arg releaseRunId "$RELEASE_RUN_ID" \
+            '
+              ["admin-api", "admin-web", "api", "battle-worker", "game-web", "jobs", "telegram-bot"] as $expected
+              | if (map(.service) | sort) != $expected then error("release service set mismatch") else . end
+              | if any(.[]; .revision != $sha or .tag != $sha) then error("release SHA mismatch") else . end
+              | if any(.[]; .taggedReference != (.image + ":" + .tag)) then error("tagged reference mismatch") else . end
+              | if any(.[]; (.digest | test("^sha256:[0-9a-f]{64}$")) | not) then error("invalid digest") else . end
+              | if any(.[]; .image != ($prefix + "/" + .service)) then error("image prefix mismatch") else . end
+              | if any(.[]; .reference != (.image + "@" + .digest)) then error("immutable reference mismatch") else . end
+              | {
+                  schemaVersion: 1,
+                  gitSha: $sha,
+                  imagePrefix: $prefix,
+                  publicBuildUrls: {api: $apiUrl, battleWebSocket: $wsUrl},
+                  sourceCiRunId: $ciRunId,
+                  releaseWorkflowRunId: $releaseRunId,
+                  generatedAt: $generatedAt,
+                  images: sort_by(.service)
+                }
+            ' "${records[@]}" > spacey-release-manifest.json
+
+      - name: Attest release manifest
+        uses: actions/attest@v4
+        with:
+          subject-path: spacey-release-manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spacey-release-manifest-${{ needs.prepare.outputs.sha }}
+          path: spacey-release-manifest.json
+          if-no-files-found: error
+          retention-days: 90

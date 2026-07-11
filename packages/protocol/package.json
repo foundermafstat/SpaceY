@@ -1,0 +1,30 @@
+{
+  "name": "@spacey/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js"
+    },
+    "./battle.proto": "./proto/battle.proto",
+    "./asyncapi.yaml": "./asyncapi.yaml"
+  },
+  "files": [
+    "dist",
+    "proto",
+    "asyncapi.yaml"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@spacey/contracts": "workspace:*"
+  }
+}

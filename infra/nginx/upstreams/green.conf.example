@@ -1,0 +1,13 @@
+# Install each line as its own file under /etc/spacey/nginx/slots/green/.
+# game-web.conf
+server 127.0.0.1:27790;
+# api.conf
+server 127.0.0.1:27800;
+# battle-worker.conf
+server 127.0.0.1:27801;
+# admin-web.conf
+server 127.0.0.1:27803;
+# admin-api.conf
+server 127.0.0.1:27802;
+# telegram-bot.conf
+server 127.0.0.1:27804;

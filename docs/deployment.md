@@ -1,5 +1,7 @@
 # SpaceY production deployment
 
+> Этот документ описывает legacy web-only PM2 deployment. После появления backend-сервисов канонический production workflow — exact-SHA blue/green runbook: `SPACEY_EXACT_SHA_BLUE_GREEN_DEPLOY_RUNBOOK_2026-07-11_RU.md`. Legacy flow нельзя использовать для миграций, battle-worker или server-authoritative release.
+
 ## Production topology
 
 - Repository: `git@github.com:foundermafstat/SpaceY.git`

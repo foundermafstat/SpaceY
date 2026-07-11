@@ -1,0 +1,33 @@
+name: spacey-data
+
+services:
+  valkey:
+    image: "${VALKEY_IMAGE:?set immutable image reference, preferably name@sha256:digest}"
+    command: ["valkey-server", "--appendonly", "yes", "--aclfile", "/run/secrets/users.acl"]
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    volumes:
+      - valkey-data:/data
+      - /etc/spacey/valkey/users.acl:/run/secrets/users.acl:ro
+      - /etc/spacey/valkey/health-password:/run/secrets/health-password:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - VALKEYCLI_AUTH="$$(cat /run/secrets/health-password)" valkey-cli --user health ping | grep -q PONG
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      spacey-data:
+        aliases: [valkey]
+
+networks:
+  spacey-data:
+    name: spacey-data
+
+volumes:
+  valkey-data: {}

@@ -1,0 +1,297 @@
+name: spacey-local
+
+x-app: &app
+  init: true
+  restart: unless-stopped
+  networks: [spacey-local]
+
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_DB: spacey
+      POSTGRES_USER: spacey
+      POSTGRES_PASSWORD: ${LOCAL_POSTGRES_PASSWORD:?set in an untracked env file}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U spacey -d spacey"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [spacey-local]
+
+  valkey:
+    image: valkey/valkey:8.1.1-alpine
+    command: ["valkey-server", "--appendonly", "yes", "--save", "60", "1"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [spacey-local]
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${LOCAL_MINIO_ROOT_USER:?set in an untracked env file}
+      MINIO_ROOT_PASSWORD: ${LOCAL_MINIO_ROOT_PASSWORD:?set in an untracked env file}
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [spacey-local]
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio: { condition: service_healthy }
+    environment:
+      MINIO_ROOT_USER: ${LOCAL_MINIO_ROOT_USER:?set in an untracked env file}
+      MINIO_ROOT_PASSWORD: ${LOCAL_MINIO_ROOT_PASSWORD:?set in an untracked env file}
+      LOCAL_S3_BUCKET: ${LOCAL_S3_BUCKET:-spacey-replays}
+    entrypoint:
+      - /bin/sh
+      - -eu
+      - -c
+      - >-
+        mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}";
+        mc mb --ignore-existing "local/$${LOCAL_S3_BUCKET}";
+        mc anonymous set none "local/$${LOCAL_S3_BUCKET}"
+    restart: "no"
+    networks: [spacey-local]
+
+  roles-bootstrap:
+    image: postgres:17.5-alpine
+    environment:
+      PGPASSWORD: ${LOCAL_POSTGRES_PASSWORD}
+    volumes:
+      - ../packages/db/sql:/spacey-db-roles:ro
+    command:
+      - sh
+      - -ceu
+      - >-
+        psql -h postgres -U spacey -d spacey -v ON_ERROR_STOP=1
+        -f /spacey-db-roles/roles.bootstrap.template.sql
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+    networks: [spacey-local]
+
+  migrator:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/api", VCS_REF: local }
+    command: ["pnpm", "--filter", "@spacey/db", "migrate:deploy"]
+    environment:
+      DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      DIRECT_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+    depends_on:
+      roles-bootstrap: { condition: service_completed_successfully }
+    restart: "no"
+
+  roles-grants:
+    image: postgres:17.5-alpine
+    environment:
+      PGPASSWORD: ${LOCAL_POSTGRES_PASSWORD}
+    volumes:
+      - ../packages/db/sql:/spacey-db-roles:ro
+    command:
+      - sh
+      - -ceu
+      - >-
+        psql -h postgres -U spacey -d spacey -v ON_ERROR_STOP=1
+        -f /spacey-db-roles/roles.grants.template.sql
+    depends_on:
+      migrator: { condition: service_completed_successfully }
+    restart: "no"
+    networks: [spacey-local]
+
+  game-web:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args:
+        APP_FILTER: "@spacey/game-web"
+        VCS_REF: local
+        NEXT_PUBLIC_API_URL: http://localhost:7800
+        NEXT_PUBLIC_BATTLE_WS_URL: ws://localhost:7801/battle
+        NEXT_PUBLIC_ALLOW_BROWSER_AUTH: "true"
+    environment:
+      SERVICE_FILTER: "@spacey/game-web"
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api: { condition: service_healthy }
+
+  api:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/api", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/api"
+      NODE_ENV: development
+      API_HOST: 0.0.0.0
+      API_PORT: 7800
+      CORS_ORIGINS: http://localhost:3000
+      DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      VALKEY_URL: redis://valkey:6379
+      BATTLE_WS_PUBLIC_URL: ws://localhost:7801/battle
+      USE_IN_MEMORY_REPOSITORY: "false"
+      ALLOW_BROWSER_AUTH: "true"
+    ports:
+      - "127.0.0.1:7800:7800"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7800/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      roles-grants: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+
+  battle-worker:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/battle-worker", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/battle-worker"
+      NODE_ENV: development
+      BATTLE_WORKER_HOST: 0.0.0.0
+      BATTLE_WORKER_PORT: 7801
+      BATTLE_WORKER_PUBLIC_URL: ws://localhost:7801/battle
+      BATTLE_ALLOWED_ORIGINS: http://localhost:3000
+      DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      VALKEY_URL: redis://valkey:6379
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: local
+      S3_BUCKET: ${LOCAL_S3_BUCKET:-spacey-replays}
+      S3_ACCESS_KEY_ID: ${LOCAL_MINIO_ROOT_USER}
+      S3_SECRET_ACCESS_KEY: ${LOCAL_MINIO_ROOT_PASSWORD}
+      S3_FORCE_PATH_STYLE: "true"
+    ports:
+      - "127.0.0.1:7801:7801"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7801/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      roles-grants: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+      minio-init: { condition: service_completed_successfully }
+
+  admin-web:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/admin-web", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/admin-web"
+      ADMIN_API_BASE_URL: http://admin-api:7802
+      ADMIN_WEB_ORIGIN: http://localhost:7803
+    ports:
+      - "127.0.0.1:7803:3102"
+    depends_on:
+      admin-api: { condition: service_started }
+
+  admin-api:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/admin-api", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/admin-api"
+      NODE_ENV: development
+      ADMIN_API_HOST: 0.0.0.0
+      ADMIN_API_PORT: 7802
+      ADMIN_ALLOWED_ORIGINS: http://localhost:7803
+      DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      VALKEY_URL: redis://valkey:6379
+    ports:
+      - "127.0.0.1:7802:7802"
+    depends_on:
+      roles-grants: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+
+  telegram-bot:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/telegram-bot", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/telegram-bot"
+      NODE_ENV: development
+      TELEGRAM_BOT_HOST: 0.0.0.0
+      TELEGRAM_BOT_PORT: 7804
+      TELEGRAM_STARS_ENABLED: "false"
+      TELEGRAM_DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      TELEGRAM_BOT_TOKEN: 123456:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijk
+      TELEGRAM_WEBHOOK_SECRET: local_webhook_secret_1234567890_ABCD
+      TELEGRAM_API_BASE_URL: http://127.0.0.1:9
+      SPACEY_MINI_APP_URL: http://localhost:3000
+    ports:
+      - "127.0.0.1:7804:7804"
+    depends_on:
+      roles-grants: { condition: service_completed_successfully }
+
+  jobs:
+    <<: *app
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.workspace
+      args: { APP_FILTER: "@spacey/jobs", VCS_REF: local }
+    environment:
+      SERVICE_FILTER: "@spacey/jobs"
+      NODE_ENV: development
+      DATABASE_URL: postgresql://spacey:${LOCAL_POSTGRES_PASSWORD}@postgres:5432/spacey?schema=public
+      VALKEY_URL: redis://valkey:6379
+      JOBS_HEALTH_HOST: 0.0.0.0
+      JOBS_HEALTH_PORT: 7805
+      WEBHOOK_TIMEOUT_MS: 5000
+      WEBHOOK_MAX_ATTEMPTS: 8
+      RETENTION_MAINTENANCE_INTERVAL_MS: 300000
+      RETENTION_MAINTENANCE_BATCH_SIZE: 5000
+    ports:
+      - "127.0.0.1:7805:7805"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7805/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    depends_on:
+      roles-grants: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+
+networks:
+  spacey-local: {}
+
+volumes:
+  postgres-data: {}
+  valkey-data: {}
+  minio-data: {}

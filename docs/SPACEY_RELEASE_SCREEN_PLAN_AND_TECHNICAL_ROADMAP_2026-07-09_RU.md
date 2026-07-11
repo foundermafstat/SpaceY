@@ -4,6 +4,8 @@
 Репозиторий: `/Users/irine/Desktop/SpaceY`  
 Цель документа: зафиксировать, какие экраны нужны для полного цикла игры, что должно находиться на каждом экране, какие системы нужно добавить к текущей реализации и в каком порядке довести проект до релизного состояния.
 
+Обновлено: 2026-07-11. Backend и server-authoritative game architecture теперь являются этапом 0, а не поздним улучшением. Архитектурный source of truth: `SPACEY_PRODUCTION_BACKEND_OPEN_API_ARCHITECTURE_2026-07-11_RU.md`.
+
 ## 1. Краткий вывод
 
 Space Y уже имеет сильную базу vertical prototype:
@@ -964,276 +966,120 @@ export type PlayerProgression = {
 };
 ```
 
-## 8. Store architecture
+## 8. Client state architecture
 
-Текущий `game/store/shipStore.ts` хранит:
+Текущий `game/store/shipStore.ts` остаётся временным источником данных только для development-прототипа и одноразового импорта legacy build schema v3.
 
-- `build`;
-- `buildMode`;
-- `selectedModuleId`;
-- `selectedPanelId`;
-- `rotation`;
-- `scrap`;
-- actions сборки.
+Production-клиент может локально хранить:
 
-Краткосрочно можно расширить существующий store:
+- editor/UI selection, camera, audio и accessibility preferences;
+- access token только в памяти;
+- optimistic pending commands до server acknowledgement;
+- interpolation buffer подтверждённых server snapshots.
 
-- `selectedMissionId`;
-- `lastMissionResult`;
-- `wallet`;
-- `selectMission`;
-- `completeMission`;
-- `grantRewards`.
-
-Но для релиза лучше разделить домены:
-
-- `shipStore` - текущая сборка и editor state;
-- `missionStore` - selected mission, runtime/result;
-- `inventoryStore` - physical items, wallet, blueprints;
-- `profileStore` - account/progression/settings.
-
-Переход должен быть постепенным: сначала добавить mission state без большого refactor, затем вынести отдельные stores, когда появится inventory.
+Production-клиент не хранит authoritative build, wallet, inventory, mission result, reward, damage или progression. Эти данные загружаются через bootstrap API и меняются только server commands. Локальный wallet/result не импортируются.
 
 ## 9. Backend contract для релиза
 
-Для local MVP backend не нужен. Для production economy backend обязателен.
+Backend обязателен с этапа 0. Отдельный source of truth: `SPACEY_PRODUCTION_BACKEND_OPEN_API_ARCHITECTURE_2026-07-11_RU.md`.
 
-Минимальные сущности backend:
+Канонические контракты:
 
-- user;
-- ship builds;
-- inventory items;
-- wallet balances;
-- missions;
-- mission attempts;
-- mission results;
-- rewards ledger;
-- season progress;
-- purchases later.
-
-Минимальные endpoints:
-
-```text
-GET  /api/me
-GET  /api/missions
-POST /api/missions/:id/start
-POST /api/missions/:attemptId/complete
-GET  /api/inventory
-POST /api/builds
-PUT  /api/builds/:id
-POST /api/repair
-POST /api/craft
-GET  /api/season
-POST /api/rewards/claim
-```
+- `specs/player-public.openapi.yaml` — first-party и Public API;
+- `specs/admin-private.openapi.yaml` — отдельный private admin API;
+- `packages/protocol/asyncapi.yaml` — realtime события;
+- `packages/protocol/proto` — Protobuf wire format.
 
 Правило релиза:
 
-- клиент может симулировать бой;
-- backend должен авторитетно выдавать награды;
-- backend должен проверять attempt, mission, risk, reward caps;
-- wallet и inventory нельзя доверять localStorage.
+- клиент отправляет только raw Telegram `initData`, build commands и realtime input;
+- battle-worker создаёт результат и инициирует authoritative reward finalization;
+- wallet, inventory, attempts, damage и progression принадлежат серверу;
+- endpoint клиентского `complete/claim reward` отсутствует;
+- production не имеет browser auth bypass или offline gameplay.
 
 ## 10. Техническая дорожная карта
 
-### Этап 0. Стабилизация текущего прототипа
+### Этап 0. Security и platform foundation
 
-Цель: не ломать уже работающий playable prototype.
+- ротировать опубликованный Neon credential до первого подключения;
+- хранить runtime/admin/migrator secrets только вне Git;
+- pnpm/Turborepo, сервисные границы, CI и container scaffolds;
+- HTTP/WS/Protobuf contracts и baseline PostgreSQL migrations;
+- локальные Postgres/Valkey только для development и CI.
 
-Задачи:
+Готовность: frozen install, schema/contract validation, targeted tests и builds проходят без production secret; live DB не затрагивается.
 
-- обновить smoke script, чтобы проверял `/`, `/hangar`, `/battle`, `/rewards`;
-- зафиксировать текущий build baseline;
-- проверить asset validation;
-- не начинать mission layer, если базовый `/hangar -> /battle` сломан.
+### Этап 1. Identity, content и economy
 
-Готовность:
+- Telegram HMAC/auth-date/replay validation;
+- rotating opaque refresh sessions и revoke model;
+- profiles, content releases, server build revisions;
+- inventory transitions, append-only wallet ledger, RLS и bootstrap API.
 
-- `/hangar` открывается;
-- `/battle` открывается;
-- выбранная сборка попадает в бой;
-- нет блокирующих TypeScript ошибок.
+Готовность: forged/replayed auth отклоняется, а игрок не читает чужие данные и не может создать баланс.
 
-### Этап 1. Mission data layer
+### Этап 2. Deterministic simulation
 
-Задачи:
+- извлечь physics/AI/weapons/damage из `BattleCanvas`;
+- удалить Pixi, DOM, clock и `Math.random` из simulation package;
+- seeded RNG, fixed 30 Hz, input journal и state hashes.
 
-- создать `game/data/missions.ts`;
-- добавить 3 Green mission;
-- добавить `MissionDef`;
-- добавить `selectedMissionId`;
-- добавить mission select action;
-- заменить hardcoded title `Survival Test` на selected mission title с fallback.
+Готовность: одинаковые versions/seed/build/inputs дают одинаковый replay hash.
 
-Готовность:
+### Этап 3. Battle worker и PvE
 
-- игрок может выбрать миссию;
-- выбор сохраняется;
-- `/battle` отображает выбранную миссию.
+- одноразовый WS ticket, Protobuf snapshots 10 Hz;
+- attempts, checkpoint каждые 2 секунды, reconnect и worker recovery;
+- authoritative result/reward, replay metadata и object storage.
+- persistent durability по pinned immutable build revision в той же result-транзакции; damaged ниже 70%, destroyed при 0, exactly-once transition.
 
-### Этап 2. Mission Board + Briefing
+Готовность: retry/reconnect/worker kill не удваивает reward и не меняет итог.
 
-Задачи:
+### Этап 4. Render-only client cutover
 
-- добавить mission board panel в `/hangar`;
-- добавить карточки миссий;
-- добавить briefing drawer;
-- показать objective, risk, reward, requirements;
-- добавить `evaluateMissionReadiness(build, mission)`.
+- заменить local battle authority на snapshot renderer;
+- перевести build editor, mission board, result и first spend path на API;
+- оставить development fallback только под явным non-production flag;
+- разрешить одноразовый import legacy build v3 без wallet/results.
 
-Готовность:
+Готовность: production client bundle не содержит simulation, reward tables, Prisma или enemy AI.
 
-- игрок понимает, какой билд нужен;
-- hard blockers видны до старта;
-- warnings не блокируют запуск.
+### Этап 5. Realtime PvP
 
-### Этап 3. Objective runtime
+- matchmaking, MMR, opponent routing и seasons;
+- neutral input/disconnect grace/forfeit;
+- command validation, anti-cheat telemetry и replay review.
 
-Задачи:
+Source-level на 2026-07-11: реализованы MMR matchmaking, два независимых participant ticket/input stream, deterministic duel, checkpoint/reconnect, neutral input/forfeit, exactly-once result/MMR/module-damage finalization, consistent-hash session routing и render-only client flow. Не подтверждены staging PostgreSQL run, membership-change recovery rehearsal, packet-chaos и нагрузочный gate.
 
-- добавить `MissionRuntimeState`;
-- реализовать `destroy_all` поверх текущей победы;
-- добавить `survive_seconds`;
-- добавить HUD progress;
-- добавить result payload вместо простого `victory/defeat`.
+Готовность: packet loss/reorder/duplicates не ломают матч, а reconnect не создаёт вторую сессию.
 
-Готовность:
+### Этап 6. Admin, bot и Public API
 
-- минимум две разные миссии завершаются разными условиями;
-- result знает, почему mission success/fail.
+- private admin-web/admin-api через Zero Trust/VPN и WebAuthn;
+- audited content revisions, rollback-as-new-revision и economy ledger adjustment;
+- Telegram bot lifecycle;
+- scoped API keys/OAuth2, quotas, developer portal и signed webhooks.
 
-### Этап 4. Mission Result + rewards
+Готовность: admin mutation и audit атомарны; Public API не предоставляет gameplay automation.
 
-Задачи:
+### Этап 7. Production hardening
 
-- заменить result panel;
-- добавить reward breakdown;
-- добавить damage summary;
-- добавить local wallet grants;
-- добавить `credits` и `materials` рядом с `scrap`;
-- встроить reward reveal для rare grants.
+- exact-SHA images, expand/contract migrations и health-gated blue/green;
+- battle worker draining/recovery;
+- OpenTelemetry, Sentry, alerts, backup/restore rehearsal;
+- load gate 10k WS / 5k PvP с минимум 25% headroom.
 
-Готовность:
+Готовность: SLO и rollback rehearsal доказаны на staging; один VPS заменяется multi-node topology при провале load gate.
 
-- short loop закрыт;
-- после победы игрок получает ресурс;
-- ресурс виден в UI;
-- игрок возвращается в ангар с измененным состоянием.
+### Этап 8. Monetization
 
-### Этап 5. First spend path
+- Stars invoices только после economy audit;
+- idempotent payment events, reconciliation и refunds;
+- cosmetics/reward tracks без pay-to-win.
 
-Задачи:
-
-- добавить простую покупку панели/детали за Credits/Scrap;
-- или добавить repair action;
-- показать ресурсную стоимость;
-- обновить UI inventory/wallet minimal.
-
-Готовность:
-
-- игрок может потратить награду на улучшение или восстановление корабля;
-- появляется loop "миссия -> награда -> улучшение".
-
-### Этап 6. MVP mission pack
-
-Задачи:
-
-- реализовать 5 MVP missions:
-  - Credit Sweep;
-  - Cargo Escort;
-  - Meteorite Drilling;
-  - Pirate Intercept;
-  - Drone Hive Burn.
-- добавить utility tags и минимальные mission tools;
-- добавить cargo/mining/point-defense stats;
-- добавить enemy budgets/hazards.
-
-Готовность:
-
-- разные миссии требуют разные билды;
-- один универсальный DPS билд не оптимален для всех целей.
-
-### Этап 7. Inventory and damage persistence
-
-Задачи:
-
-- добавить physical item model;
-- связать installed modules/panels с item ids;
-- сохранять damaged/broken after battle;
-- добавить repair;
-- добавить salvage choice.
-
-Готовность:
-
-- деталь может быть повреждена;
-- чертеж/прогресс не теряется;
-- игрок может восстановить корабль.
-
-### Этап 8. Research / crafting / market
-
-Задачи:
-
-- добавить blueprints;
-- добавить shards;
-- добавить craft;
-- добавить basic market;
-- добавить unlock tiers.
-
-Готовность:
-
-- за 30-60 минут игрок открывает новую деталь или билд-направление;
-- progression не зависит только от случайного drop.
-
-### Этап 9. Backend readiness
-
-Задачи:
-
-- описать API contract;
-- вынести user/wallet/inventory/mission attempts на backend;
-- добавить reward ledger;
-- добавить anti-cheat caps;
-- добавить account linking.
-
-Готовность:
-
-- награды и inventory не живут только в localStorage;
-- mission complete нельзя бесконечно подделывать клиентом.
-
-### Этап 10. Telegram / social / monetization
-
-Задачи:
-
-- Mini App launch payload;
-- SOS/salvage/resonance links;
-- Telegram Stars purchase flow later;
-- season operation;
-- cosmetics/reward tracks.
-
-Готовность:
-
-- share payload является игровым объектом;
-- premium не продает прямую победу.
-
-### Этап 11. QA and release hardening
-
-Задачи:
-
-- unit tests для mission readiness;
-- unit tests для rewards;
-- unit tests для inventory transitions;
-- smoke для full short loop;
-- Playwright e2e для mission select -> hangar -> battle -> result;
-- canvas nonblank checks;
-- mobile layout checks;
-- performance budget;
-- error boundary;
-- save migration tests.
-
-Готовность:
-
-- релизная сборка воспроизводимо проходит smoke/e2e;
-- нет критических console errors;
-- сохранения старых игроков мигрируют.
+Готовность: duplicate/reordered Telegram events не удваивают purchase, refund корректно отражается в ledger.
 
 ## 11. Acceptance criteria для MVP
 
@@ -1245,7 +1091,7 @@ MVP можно считать настоящей игрой, когда:
 - бой показывает objective progress;
 - victory/failure зависит от objective;
 - result показывает reward breakdown;
-- reward сохраняется;
+- reward сохраняется сервером ровно один раз;
 - reward можно потратить хотя бы одним способом;
 - после результата игрок понимает, почему стоит перестроить корабль;
 - smoke покрывает `/hangar`, mission select, `/battle`, result.
@@ -1261,7 +1107,9 @@ Release candidate можно рассматривать, когда:
 - есть blueprints/research;
 - есть Green/Yellow/Red risk;
 - есть persisted progression;
-- есть backend contract или backend implementation;
+- server-authoritative backend реализован и проверен на staging;
+- production client не содержит gameplay/economy authority;
+- Telegram auth, reconnect и idempotent reward покрыты security/integration tests;
 - есть first-session onboarding;
 - есть mobile QA;
 - есть performance QA;
@@ -1274,7 +1122,7 @@ Release candidate можно рассматривать, когда:
 | Риск | Влияние | Решение |
 | --- | --- | --- |
 | Нет mission abstraction | Игра остается тестовой ареной | Начать с `MissionDef`, selected mission state, objective HUD |
-| Слишком ранний backend | Замедлит MVP | Сначала local short loop, затем backend contract |
+| Поздний backend cutover | Закрепит небезопасную client authority | Backend — этап 0; UI строится поверх server contracts |
 | Слишком много экранов сразу | Размоет фокус | MVP: contracts panel в `/hangar`, result overlay в `/battle` |
 | Нет first spend path | Награды бессмысленны | Добавить repair или покупку common детали |
 | Потеря деталей без blueprints | Игрок боится играть | Permanent blueprint progression до жестких потерь |
@@ -1286,9 +1134,9 @@ Release candidate можно рассматривать, когда:
 
 1. `/hangar`: mission board panel.
 2. `/hangar`: mission briefing drawer.
-3. `shipStore`: selected mission and last result.
-4. `/battle`: mission title and objective HUD.
-5. `BattleCanvas`: mission runtime hooks.
+3. server bootstrap/build commands: selected mission и immutable build revision.
+4. `/battle`: mission title, objective HUD и connection state.
+5. `BattleCanvas`: snapshot renderer без authoritative runtime.
 6. `/battle`: mission result overlay.
 7. `/hangar`: wallet/resources strip.
 8. `/hangar`: first spend path.
@@ -1301,33 +1149,26 @@ Release candidate можно рассматривать, когда:
 
 ## 15. Практический следующий патч
 
-Самый правильный следующий кодовый патч:
+Следующий фундаментальный патч:
 
 ```text
-Mission Loop Patch 1
+Production Platform Foundation
 ```
 
 Состав:
 
-- `game/data/missions.ts`;
-- `game/mission/readiness.ts`;
-- расширить `game/store/shipStore.ts`:
-  - `selectedMissionId`;
-  - `selectMission`;
-  - `lastMissionResult`;
-- добавить mission board panel в `app/hangar/page.tsx`;
-- заменить `Test Battle` на `Launch Contract`;
-- показать selected mission в `app/battle/page.tsx`;
-- обновить `scripts/smoke-playable.mjs` маркером selected mission.
+- monorepo/service границы и shared contracts;
+- baseline PostgreSQL schema, RLS и migrations;
+- Telegram auth/session foundation;
+- deterministic simulation/protocol foundation;
+- local/production infrastructure scaffolds и CI gates.
 
-Не включать в первый патч:
+Не выполнять до ротации credential и staging-проверки:
 
-- backend;
-- full inventory;
-- battle pass;
-- Telegram;
-- paid economy;
-- большие рефакторы `BattleCanvas`.
+- подключение опубликованного Neon URI;
+- production migration;
+- Stars payments;
+- публичный rollout;
+- объявление системы production-ready.
 
-Цель первого патча: доказать, что игра теперь начинается с контракта, а не с тестовой арены.
-
+Цель патча: создать безопасную server-authoritative основу, после которой mission UI подключается к настоящим API, а не к новой локальной authority.

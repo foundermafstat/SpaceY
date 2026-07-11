@@ -1,0 +1,18 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-current-battle-replays",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "replays/" },
+      "Expiration": { "Days": 30 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 1, "NewerNoncurrentVersions": 1 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+    },
+    {
+      "ID": "remove-expired-battle-replay-delete-markers",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "replays/" },
+      "Expiration": { "ExpiredObjectDeleteMarker": true }
+    }
+  ]
+}

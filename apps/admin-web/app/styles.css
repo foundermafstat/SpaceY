@@ -1,0 +1,67 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: #071018;
+  color: #e9f6ff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 70% 10%, #153247 0, #071018 42%); }
+a { color: inherit; }
+
+.locked-shell { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.locked-card { width: min(560px, 100%); padding: 40px; border: 1px solid #27485b; background: rgba(5, 15, 23, .92); box-shadow: 0 24px 80px #0009; }
+.locked-card h1 { margin: 8px 0 16px; font-size: clamp(28px, 5vw, 48px); line-height: 1; }
+.locked-card > p { color: #9eb5c6; line-height: 1.6; }
+.eyebrow { margin: 0; color: #55d9ff; font-size: 12px; font-weight: 700; letter-spacing: .18em; }
+
+.admin-shell { min-height: 100vh; display: grid; grid-template-columns: 248px 1fr; }
+.sidebar { display: flex; flex-direction: column; gap: 48px; padding: 32px 24px; border-right: 1px solid #1d3949; background: rgba(4, 13, 20, .88); }
+.brand-link { display: block; margin: 4px 0 0; font-size: 32px; font-weight: 700; text-decoration: none; }
+.sidebar nav { display: grid; gap: 8px; }
+.sidebar nav a { padding: 11px 12px; border: 1px solid transparent; color: #acc0cd; text-decoration: none; }
+.sidebar nav a:hover, .sidebar nav a:focus-visible { border-color: #2b6278; color: #fff; background: #102936; }
+.operator { margin: auto 0 0; color: #d8e9f4; font-size: 13px; }
+.operator span { color: #668498; }
+.workspace { padding: clamp(32px, 6vw, 88px); }
+.workspace-title { margin: 10px 0 36px; font-size: clamp(32px, 5vw, 64px); font-weight: 500; }
+.status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.status-grid article { min-height: 150px; padding: 22px; border: 1px solid #254556; background: #0a1822cc; }
+.status-grid span, .status-grid strong { display: block; }
+.status-grid span { color: #7894a6; font-size: 12px; text-transform: uppercase; letter-spacing: .12em; }
+.status-grid strong { margin-top: 48px; font-size: 18px; }
+
+.admin-form { display: grid; gap: 18px; width: min(820px, 100%); }
+.login-form { margin-top: 28px; }
+.admin-form label { display: grid; gap: 8px; color: #c8dbe7; font-size: 13px; font-weight: 650; letter-spacing: .02em; }
+.admin-form input, .admin-form select, .admin-form textarea {
+  width: 100%; border: 1px solid #315368; border-radius: 0; padding: 12px 13px;
+  background: #07131c; color: #f4fbff; font: inherit;
+}
+.admin-form textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.5; }
+.admin-form input:focus-visible, .admin-form select:focus-visible, .admin-form textarea:focus-visible, .admin-form button:focus-visible {
+  outline: 2px solid #55d9ff; outline-offset: 2px;
+}
+.admin-form button { width: fit-content; border: 1px solid #55d9ff; padding: 12px 18px; background: #0b3343; color: #eafaff; font: inherit; font-weight: 700; cursor: pointer; }
+.admin-form button:hover { background: #10506a; }
+.admin-form button:disabled { cursor: wait; opacity: .55; }
+.field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.inline-field { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.admin-form .secondary-button { background: transparent; }
+.form-note { margin: -6px 0 0; color: #819cab; font-size: 12px; line-height: 1.5; }
+.form-error, .form-success { min-height: 20px; margin: 0; font-size: 13px; line-height: 1.5; }
+.form-error { color: #ff9b9b; }
+.form-success { color: #8be8b1; }
+.form-success code, .notice code { overflow-wrap: anywhere; }
+.notice, .gap-note { width: min(820px, 100%); border: 1px solid #315368; padding: 20px; color: #aac1cf; background: #091722; line-height: 1.6; }
+.gap-note { display: grid; gap: 8px; margin-top: 24px; border-color: #665b37; }
+.gap-note strong { color: #f2df9e; }
+.gap-note span { color: #a99d78; }
+
+@media (max-width: 760px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .sidebar { border-right: 0; border-bottom: 1px solid #1d3949; }
+  .sidebar nav { grid-template-columns: repeat(2, 1fr); }
+  .status-grid { grid-template-columns: 1fr; }
+  .field-grid, .inline-field { grid-template-columns: 1fr; }
+}

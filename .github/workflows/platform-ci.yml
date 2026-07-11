@@ -1,0 +1,189 @@
+name: platform-ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  contracts-db-and-code:
+    name: Contracts, database and workspace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17.5-alpine
+        env:
+          POSTGRES_DB: spacey_ci
+          POSTGRES_USER: spacey_ci
+          POSTGRES_PASSWORD: local-ci-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U spacey_ci -d spacey_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://spacey_ci:local-ci-only@127.0.0.1:5432/spacey_ci?schema=public
+      DIRECT_URL: postgresql://spacey_ci:local-ci-only@127.0.0.1:5432/spacey_ci?schema=public
+      TEST_DATABASE_URL: postgresql://spacey_ci:local-ci-only@127.0.0.1:5432/spacey_ci?schema=public
+      NEXT_PUBLIC_API_URL: http://127.0.0.1:7800
+      NEXT_PUBLIC_BATTLE_WS_URL: ws://127.0.0.1:7801/battle
+      NEXT_PUBLIC_ALLOW_BROWSER_AUTH: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.17.0
+          cache: pnpm
+
+      - name: Validate workflow and Compose YAML syntax
+        run: >-
+          ruby -e 'require "yaml"; ARGV.each { |path| YAML.parse_file(path) }'
+          .github/workflows/platform-ci.yml
+          .github/workflows/release-images.yml
+          infra/compose.local.yml
+          infra/compose.production.yml
+          infra/compose.production-data.yml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate and validate Prisma client/schema
+        run: |
+          pnpm --filter @spacey/db generate
+          pnpm --filter @spacey/db validate
+
+      - name: Apply baseline migrations to ephemeral PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          pgurl="${DIRECT_URL%%\?*}"
+          psql "$pgurl" -v ON_ERROR_STOP=1 -f packages/db/sql/roles.bootstrap.template.sql
+          pnpm --filter @spacey/db migrate:deploy
+          psql "$pgurl" -v ON_ERROR_STOP=1 -f packages/db/sql/roles.grants.template.sql
+
+      - name: Lint OpenAPI 3.1 contracts
+        run: >-
+          pnpm --package=@redocly/cli@2.38.0 dlx redocly lint
+          specs/player-public.openapi.yaml
+          specs/admin-private.openapi.yaml
+
+      - name: Generate and verify TypeScript public SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --filter @spacey/public-sdk generate
+          git diff --exit-code -- packages/public-sdk/src/generated/schema.ts
+          pnpm --filter @spacey/public-sdk typecheck
+
+      - name: Validate AsyncAPI 3 contract
+        run: pnpm dlx @asyncapi/cli@6.0.2 validate packages/protocol/asyncapi.yaml
+
+      - name: Validate staging load harness (no load run)
+        run: pnpm validate:load-harness
+
+      - uses: bufbuild/buf-setup-action@v1.50.0
+        with:
+          version: 1.71.0
+
+      - name: Lint and compile Protobuf contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=/tmp/spacey-proto-current
+          mkdir -p "$work"
+          cp packages/protocol/proto/*.proto "$work/"
+          printf 'version: v2\nmodules:\n  - path: .\nlint:\n  use:\n    - STANDARD\nbreaking:\n  use:\n    - FILE\n' > "$work/buf.yaml"
+          buf lint "$work"
+          buf build "$work" --output /tmp/spacey-battle.binpb
+
+      - uses: actions/setup-go@v5
+        if: github.event_name == 'pull_request'
+        with:
+          go-version: '1.24.4'
+          cache: false
+
+      - name: Check OpenAPI backward compatibility
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_ref="origin/${{ github.base_ref }}"
+          spec=specs/player-public.openapi.yaml
+          if git cat-file -e "$base_ref:$spec" 2>/dev/null; then
+            git show "$base_ref:$spec" > /tmp/openapi-base.yaml
+            go run github.com/oasdiff/oasdiff@v1.23.0 breaking /tmp/openapi-base.yaml "$spec"
+          else
+            echo "Initial OpenAPI baseline; compatibility diff starts after merge."
+          fi
+
+      - name: Check Protobuf backward compatibility
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          base_ref="origin/${{ github.base_ref }}"
+          if git cat-file -e "$base_ref:packages/protocol/proto/battle.proto" 2>/dev/null; then
+            current=/tmp/spacey-proto-current
+            base=/tmp/spacey-proto-base
+            mkdir -p "$base"
+            git show "$base_ref:packages/protocol/proto/battle.proto" > "$base/battle.proto"
+            cp "$current/buf.yaml" "$base/buf.yaml"
+            buf breaking "$current" --against "$base"
+          else
+            echo "Initial Protobuf baseline; compatibility diff starts after merge."
+          fi
+
+      - name: Typecheck workspace
+        run: pnpm typecheck:all
+
+      - name: Test workspace
+        run: pnpm test:all
+
+      - name: Build workspace
+        run: pnpm build:all
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: /tmp/spacey-sbom.spdx.json
+          artifact-name: spacey-sbom.spdx.json
+          upload-artifact: false
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: spacey-sbom-${{ github.sha }}
+          path: /tmp/spacey-sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 30

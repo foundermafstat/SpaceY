@@ -1,42 +1,36 @@
 "use client";
 
+import type { MissionCatalogItemDto, WalletCurrencyDto } from "@spacey/contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { UiButton } from "@/components/ui-kit/UiButton";
-import { getMissionById, missionDefs } from "@/game/data/missions";
-import { evaluateMissionReadiness } from "@/game/mission/readiness";
-import type { MissionDef, MissionId, MissionReadinessIssue } from "@/game/mission/types";
-import type { ShipBuild } from "@/game/types";
 
 type MissionSelectionPanelProps = {
-  build: ShipBuild;
-  selectedMissionId: MissionId | null;
+  missions: MissionCatalogItemDto[];
+  selectedMissionId: string | null;
   onClear: () => void;
-  onSelect: (missionId: MissionId) => void;
+  onSelect: (missionId: string) => void;
   onShowBuild: () => void;
 };
 
 export function MissionSelectionPanel({
-  build,
+  missions,
   selectedMissionId,
   onClear,
   onSelect,
   onShowBuild
 }: MissionSelectionPanelProps) {
-  const [previewMissionId, setPreviewMissionId] = useState<MissionId | null>(null);
+  const [previewMissionId, setPreviewMissionId] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const readinessByMission = useMemo(
-    () => new Map(missionDefs.map((mission) => [mission.id, evaluateMissionReadiness(build, mission)])),
-    [build]
+  const previewMission = useMemo(
+    () => missions.find((mission) => mission.id === previewMissionId) ?? null,
+    [missions, previewMissionId]
   );
-  const previewMission = previewMissionId ? getMissionById(previewMissionId) : null;
-  const previewReadiness = previewMission ? readinessByMission.get(previewMission.id) ?? null : null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!previewMission || !dialog) return;
-
     previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     if (!dialog.open) dialog.showModal();
     closeButtonRef.current?.focus();
@@ -46,7 +40,6 @@ export function MissionSelectionPanel({
       setPreviewMissionId(null);
     };
     document.addEventListener("keydown", handleKeyDown);
-
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       if (dialog.open) dialog.close();
@@ -54,49 +47,39 @@ export function MissionSelectionPanel({
     };
   }, [previewMission]);
 
-  function closeBriefing() {
-    setPreviewMissionId(null);
-  }
-
   return (
     <section className="mission-board" aria-label="Mission Board">
       <div className="mission-board-heading">
         <div>
           <span className="mission-eyebrow">Mission Board</span>
-          <strong>Green contracts</strong>
+          <strong>Published contracts</strong>
         </div>
         {selectedMissionId ? (
-          <button className="mission-clear-selection" onClick={onClear} type="button">
-            Clear selection
-          </button>
+          <button className="mission-clear-selection" onClick={onClear} type="button">Clear selection</button>
         ) : (
-          <span className="small">Choose the engineering problem before the fight.</span>
+          <span className="small">Catalog and rewards are supplied by the active server content release.</span>
         )}
       </div>
 
       <div className="mission-card-list">
-        {missionDefs.map((mission) => {
-          const readiness = readinessByMission.get(mission.id);
+        {missions.map((mission) => {
           const selected = mission.id === selectedMissionId;
-
           return (
             <button
               aria-pressed={selected}
-              className={["mission-card", selected ? "selected" : "", readiness?.blockers.length ? "blocked" : ""].filter(Boolean).join(" ")}
+              className={["mission-card", selected ? "selected" : ""].filter(Boolean).join(" ")}
               key={mission.id}
               onClick={() => setPreviewMissionId(mission.id)}
               type="button"
             >
               <span className="mission-card-topline">
                 <span className={`mission-risk mission-risk--${mission.risk}`}>{mission.risk}</span>
-                <span className={`mission-readiness-score ${readiness?.blockers.length ? "blocked" : ""}`}>
-                  {readiness?.blockers.length ? "Blocked" : `${readiness?.score ?? 0}% ready`}
-                </span>
+                <span className="mission-readiness-score">Server validation</span>
               </span>
               <strong>{mission.name}</strong>
               <span className="mission-card-objective">{mission.objective.label}</span>
               <span className="mission-card-meta">
-                {formatDuration(mission.durationSec)} · {mission.rewards.credits} Cr · {mission.rewards.scrap} Scrap
+                {formatDuration(mission.durationSeconds)} · {formatRewardPreview(mission)}
               </span>
               <span className="mission-card-action">{selected ? "Selected · View briefing" : "View briefing"}</span>
             </button>
@@ -104,43 +87,39 @@ export function MissionSelectionPanel({
         })}
       </div>
 
-      {previewMission && previewReadiness ? (
+      {previewMission ? (
         <dialog
           aria-labelledby="mission-briefing-title"
           className="mission-briefing-dialog"
           onCancel={(event) => {
             event.preventDefault();
-            closeBriefing();
+            setPreviewMissionId(null);
           }}
           onClick={(event) => {
-            if (event.target === event.currentTarget) closeBriefing();
+            if (event.target === event.currentTarget) setPreviewMissionId(null);
           }}
           ref={dialogRef}
         >
           <div className="mission-briefing-shell">
             <header className="mission-briefing-header">
               <div>
-                <span className="mission-eyebrow">Engineering Brief</span>
+                <span className="mission-eyebrow">Server Content Brief</span>
                 <h2 id="mission-briefing-title">{previewMission.name}</h2>
               </div>
               <button
                 aria-label="Close mission briefing"
                 className="mission-dialog-close"
-                onClick={closeBriefing}
+                onClick={() => setPreviewMissionId(null)}
                 ref={closeButtonRef}
                 type="button"
-              >
-                ×
-              </button>
+              >×</button>
             </header>
 
             <div className="mission-briefing-summary">
               <span className={`mission-risk mission-risk--${previewMission.risk}`}>{previewMission.risk} risk</span>
-              <span>{formatDuration(previewMission.durationSec)}</span>
-              <span>{previewMission.rewards.credits} Cr + {previewMission.rewards.scrap} Scrap</span>
-              <span className={previewReadiness.blockers.length ? "mission-state-blocked" : "mission-state-ready"}>
-                {previewReadiness.blockers.length ? "Launch blocked" : `${previewReadiness.score}% ready`}
-              </span>
+              <span>{formatDuration(previewMission.durationSeconds)}</span>
+              <span>{formatRewardPreview(previewMission)}</span>
+              <span className="mission-state-ready">Validated on launch</span>
             </div>
 
             <div className="mission-briefing-body">
@@ -148,61 +127,36 @@ export function MissionSelectionPanel({
                 <h3>Briefing</h3>
                 <p>{previewMission.briefing}</p>
                 <dl className="mission-facts">
-                  <div>
-                    <dt>Objective</dt>
-                    <dd>{previewMission.objective.label}</dd>
-                  </div>
-                  <div>
-                    <dt>Reward preview</dt>
-                    <dd>
-                      {formatRewardPreview(previewMission)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Hard requirements</dt>
-                    <dd>
-                      {previewMission.hardRequirements.requiredTags?.length
-                        ? previewMission.hardRequirements.requiredTags.map(formatTag).join(", ")
-                        : "None"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Hazards</dt>
-                    <dd>{previewMission.hazards.join(", ")}</dd>
-                  </div>
+                  <div><dt>Objective</dt><dd>{previewMission.objective.label}</dd></div>
+                  <div><dt>Target</dt><dd>{previewMission.objective.target}</dd></div>
+                  <div><dt>Content version</dt><dd>{previewMission.contentVersion}</dd></div>
+                  <div><dt>Reward preview</dt><dd>{formatRewardPreview(previewMission)}</dd></div>
                 </dl>
               </section>
-
-              <section className="mission-diagnostics" aria-label="Current ship readiness">
+              <section className="mission-diagnostics" aria-label="Server validation">
                 <div className="mission-diagnostics-title">
-                  <h3>Current ship</h3>
-                  <span>{previewReadiness.score}%</span>
+                  <h3>Authority</h3>
+                  <span>Server</span>
                 </div>
-                <ReadinessGroup empty="No mission blockers" issues={previewReadiness.blockers} label="Blockers" tone="danger" />
-                <ReadinessGroup empty="Recommendations met" issues={previewReadiness.warnings} label="Warnings" tone="warn" />
-                <ReadinessGroup empty="No additional notes" issues={previewReadiness.hints} label="Ready" tone="hint" />
-                {previewReadiness.recommendedChanges.length ? (
-                  <div className="mission-recommended-changes">
-                    <strong>Suggested changes</strong>
-                    <ul>
-                      {previewReadiness.recommendedChanges.map((change) => <li key={change}>{change}</li>)}
-                    </ul>
-                  </div>
-                ) : null}
+                <div className="mission-readiness-group hint">
+                  <strong>Launch checks</strong>
+                  <span>The API validates the selected immutable build revision, inventory ownership and content version.</span>
+                </div>
+                <div className="mission-readiness-group hint">
+                  <strong>Rewards</strong>
+                  <span>The battle worker finalizes rewards; this client only displays the result.</span>
+                </div>
               </section>
             </div>
 
             <footer className="mission-briefing-actions">
               <UiButton onClick={() => {
-                closeBriefing();
+                setPreviewMissionId(null);
                 onShowBuild();
-              }} size="sm" variant="secondary">
-                Modify Ship
-              </UiButton>
+              }} size="sm" variant="secondary">Inspect Ship</UiButton>
               <UiButton disabled={selectedMissionId === previewMission.id} onClick={() => {
                 onSelect(previewMission.id);
-                closeBriefing();
-                onShowBuild();
+                setPreviewMissionId(null);
               }} size="sm" variant="primary">
                 {selectedMissionId === previewMission.id ? "Selected" : "Accept Contract"}
               </UiButton>
@@ -214,48 +168,21 @@ export function MissionSelectionPanel({
   );
 }
 
-function ReadinessGroup({
-  empty,
-  issues,
-  label,
-  tone
-}: {
-  empty: string;
-  issues: MissionReadinessIssue[];
-  label: string;
-  tone: "danger" | "warn" | "hint";
-}) {
-  return (
-    <div className={`mission-readiness-group ${tone}`}>
-      <strong>{label}</strong>
-      {issues.length ? (
-        <ul>
-          {issues.map((issue) => <li key={issue.code}>{issue.message}</li>)}
-        </ul>
-      ) : (
-        <span>{empty}</span>
-      )}
-    </div>
-  );
-}
-
-function formatDuration(durationSec: number) {
-  if (durationSec < 120) return `${durationSec} sec`;
-  const minutes = Math.floor(durationSec / 60);
-  const seconds = durationSec % 60;
+function formatDuration(durationSeconds: number) {
+  if (durationSeconds < 120) return `${durationSeconds} sec`;
+  const minutes = Math.floor(durationSeconds / 60);
+  const seconds = durationSeconds % 60;
   return seconds ? `${minutes}m ${seconds}s` : `${minutes} min`;
 }
 
-function formatTag(tag: string) {
-  return tag.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join(" ");
-}
-
-function formatRewardPreview(mission: MissionDef) {
-  return [
-    `${mission.rewards.credits} Credits`,
-    `${mission.rewards.scrap} Scrap`,
-    mission.rewards.alloy ? `${mission.rewards.alloy} Alloy` : null,
-    mission.rewards.dataShards ? `${mission.rewards.dataShards} Data Shards` : null,
-    ...mission.rewards.bonuses.map((bonus) => bonus.label)
-  ].filter(Boolean).join(" · ");
+function formatRewardPreview(mission: MissionCatalogItemDto) {
+  const labels: Record<WalletCurrencyDto, string> = {
+    credits: "Cr",
+    scrap: "Scrap",
+    alloy: "Alloy",
+    dataShards: "Data"
+  };
+  return (Object.entries(mission.rewardPreview) as Array<[WalletCurrencyDto, number | undefined]>)
+    .flatMap(([currency, amount]) => typeof amount === "number" && amount > 0 ? [`${amount} ${labels[currency]}`] : [])
+    .join(" · ") || "Server-calculated";
 }

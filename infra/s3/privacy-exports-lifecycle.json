@@ -1,0 +1,18 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-current-privacy-exports",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "privacy-exports/" },
+      "Expiration": { "Days": 7 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 1, "NewerNoncurrentVersions": 1 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 1 }
+    },
+    {
+      "ID": "remove-expired-privacy-export-delete-markers",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "privacy-exports/" },
+      "Expiration": { "ExpiredObjectDeleteMarker": true }
+    }
+  ]
+}

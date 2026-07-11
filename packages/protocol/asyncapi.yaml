@@ -1,0 +1,63 @@
+asyncapi: 3.0.0
+info:
+  title: SpaceY Battle Realtime API
+  version: 1.0.0
+  description: Server-authoritative binary battle stream. A single-use 30-second ticket is supplied through the WebSocket subprotocol.
+defaultContentType: application/x-protobuf
+servers:
+  production:
+    host: spacey.aima.space
+    pathname: /realtime/v1/battle
+    protocol: wss
+    description: Production battle gateway
+channels:
+  battle:
+    address: /realtime/v1/battle
+    bindings:
+      ws:
+        method: GET
+        headers:
+          type: object
+          required: [Sec-WebSocket-Protocol]
+          properties:
+            Sec-WebSocket-Protocol:
+              type: string
+              description: "spacey-battle-v1, ticket.<opaque-single-use-ticket>"
+    messages:
+      clientEnvelope:
+        $ref: '#/components/messages/ClientEnvelope'
+      serverEnvelope:
+        $ref: '#/components/messages/ServerEnvelope'
+operations:
+  receiveClientEnvelope:
+    action: receive
+    channel:
+      $ref: '#/channels/battle'
+    messages:
+      - $ref: '#/channels/battle/messages/clientEnvelope'
+  sendServerEnvelope:
+    action: send
+    channel:
+      $ref: '#/channels/battle'
+    messages:
+      - $ref: '#/channels/battle/messages/serverEnvelope'
+components:
+  messages:
+    ClientEnvelope:
+      name: ClientEnvelope
+      title: Client command envelope
+      contentType: application/x-protobuf
+      payload:
+        type: object
+        description: Binary protobuf message; its canonical schema is packages/protocol/proto/battle.proto.
+      x-protobuf-schema: ./proto/battle.proto
+      x-protobuf-message: spacey.battle.v1.ClientEnvelope
+    ServerEnvelope:
+      name: ServerEnvelope
+      title: Authoritative server envelope
+      contentType: application/x-protobuf
+      payload:
+        type: object
+        description: Binary protobuf message; its canonical schema is packages/protocol/proto/battle.proto.
+      x-protobuf-schema: ./proto/battle.proto
+      x-protobuf-message: spacey.battle.v1.ServerEnvelope

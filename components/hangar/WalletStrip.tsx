@@ -1,10 +1,10 @@
-import type { PlayerWallet, WalletCurrency } from "@/game/mission/types";
+import type { WalletCurrencyDto, WalletDto } from "@spacey/contracts";
 
 type WalletStripProps = {
-  wallet: PlayerWallet;
+  wallet: WalletDto;
 };
 
-const walletEntries: Array<{ currency: WalletCurrency; label: string }> = [
+const walletEntries: Array<{ currency: WalletCurrencyDto; label: string }> = [
   { currency: "credits", label: "Credits" },
   { currency: "scrap", label: "Scrap" },
   { currency: "alloy", label: "Alloy" },

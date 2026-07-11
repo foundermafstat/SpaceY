@@ -1,0 +1,47 @@
+{
+  "name": "@spacey/public-sdk",
+  "version": "1.0.0",
+  "private": false,
+  "type": "module",
+  "description": "Generated TypeScript client for the versioned SpaceY public HTTP API.",
+  "license": "UNLICENSED",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.js.map",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "generate": "openapi-typescript ../../specs/player-public.openapi.yaml --output src/generated/schema.ts",
+    "check:generated": "node scripts/check-generated.mjs",
+    "clean": "node scripts/clean.mjs",
+    "build": "pnpm run check:generated && pnpm run clean && tsc -p tsconfig.json",
+    "typecheck": "pnpm run check:generated && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.contract.json",
+    "test": "tsc -p tsconfig.contract.json && node --test test/*.test.mjs",
+    "prepack": "pnpm run build && pnpm run test"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "7.13.0",
+    "typescript": "^5.9.3"
+  }
+}

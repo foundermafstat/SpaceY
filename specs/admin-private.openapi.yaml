@@ -1,0 +1,220 @@
+openapi: 3.1.1
+info:
+  title: SpaceY Private Admin API
+  version: 1.0.0
+  description: Private-ingress, fail-closed admin foundation. Authenticated mutations require WebAuthn-backed session, exact Origin, double-submit CSRF, RBAC and atomic immutable audit.
+  license: { name: Proprietary, identifier: LicenseRef-SpaceY-Proprietary }
+servers:
+  - url: https://admin-api.spacey.aima.space/internal/admin/v1
+security:
+  - adminSession: []
+paths:
+  /health:
+    get:
+      operationId: getAdminHealth
+      summary: Check admin API process liveness
+      security: []
+      responses:
+        "200": { description: Process liveness. }
+        "429": { description: Distributed rate limit exceeded. }
+  /ready:
+    get:
+      operationId: getAdminReadiness
+      summary: Check mandatory private dependencies
+      security: []
+      responses:
+        "200": { description: "PostgreSQL, WebAuthn, TOTP recovery and Valkey rate-limit adapters are ready." }
+        "429": { description: Distributed rate limit exceeded. }
+        "503": { description: One or more mandatory private dependencies are not configured. }
+  /session:
+    get:
+      operationId: getAdminSession
+      summary: Read the current admin principal
+      responses:
+        "200": { description: "Current admin principal, role and permissions." }
+        "401": { description: Admin session missing or invalid. }
+  /auth/webauthn/authentication/options:
+    post:
+      operationId: beginAdminWebAuthnAuthentication
+      summary: Create a single-use five-minute WebAuthn authentication challenge
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [loginHint]
+              properties:
+                loginHint: { type: string, format: email, maxLength: 320 }
+      responses:
+        "201":
+          description: Challenge ID plus PublicKeyCredentialRequestOptionsJSON.
+          content: { application/json: { schema: { $ref: "#/components/schemas/WebAuthnOptions" } } }
+        "400": { description: Invalid login hint. }
+        "429": { description: Authentication rate limit exceeded. }
+  /auth/webauthn/authentication/verify:
+    post:
+      operationId: finishAdminWebAuthnAuthentication
+      summary: Verify WebAuthn assertion and issue a rotating opaque admin session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/WebAuthnVerification" } }
+      responses:
+        "201":
+          description: WebAuthn verified; Secure HttpOnly session and double-submit CSRF cookies issued.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+        "400": { description: Challenge or credential payload is invalid. }
+        "401": { description: Challenge expired/consumed or assertion verification failed. }
+        "429": { description: Authentication rate limit exceeded. }
+  /auth/webauthn/registration/options:
+    post:
+      operationId: beginAdminWebAuthnRegistration
+      summary: Begin registration of another WebAuthn credential for the current admin
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "201":
+          description: Challenge ID plus PublicKeyCredentialCreationOptionsJSON.
+          content: { application/json: { schema: { $ref: "#/components/schemas/WebAuthnOptions" } } }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: Origin or CSRF validation failed. }
+  /auth/webauthn/registration/verify:
+    post:
+      operationId: finishAdminWebAuthnRegistration
+      summary: Verify attestation and persist the credential public key
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/WebAuthnVerification" } }
+      responses:
+        "201": { description: Credential registered with required user verification. }
+        "400": { description: Challenge or credential payload is invalid. }
+        "401": { description: Admin session missing or challenge expired/consumed. }
+        "403": { description: "Origin, CSRF or attestation verification failed." }
+  /auth/recovery/totp:
+    post:
+      operationId: recoverAdminSessionWithTotp
+      summary: Recovery-only TOTP authentication with distributed and account lockout
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [loginHint, code]
+              properties:
+                loginHint: { type: string, format: email, maxLength: 320 }
+                code: { type: string, pattern: "^[0-9]{6}$" }
+      responses:
+        "201": { description: Recovery session and immutable audit committed; host-only session/CSRF cookies issued. }
+        "400": { description: Invalid recovery payload. }
+        "401": { description: "Generic invalid, replayed or locked recovery credential response." }
+        "429": { description: Distributed Valkey authentication limit exceeded. }
+        "503": { description: "Recovery cipher, PostgreSQL or Valkey is unavailable." }
+  /auth/recovery/code:
+    post:
+      operationId: recoverAdminSessionWithSingleUseCode
+      summary: Consume one hashed recovery code and issue a recovery-only session
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [loginHint, recoveryCode]
+              properties:
+                loginHint: { type: string, format: email, maxLength: 320 }
+                recoveryCode: { type: string, minLength: 10, maxLength: 128 }
+      responses:
+        "201": { description: Recovery code consumed atomically with session issuance and immutable audit. }
+        "400": { description: Invalid recovery payload. }
+        "401": { description: "Generic invalid, consumed or locked recovery credential response." }
+        "429": { description: Distributed Valkey authentication limit exceeded. }
+        "503": { description: PostgreSQL or Valkey is unavailable. }
+  /mutations/content:
+    post:
+      operationId: applyContentRevision
+      summary: Apply an audited content revision
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [resourceType, resourceId, expectedRevision, payload, reason]
+              properties:
+                resourceType: { enum: [mission, module, enemy, drop-table] }
+                resourceId: { type: string, format: uuid }
+                expectedRevision: { type: integer, minimum: 0 }
+                payload: { type: object, additionalProperties: true }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "201": { description: Content revision and immutable audit committed atomically. }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or content:write permission rejected." }
+        "503": { description: Persistence adapter is not ready. }
+  /mutations/economy/adjustments:
+    post:
+      operationId: createEconomyAdjustment
+      summary: Apply an audited wallet adjustment
+      parameters:
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [playerId, currency, amount, idempotencyKey, caseId, reason]
+              properties:
+                playerId: { type: string, format: uuid }
+                currency: { enum: [credits, scrap, alloy, dataShards] }
+                amount: { type: integer, minimum: -1000000000, maximum: 1000000000, not: { const: 0 } }
+                idempotencyKey: { type: string, format: uuid }
+                caseId: { type: string, minLength: 1, maxLength: 120 }
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "201": { description: Wallet ledger entry and immutable audit committed atomically. }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or economy:adjust permission rejected." }
+        "503": { description: Persistence adapter is not ready. }
+components:
+  parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string, minLength: 32 }
+  securitySchemes:
+    adminSession:
+      type: apiKey
+      in: cookie
+      name: __Host-spacey_admin_session
+  schemas:
+    WebAuthnOptions:
+      type: object
+      required: [challengeId, expiresAt, publicKeyOptions]
+      properties:
+        challengeId: { type: string, format: uuid }
+        expiresAt: { type: string, format: date-time }
+        publicKeyOptions: { type: object, additionalProperties: true }
+    WebAuthnVerification:
+      type: object
+      additionalProperties: false
+      required: [challengeId, credential]
+      properties:
+        challengeId: { type: string, format: uuid }
+        credential: { type: object, additionalProperties: true }

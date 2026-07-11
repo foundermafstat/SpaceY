@@ -1,0 +1,810 @@
+openapi: 3.1.1
+info:
+  title: SpaceY Player and Public API
+  version: 1.0.0
+  description: Server-authoritative player API and read-only partner API. Gameplay completion is never accepted from clients.
+  license: { name: Proprietary, identifier: LicenseRef-SpaceY-Proprietary }
+servers:
+  - url: https://api.spacey.aima.space
+tags:
+  - name: Auth
+    description: Telegram identity and rotating player sessions.
+  - name: Player
+    description: Player-owned state and immutable build revisions.
+  - name: Battles
+    description: Authoritative attempts, tickets and reconnect state.
+  - name: PvP
+    description: Server-authoritative matchmaking, participant tickets, reconnect and realtime duels.
+  - name: Privacy
+    description: EU privacy preferences and durable export/deletion workflows.
+  - name: Public
+    description: Scoped, quota-controlled partner reads.
+paths:
+  /api/v1/auth/telegram:
+    post:
+      tags: [Auth]
+      operationId: authenticateTelegram
+      summary: Authenticate raw Telegram Mini App initData
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [initData]
+              properties:
+                initData: { type: string, minLength: 1, maxLength: 16384 }
+      responses:
+        "200":
+          description: Authenticated; rotating refresh token is returned only as a Secure HttpOnly cookie.
+          headers:
+            Set-Cookie: { schema: { type: string } }
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/AuthSession" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshPlayerSession
+      summary: Rotate the player refresh session
+      security: [{ refreshCookie: [] }]
+      responses:
+        "200":
+          description: Rotated refresh session.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/RefreshSession" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutPlayerSession
+      summary: Revoke the current refresh session
+      security: [{ refreshCookie: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/auth/logout-all:
+    post:
+      tags: [Auth]
+      operationId: logoutAllPlayerSessions
+      summary: Revoke all player refresh sessions
+      security: [{ playerAccess: [] }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/bootstrap:
+    get:
+      tags: [Player]
+      operationId: getPlayerBootstrap
+      summary: Read current server-owned player state
+      security: [{ playerAccess: [] }]
+      responses:
+        "200":
+          description: Current server-owned profile, economy, content and build state.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/Bootstrap" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/v1/builds/{buildId}/commands:
+    put:
+      tags: [Player]
+      operationId: applyShipBuildCommands
+      summary: Apply commands as a new immutable build revision
+      security: [{ playerAccess: [] }]
+      parameters:
+        - $ref: "#/components/parameters/BuildId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BuildCommands" }
+      responses:
+        "200":
+          description: New immutable build revision.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/ShipBuild" } }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/builds/legacy-import-proposals:
+    post:
+      tags: [Player]
+      operationId: importLegacyBuildV3
+      summary: Import one legacy schema-v3 build
+      description: One-time build-only import. Wallet, rewards and mission results are ignored.
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/LegacyBuildImport" } }
+      responses:
+        "200": { description: Imported or previously imported build. }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/mission-attempts:
+    post:
+      tags: [Battles]
+      operationId: createMissionAttempt
+      summary: Create an authoritative PvE attempt
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [missionId, shipBuildRevisionId, idempotencyKey]
+              properties:
+                missionId: { type: string }
+                shipBuildRevisionId: { type: string, format: uuid }
+                idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+      responses:
+        "201":
+          description: One-time, 30-second battle connection ticket.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/BattleConnection" } }
+        "422": { $ref: "#/components/responses/Conflict" }
+  /api/v1/mission-attempts/{attemptId}:
+    get:
+      tags: [Battles]
+      operationId: getMissionAttempt
+      summary: Read attempt and reconnect status
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Authoritative attempt/reconnect/result status.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/MissionAttemptStatus" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/mission-attempts/{attemptId}/reconnect:
+    post:
+      tags: [Battles]
+      operationId: reconnectMissionAttempt
+      summary: Issue a fresh one-time reconnect ticket
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Fresh one-time reconnect ticket for an owned resumable attempt.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/BattleConnection" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/pvp/matchmaking-tickets:
+    post:
+      tags: [PvP]
+      operationId: createMatchmakingTicket
+      summary: Create or replay an idempotent server-side matchmaking ticket
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/CreateMatchmakingTicket" } }
+      responses:
+        "202":
+          description: Durable queue or matched state. A matched response deliberately contains no connection ticket.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/MatchmakingTicket" } }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/Conflict" }
+  /api/v1/pvp/matchmaking-tickets/{ticketId}:
+    get:
+      tags: [PvP]
+      operationId: getMatchmakingTicket
+      summary: Read an owned matchmaking ticket
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current durable queue or match state.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/MatchmakingTicket" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/pvp/matchmaking-tickets/{ticketId}/cancel:
+    post:
+      tags: [PvP]
+      operationId: cancelMatchmakingTicket
+      summary: Cancel an owned ticket before it is atomically claimed
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Cancelled or already-terminal ticket.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/MatchmakingTicket" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/pvp/matchmaking-tickets/{ticketId}/connection:
+    post:
+      tags: [PvP]
+      operationId: requestPvpMatchConnection
+      summary: Issue or rotate one participant's one-time PvP connection ticket
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Fresh 30-second ticket for the owned participant in a matched duel.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PvpBattleParticipantConnection" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503":
+          description: Routing or duel runtime is temporarily unavailable.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+  /api/v1/privacy/preferences:
+    get:
+      tags: [Privacy]
+      operationId: getPrivacyPreferences
+      summary: Read server-owned profile visibility and analytics consent
+      security: [{ playerAccess: [] }]
+      responses:
+        "200":
+          description: Current privacy preferences.
+          content: { application/json: { schema: { $ref: "#/components/schemas/PrivacyPreferences" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [Privacy]
+      operationId: updatePrivacyPreferences
+      summary: Replace server-owned profile visibility and analytics consent
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UpdatePrivacyPreferences" } } }
+      responses:
+        "200":
+          description: Updated privacy preferences. Consent timestamps are assigned by the server.
+          content: { application/json: { schema: { $ref: "#/components/schemas/PrivacyPreferences" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/privacy/requests:
+    post:
+      tags: [Privacy]
+      operationId: createPrivacyRequest
+      summary: Create an idempotent export or deletion request
+      description: Deletion immediately withdraws public-profile and analytics consent. Completion is asynchronous and durable.
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CreatePrivacyRequest" } } }
+      responses:
+        "202":
+          description: New or previously accepted privacy request.
+          content: { application/json: { schema: { $ref: "#/components/schemas/PrivacyRequest" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/privacy/requests/{requestId}:
+    get:
+      tags: [Privacy]
+      operationId: getPrivacyRequest
+      summary: Read durable status for an owned privacy request
+      description: Export status exposes integrity metadata only. Object keys, encryption keys and fabricated download URLs are never returned.
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Owned durable privacy request status.
+          content: { application/json: { schema: { $ref: "#/components/schemas/PrivacyRequest" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/privacy/requests/{requestId}/download:
+    post:
+      tags: [Privacy]
+      operationId: createPrivacyExportDownload
+      summary: Create a short-lived owner-only export download URL
+      description: Available only for an owned completed, unexpired export. The response contains only an HTTPS URL signed for at most five minutes, not a reusable raw storage key.
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Short-lived HTTPS download URL for the encrypted export object.
+          content: { application/json: { schema: { $ref: "#/components/schemas/PrivacyExportDownload" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/Conflict" }
+  /public/v1/oauth/token:
+    post:
+      tags: [Public]
+      operationId: createPublicAccessToken
+      summary: Exchange client credentials for a scoped token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, client_id, client_secret]
+              properties:
+                grant_type: { const: client_credentials }
+                client_id: { type: string }
+                client_secret: { type: string }
+                scope: { type: string }
+      responses:
+        "200":
+          description: Scoped 10-minute access token.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [access_token, token_type, expires_in, scope]
+                properties:
+                  access_token: { type: string }
+                  token_type: { const: Bearer }
+                  expires_in: { type: integer, const: 600 }
+                  scope: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /public/v1/catalog:
+    get:
+      tags: [Public]
+      operationId: getPublicCatalog
+      summary: Read the published public catalog
+      security: [{ publicApiKey: [] }, { oauthClient: ["catalog:read"] }]
+      responses:
+        "200":
+          description: Published, non-sensitive content catalog.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PublicCatalog" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /public/v1/leaderboards:
+    get:
+      tags: [Public]
+      operationId: getPublicLeaderboard
+      summary: Read the consent-filtered leaderboard
+      security: [{ publicApiKey: [] }, { oauthClient: ["leaderboards:read"] }]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        "200":
+          description: Consent-safe public leaderboard.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LeaderboardEntry" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /public/v1/profiles/{userId}:
+    get:
+      tags: [Public]
+      operationId: getPublicProfile
+      summary: Read a player profile only when that player opted in to public visibility
+      security: [{ publicApiKey: [] }, { oauthClient: ["profiles:read"] }]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Consent-safe public profile without Telegram identity data.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PublicProfile" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /public/v1/stats:
+    get:
+      tags: [Public]
+      operationId: getPublicAggregateStats
+      summary: Read privacy-filtered aggregate game statistics
+      security: [{ publicApiKey: [] }, { oauthClient: ["stats:read"] }]
+      responses:
+        "200":
+          description: Aggregate statistics containing no player identifiers.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/PublicAggregateStats" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+webhooks:
+  spaceyEvent:
+    post:
+      operationId: receiveSpaceyWebhook
+      summary: Receive an idempotent signed SpaceY domain event
+      security: [{ webhookSignature: [] }]
+      description: Verify HMAC-SHA256 over `<timestamp>.<event-id>.<raw-body>` with `SHA-256(raw webhook secret)` as the key. Reject stale timestamps and deduplicate by event ID.
+      parameters:
+        - name: X-SpaceY-Event-Id
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+        - name: X-SpaceY-Event-Type
+          in: header
+          required: true
+          schema: { enum: [content.release.published, leaderboard.updated, season.started, season.ended, aggregate.stats.updated] }
+        - name: X-SpaceY-Timestamp
+          in: header
+          required: true
+          schema: { type: string, pattern: "^[0-9]{10,}$" }
+        - name: X-SpaceY-Signature
+          in: header
+          required: true
+          schema: { type: string, pattern: "^v1=[a-f0-9]{64}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignedWebhookEnvelope" }
+      responses:
+        "204": { description: Event signature verified and event accepted or already processed. }
+        "400": { description: Malformed envelope. }
+        "401": { description: Signature or timestamp validation failed. }
+components:
+  securitySchemes:
+    playerAccess:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-spacey_refresh
+    publicApiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    oauthClient:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: /public/v1/oauth/token
+          scopes:
+            catalog:read: Read published catalog.
+            leaderboards:read: Read public leaderboards.
+            profiles:read: Read consented public profiles.
+            stats:read: Read aggregate statistics.
+    webhookSignature:
+      type: apiKey
+      in: header
+      name: X-SpaceY-Signature
+  parameters:
+    BuildId:
+      name: buildId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Ok:
+      description: Success.
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [ok]
+            properties: { ok: { const: true } }
+    Unauthorized:
+      description: Authentication failed.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+    Conflict:
+      description: Revision or idempotency conflict.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+    NotFound:
+      description: Resource not found or not owned by the caller.
+      content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
+  schemas:
+    ApiError:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, correlationId]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            correlationId: { type: string }
+            details: { type: object, additionalProperties: true }
+    PlayerProfile:
+      type: object
+      required: [id, telegramUserId, displayName, avatarUrl, locale, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        telegramUserId: { type: string, pattern: "^[0-9]+$" }
+        displayName: { type: string }
+        avatarUrl: { type: [string, "null"], format: uri }
+        locale: { type: string }
+        createdAt: { type: string, format: date-time }
+    PrivacyPreferences:
+      type: object
+      additionalProperties: false
+      required: [profilePublic, analyticsConsent, analyticsConsentUpdatedAt, updatedAt]
+      properties:
+        profilePublic: { type: boolean }
+        analyticsConsent: { type: boolean }
+        analyticsConsentUpdatedAt: { type: [string, "null"], format: date-time }
+        updatedAt: { type: string, format: date-time }
+    UpdatePrivacyPreferences:
+      type: object
+      additionalProperties: false
+      required: [profilePublic, analyticsConsent]
+      properties:
+        profilePublic: { type: boolean }
+        analyticsConsent: { type: boolean }
+    CreatePrivacyRequest:
+      type: object
+      additionalProperties: false
+      required: [type, idempotencyKey]
+      properties:
+        type: { enum: [export, delete] }
+        idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+    PrivacyRequest:
+      type: object
+      additionalProperties: false
+      required: [id, type, status, requestedAt, processingStartedAt, completedAt, failedAt, failureCode, retentionUntil, exportArtifact]
+      properties:
+        id: { type: string, format: uuid }
+        type: { enum: [export, delete] }
+        status: { enum: [pending, processing, completed, failed] }
+        requestedAt: { type: string, format: date-time }
+        processingStartedAt: { type: [string, "null"], format: date-time }
+        completedAt: { type: [string, "null"], format: date-time }
+        failedAt: { type: [string, "null"], format: date-time }
+        failureCode: { type: [string, "null"] }
+        retentionUntil: { type: string, format: date-time }
+        exportArtifact:
+          oneOf:
+            - { type: "null" }
+            - type: object
+              additionalProperties: false
+              required: [state, contentType, contentSha256, sizeBytes, expiresAt]
+              properties:
+                state: { const: stored_encrypted }
+                contentType: { const: application/json }
+                contentSha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                sizeBytes: { type: integer, minimum: 0 }
+                expiresAt: { type: string, format: date-time }
+    PrivacyExportDownload:
+      type: object
+      additionalProperties: false
+      required: [url, expiresAt]
+      properties:
+        url: { type: string, format: uri, pattern: "^https://" }
+        expiresAt: { type: string, format: date-time }
+    AuthSession:
+      type: object
+      required: [accessToken, accessTokenExpiresInSeconds, refreshSessionExpiresAt, profile]
+      properties:
+        accessToken: { type: string }
+        accessTokenExpiresInSeconds: { type: integer }
+        refreshSessionExpiresAt: { type: string, format: date-time }
+        profile: { $ref: "#/components/schemas/PlayerProfile" }
+    RefreshSession:
+      type: object
+      required: [accessToken, accessTokenExpiresInSeconds, refreshSessionExpiresAt]
+      properties:
+        accessToken: { type: string }
+        accessTokenExpiresInSeconds: { type: integer }
+        refreshSessionExpiresAt: { type: string, format: date-time }
+    Wallet:
+      type: object
+      additionalProperties: false
+      required: [credits, scrap, alloy, dataShards]
+      properties:
+        credits: { type: integer, minimum: 0 }
+        scrap: { type: integer, minimum: 0 }
+        alloy: { type: integer, minimum: 0 }
+        dataShards: { type: integer, minimum: 0 }
+    Mission:
+      type: object
+      required: [id, contentVersion, name, type, risk, durationSeconds, objective, rewardPreview]
+      properties:
+        id: { type: string }
+        contentVersion: { type: string }
+        name: { type: string }
+        type: { enum: [salvage, escort, mining, intercept, defense] }
+        risk: { enum: [green, yellow, red] }
+        briefing: { type: string }
+        durationSeconds: { type: integer }
+        objective: { type: object, additionalProperties: true }
+        rewardPreview: { type: object, additionalProperties: true }
+    ShipBuild:
+      type: object
+      required: [id, activeRevision, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        activeRevision: { type: object, additionalProperties: true }
+        updatedAt: { type: string, format: date-time }
+    BuildCommands:
+      type: object
+      additionalProperties: false
+      required: [expectedRevision, idempotencyKey, commands]
+      properties:
+        expectedRevision: { type: integer, minimum: 1 }
+        idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+        commands:
+          type: array
+          minItems: 1
+          maxItems: 128
+          items: { type: object, required: [type], properties: { type: { enum: [rename, install, move, remove] } } }
+    Bootstrap:
+      type: object
+      required: [serverTime, profile, wallet, activeBuild, inventory, contentRelease, missions]
+      properties:
+        serverTime: { type: string, format: date-time }
+        profile: { $ref: "#/components/schemas/PlayerProfile" }
+        wallet: { $ref: "#/components/schemas/Wallet" }
+        activeBuild: { oneOf: [{ $ref: "#/components/schemas/ShipBuild" }, { type: "null" }] }
+        inventory:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        contentRelease: { type: object, additionalProperties: true }
+        missions: { type: array, items: { $ref: "#/components/schemas/Mission" } }
+    BattleConnection:
+      type: object
+      required: [sessionId, attemptId, mode, websocketUrl, ticket, ticketExpiresAt, protocolVersion]
+      properties:
+        sessionId: { type: string, format: uuid }
+        attemptId: { type: string, format: uuid }
+        mode: { enum: [pve, pvp] }
+        websocketUrl: { type: string, format: uri }
+        ticket: { type: string }
+        ticketExpiresAt: { type: string, format: date-time }
+        protocolVersion: { type: string }
+    PvpBattleParticipantConnection:
+      type: object
+      additionalProperties: false
+      required: [sessionId, attemptId, mode, websocketUrl, ticket, ticketExpiresAt, protocolVersion, matchId, participantId, side]
+      properties:
+        sessionId: { type: string, format: uuid }
+        attemptId: { type: string, format: uuid }
+        mode: { const: pvp }
+        websocketUrl: { type: string, format: uri }
+        ticket: { type: string, minLength: 1 }
+        ticketExpiresAt: { type: string, format: date-time }
+        protocolVersion: { type: string, minLength: 1 }
+        matchId: { type: string, format: uuid }
+        participantId: { type: string, format: uuid }
+        side: { enum: [0, 1] }
+    CreateMatchmakingTicket:
+      type: object
+      additionalProperties: false
+      required: [shipBuildRevisionId, queue, idempotencyKey]
+      properties:
+        shipBuildRevisionId: { type: string, format: uuid }
+        queue: { type: string, pattern: "^[a-z0-9][a-z0-9_-]{0,63}$" }
+        idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+    MatchmakingTicket:
+      type: object
+      additionalProperties: false
+      required: [id, queue, region, mmr, status, createdAt, expiresAt, match]
+      properties:
+        id: { type: string, format: uuid }
+        queue: { type: string }
+        region: { type: string }
+        mmr: { type: integer, minimum: 0 }
+        status: { enum: [queued, matched, completed, cancelled, expired, failed] }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time }
+        match:
+          oneOf:
+            - { type: "null" }
+            - type: object
+              additionalProperties: false
+              required: [matchId, sessionId, attemptId, runtimeState, connection]
+              properties:
+                matchId: { type: string, format: uuid }
+                sessionId: { type: string, format: uuid }
+                attemptId: { type: string, format: uuid }
+                runtimeState: { enum: [duel_protocol_unavailable, ready] }
+                connection: { type: "null" }
+    MissionAttemptStatus:
+      type: object
+      required: [attemptId, sessionId, status, resultId, reconnect]
+      properties:
+        attemptId: { type: string, format: uuid }
+        sessionId: { type: string, format: uuid }
+        status: { enum: [queued, active, paused, completed, failed] }
+        resultId: { type: [string, "null"], format: uuid }
+        reconnect: { type: object, additionalProperties: true }
+    PublicCatalog:
+      type: object
+      required: [contentRelease, missions]
+      properties:
+        contentRelease: { type: object, additionalProperties: true }
+        missions: { type: array, items: { $ref: "#/components/schemas/Mission" } }
+    LeaderboardEntry:
+      type: object
+      required: [rank, publicPlayerId, displayName, score]
+      properties:
+        rank: { type: integer, minimum: 1 }
+        publicPlayerId: { type: string }
+        displayName: { type: string }
+        score: { type: integer }
+    PublicProfile:
+      type: object
+      additionalProperties: false
+      required: [id, displayName, avatarUrl, joinedAt, level, seasonRating, wins, losses, draws]
+      properties:
+        id: { type: string, format: uuid }
+        displayName: { type: string }
+        avatarUrl: { type: [string, "null"], format: uri }
+        joinedAt: { type: string, format: date-time }
+        level: { type: integer, minimum: 1 }
+        seasonRating: { type: [integer, "null"] }
+        wins: { type: integer, minimum: 0 }
+        losses: { type: integer, minimum: 0 }
+        draws: { type: integer, minimum: 0 }
+    PublicAggregateStats:
+      type: object
+      additionalProperties: false
+      required: [generatedAt, consentedPlayers, completedBattles, completedPvpMatches, publishedContentVersion]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        consentedPlayers: { type: integer, minimum: 0 }
+        completedBattles: { type: integer, minimum: 0 }
+        completedPvpMatches: { type: integer, minimum: 0 }
+        publishedContentVersion: { type: [string, "null"] }
+    SignedWebhookEnvelope:
+      type: object
+      additionalProperties: false
+      required: [id, type, apiVersion, createdAt, data]
+      properties:
+        id: { type: string, format: uuid }
+        type: { enum: [content.release.published, leaderboard.updated, season.started, season.ended, aggregate.stats.updated] }
+        apiVersion: { const: "1.0" }
+        createdAt: { type: string, format: date-time }
+        data:
+          type: object
+          additionalProperties: false
+          required: [aggregate, payload]
+          properties:
+            aggregate:
+              type: object
+              additionalProperties: false
+              required: [type, id]
+              properties:
+                type: { type: string }
+                id: { type: string }
+            payload: {}
+    LegacyBuildImport:
+      type: object
+      additionalProperties: false
+      required: [schemaVersion, sourceBuildId, name, frameId, parts]
+      properties:
+        schemaVersion: { const: 3 }
+        sourceBuildId: { type: string, maxLength: 128 }
+        name: { type: string, minLength: 1, maxLength: 64 }
+        frameId: { type: string, maxLength: 128 }
+        cabin: { type: object, additionalProperties: true }
+        parts:
+          type: array
+          maxItems: 256
+          items:
+            type: object
+            required: [sourceInstanceId, kind, definitionId, gridX, gridY, rotation]
+            properties:
+              sourceInstanceId: { type: string }
+              kind: { enum: [panel, module, element] }
+              definitionId: { type: string }
+              gridX: { type: integer, minimum: -64, maximum: 64 }
+              gridY: { type: integer, minimum: -64, maximum: 64 }
+              rotation: { enum: [0, 90, 180, 270] }

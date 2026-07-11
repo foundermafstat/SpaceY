@@ -4,8 +4,8 @@ import { TelegramMiniAppRuntime } from "@/components/telegram/TelegramMiniAppRun
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Starframe Arena MVP",
-  description: "Mobile spacecraft builder combat prototype"
+  title: "SpaceY",
+  description: "Telegram spacecraft construction and server-authoritative combat game"
 };
 
 export const viewport: Viewport = {
@@ -23,9 +23,10 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body>
-        <TelegramMiniAppRuntime />
-        <GameAudioUnlock />
-        {children}
+        <TelegramMiniAppRuntime>
+          <GameAudioUnlock />
+          {children}
+        </TelegramMiniAppRuntime>
       </body>
     </html>
   );

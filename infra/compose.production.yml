@@ -1,0 +1,195 @@
+x-app: &app
+  init: true
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: [/tmp]
+  stop_grace_period: 2m
+  networks: [slot, spacey-data]
+  labels:
+    com.spacey.slot: "${SLOT:?blue or green}"
+    org.opencontainers.image.revision: "${IMAGE_TAG:?full Git SHA}"
+
+services:
+  game-web:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/game-web@${GAME_WEB_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/game-web"
+      HOSTNAME: 0.0.0.0
+      PORT: 7790
+    env_file: [/etc/spacey/game-web.env]
+    ports:
+      - "127.0.0.1:${WEB_BIND_PORT:?slot port}:7790"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7790/').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/api@${API_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/api"
+      NODE_ENV: production
+      OBSERVABILITY_REQUIRED: "true"
+      OTEL_SERVICE_NAME: spacey-api
+      SPACEY_ENVIRONMENT: production
+      SPACEY_RELEASE_SHA: "${IMAGE_TAG:?full Git SHA}"
+      API_HOST: 0.0.0.0
+      API_PORT: 7800
+      ALLOW_BROWSER_AUTH: "false"
+      USE_IN_MEMORY_REPOSITORY: "false"
+    env_file: [/etc/spacey/api.env]
+    ports:
+      - "127.0.0.1:${API_BIND_PORT:?slot port}:7800"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7800/ready').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  battle-worker:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/battle-worker@${BATTLE_WORKER_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/battle-worker"
+      NODE_ENV: production
+      OBSERVABILITY_REQUIRED: "true"
+      OTEL_SERVICE_NAME: spacey-battle-worker
+      SPACEY_ENVIRONMENT: production
+      SPACEY_RELEASE_SHA: "${IMAGE_TAG:?full Git SHA}"
+      BATTLE_WORKER_HOST: 0.0.0.0
+      BATTLE_WORKER_PORT: 7801
+    env_file: [/etc/spacey/battle-worker.env]
+    ports:
+      - "127.0.0.1:${BATTLE_BIND_PORT:?slot port}:7801"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7801/ready').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  admin-web:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/admin-web@${ADMIN_WEB_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/admin-web"
+    env_file: [/etc/spacey/admin-web.env]
+    ports:
+      - "127.0.0.1:${ADMIN_WEB_BIND_PORT:?slot port}:3102"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3102/').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  admin-api:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/admin-api@${ADMIN_API_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/admin-api"
+      NODE_ENV: production
+      OBSERVABILITY_REQUIRED: "true"
+      OTEL_SERVICE_NAME: spacey-admin-api
+      SPACEY_ENVIRONMENT: production
+      SPACEY_RELEASE_SHA: "${IMAGE_TAG:?full Git SHA}"
+      ADMIN_API_HOST: 0.0.0.0
+      ADMIN_API_PORT: 7802
+    env_file: [/etc/spacey/admin-api.env]
+    ports:
+      - "127.0.0.1:${ADMIN_API_BIND_PORT:?slot port}:7802"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7802/internal/admin/v1/ready').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  telegram-bot:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/telegram-bot@${TELEGRAM_BOT_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/telegram-bot"
+      NODE_ENV: production
+      OBSERVABILITY_REQUIRED: "true"
+      OTEL_SERVICE_NAME: spacey-telegram-bot
+      SPACEY_ENVIRONMENT: production
+      SPACEY_RELEASE_SHA: "${IMAGE_TAG:?full Git SHA}"
+      TELEGRAM_BOT_HOST: 0.0.0.0
+      TELEGRAM_BOT_PORT: 7804
+      TELEGRAM_STARS_ENABLED: "false"
+    env_file: [/etc/spacey/telegram-bot.env]
+    ports:
+      - "127.0.0.1:${BOT_BIND_PORT:?slot port}:7804"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7804/ready').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  jobs:
+    <<: *app
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/jobs@${JOBS_IMAGE_DIGEST:?digest from release manifest}"
+    environment:
+      SERVICE_FILTER: "@spacey/jobs"
+      NODE_ENV: production
+      OBSERVABILITY_REQUIRED: "true"
+      OTEL_SERVICE_NAME: spacey-jobs
+      SPACEY_ENVIRONMENT: production
+      SPACEY_RELEASE_SHA: "${IMAGE_TAG:?full Git SHA}"
+      JOBS_HEALTH_HOST: 0.0.0.0
+      JOBS_HEALTH_PORT: 7805
+      WEBHOOK_TIMEOUT_MS: 5000
+      WEBHOOK_MAX_ATTEMPTS: 8
+      RETENTION_MAINTENANCE_INTERVAL_MS: 300000
+      RETENTION_MAINTENANCE_BATCH_SIZE: 5000
+    env_file: [/etc/spacey/jobs.env]
+    ports:
+      - "127.0.0.1:${JOBS_BIND_PORT:?slot port}:7805"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:7805/ready').then(r=>{if(!r.ok)process.exit(1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  migrator:
+    image: "${SPACEY_IMAGE_PREFIX:?registry/name prefix}/api@${API_IMAGE_DIGEST:?digest from release manifest}"
+    command: ["pnpm", "--filter", "@spacey/db", "migrate:deploy"]
+    env_file: [/etc/spacey/migrator.env]
+    profiles: [migration]
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    networks: [spacey-data]
+    labels:
+      org.opencontainers.image.revision: "${IMAGE_TAG:?full Git SHA}"
+
+  grants:
+    image: "${POSTGRES_CLIENT_IMAGE:?set immutable postgres client image reference, preferably name@sha256:digest}"
+    command:
+      - sh
+      - -ceu
+      - >-
+        psql "$${DIRECT_URL}" -v ON_ERROR_STOP=1
+        -f /spacey-db-roles/roles.grants.template.sql
+    env_file: [/etc/spacey/migrator.env]
+    profiles: [migration]
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    volumes:
+      - ../packages/db/sql:/spacey-db-roles:ro
+    networks: [spacey-data]
+
+networks:
+  slot:
+    internal: true
+  spacey-data:
+    external: true
+    name: spacey-data

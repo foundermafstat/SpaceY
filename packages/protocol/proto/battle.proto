@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package spacey.battle.v1;
+
+message ClientEnvelope {
+  oneof payload {
+    SessionResume session_resume = 1;
+    InputCommand input_command = 2;
+    Ping ping = 3;
+  }
+}
+
+message ServerEnvelope {
+  oneof payload {
+    BattleInitial battle_initial = 1;
+    BattleSnapshot battle_snapshot = 2;
+    BattleEvent battle_event = 3;
+    BattleEnded battle_ended = 4;
+    SessionError session_error = 5;
+    Pong pong = 6;
+  }
+}
+
+message SessionResume {
+  uint64 last_acknowledged_input_sequence = 1;
+}
+
+message InputCommand {
+  uint64 sequence = 1;
+  uint64 target_tick = 2;
+  sint32 move_x = 3;
+  sint32 move_y = 4;
+  sint32 aim_x = 5;
+  sint32 aim_y = 6;
+  uint32 action_flags = 7;
+}
+
+message Ping {
+  uint64 nonce = 1;
+}
+
+message Pong {
+  uint64 nonce = 1;
+  uint64 server_tick = 2;
+}
+
+enum BattleMode {
+  BATTLE_MODE_UNSPECIFIED = 0;
+  BATTLE_MODE_PVE = 1;
+  BATTLE_MODE_PVP = 2;
+}
+
+enum BattleStatus {
+  BATTLE_STATUS_UNSPECIFIED = 0;
+  BATTLE_STATUS_ACTIVE = 1;
+  BATTLE_STATUS_VICTORY = 2;
+  BATTLE_STATUS_DEFEAT = 3;
+}
+
+enum EntityKind {
+  ENTITY_KIND_UNSPECIFIED = 0;
+  ENTITY_KIND_PLAYER = 1;
+  ENTITY_KIND_ENEMY = 2;
+  ENTITY_KIND_PROJECTILE = 3;
+  ENTITY_KIND_OBJECTIVE = 4;
+}
+
+message BattleEntity {
+  string id = 1;
+  EntityKind kind = 2;
+  sint32 x_milli = 3;
+  sint32 y_milli = 4;
+  sint32 velocity_x_milli_per_tick = 5;
+  sint32 velocity_y_milli_per_tick = 6;
+  sint32 rotation_milli_radians = 7;
+  uint32 hull = 8;
+  uint32 hull_max = 9;
+  uint32 flags = 10;
+}
+
+message BattleObjective {
+  string type = 1;
+  uint32 progress = 2;
+  uint32 target = 3;
+}
+
+message BattleSnapshot {
+  string session_id = 1;
+  uint64 tick = 2;
+  string state_hash = 3;
+  uint64 last_processed_input_sequence = 4;
+  BattleStatus status = 5;
+  BattleObjective objective = 6;
+  repeated BattleEntity entities = 7;
+}
+
+message ReconnectMetadata {
+  bool permitted = 1;
+  string disconnected_at = 2;
+  string deadline_at = 3;
+  uint64 last_processed_input_sequence = 4;
+  uint64 latest_checkpoint_tick = 5;
+}
+
+message BattleInitial {
+  string protocol_version = 1;
+  BattleMode mode = 2;
+  BattleSnapshot snapshot = 3;
+  ReconnectMetadata reconnect = 4;
+  PvpParticipantContext participant = 5;
+}
+
+message PvpParticipantContext {
+  string match_id = 1;
+  string participant_id = 2;
+  uint32 side = 3;
+}
+
+message BattleEvent {
+  uint64 event_id = 1;
+  uint64 tick = 2;
+  string event_type = 3;
+  repeated string entity_ids = 4;
+}
+
+message BattleEnded {
+  string result_id = 1;
+  string outcome = 2;
+  string reason = 3;
+  uint64 final_tick = 4;
+  string final_state_hash = 5;
+}
+
+message SessionError {
+  string code = 1;
+  string message = 2;
+  bool retryable = 3;
+}
