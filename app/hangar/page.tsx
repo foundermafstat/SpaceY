@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent } from "react";
 import { createDraggable, type Draggable } from "animejs";
+import { MissionSelectionPanel } from "@/components/hangar/MissionSelectionPanel";
 import { UiButton, UiButtonLabel, UiLinkButton } from "@/components/ui-kit/UiButton";
 import { playGameSound, preloadGameAudio } from "@/game/audio/gameAudio";
 import { observeElementSize } from "@/game/render/observeElementSize";
 import { cabinDefs } from "@/game/data/cabins";
+import { getMissionById } from "@/game/data/missions";
 import { moduleDefs } from "@/game/data/modules";
 import { panelDefs } from "@/game/data/panels";
 import { shipBuildPresets } from "@/game/data/shipPresets";
+import { evaluateMissionReadiness } from "@/game/mission/readiness";
 import { useShipStore } from "@/game/store/shipStore";
+import { useShipStoreHydrated } from "@/game/store/useShipStoreHydrated";
 import { calculateShipStatsV2 } from "@/game/ship/statsV2";
 import {
   buildShipTopology,
@@ -48,6 +52,7 @@ import {
 import type { CabinDef, GridCell, InstalledModule, InstalledPanel, ModuleType, PanelDef, Rotation } from "@/game/types";
 
 type OverlayMode = "structure" | "power" | "heat" | "weapons" | "engines" | "mass";
+type HangarSection = "contracts" | "structure" | "modules";
 
 const labels: Record<ModuleType, string> = {
   core: "Core",
@@ -125,8 +130,11 @@ export default function HangarPage() {
     buildMode,
     selectedModuleId,
     selectedPanelId,
+    selectedMissionId,
     rotation,
     setBuildMode,
+    selectMission,
+    clearMission,
     loadPreset,
     selectCabin,
     selectModule,
@@ -141,6 +149,7 @@ export default function HangarPage() {
     removePanel,
     resetBuild
   } = useShipStore();
+  const storeHydrated = useShipStoreHydrated();
   const stageRef = useRef<HTMLElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
   const panRef = useRef<HTMLDivElement>(null);
@@ -166,6 +175,7 @@ export default function HangarPage() {
   const [zoomIndex, setZoomIndex] = useState(0);
   const [scenePosition, setScenePosition] = useState(initialScenePosition);
   const [overlayMode, setOverlayMode] = useState<OverlayMode>("structure");
+  const [hangarSection, setHangarSection] = useState<HangarSection>("contracts");
   const [gridMetrics, setGridMetrics] = useState({ cellSize: defaultGridCellSize, gap: gridGap });
   const frame = getFrame(build.frameId);
   const cabin = build.cabinId ? getCabin(build.cabinId) : null;
@@ -178,6 +188,11 @@ export default function HangarPage() {
   const blockers = getBuildBlockers(build);
   const warnings = getBuildWarnings(build);
   const hints = getBuildHints(build);
+  const selectedMission = selectedMissionId ? getMissionById(selectedMissionId) : null;
+  const missionReadiness = useMemo(
+    () => selectedMission ? evaluateMissionReadiness(build, selectedMission) : null,
+    [build, selectedMission]
+  );
   const topology = buildShipTopology(build);
   const connectedPanels = new Set(getConnectedPanelsFromCabin(topology));
   const centerOfMassCell = {
@@ -188,7 +203,10 @@ export default function HangarPage() {
   const panelCellKeys = getBuildableCellKeys(build);
   const cabinPosition = getInstalledCabinPosition(build);
   const zoom = zoomSteps[zoomIndex];
-  const canTestBattle = blockers.length === 0;
+  const canLaunchContract = storeHydrated
+    && selectedMission !== null
+    && blockers.length === 0
+    && missionReadiness?.canLaunch === true;
   const gridPitch = gridMetrics.cellSize + gridMetrics.gap;
   const cabinGraphicFrame = cabin && cabinPosition
     ? getCabinGraphicFrame(cabin, cabinPosition, gridMetrics.cellSize, gridMetrics.gap)
@@ -203,6 +221,25 @@ export default function HangarPage() {
       localCell: getPanelLocalCell(panel, installed, cell) ?? { x: 0, y: 0 }
     }));
   });
+
+  useEffect(() => {
+    if (!storeHydrated) return;
+    if (window.location.hash === "#contracts" || !selectedMissionId) {
+      setHangarSection("contracts");
+    }
+  }, [selectedMissionId, storeHydrated]);
+
+  function showBuildSection() {
+    setHangarSection(buildMode);
+    if (window.location.hash === "#contracts") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+    }
+  }
+
+  function showBuildLayer(mode: "structure" | "modules") {
+    setBuildMode(mode);
+    setHangarSection(mode);
+  }
 
   function playInstallSound(kind: keyof typeof installSounds) {
     const soundList = installSounds[kind];
@@ -568,6 +605,7 @@ export default function HangarPage() {
   }, [
     build,
     buildMode,
+    hangarSection,
     gridHeight,
     gridPitch,
     gridWidth,
@@ -588,7 +626,16 @@ export default function HangarPage() {
           <header className="topbar hangar-topbar">
             <div className="brand">
               <strong>{build.name}</strong>
-              <span>{cabin?.name ?? frame.name}</span>
+              <span title={storeHydrated && selectedMission && missionReadiness
+                ? `${cabin?.name ?? frame.name} · ${selectedMission.name} · ${missionReadiness.score}% ready`
+                : undefined}
+              >
+                {!storeHydrated
+                  ? "Loading contract"
+                  : selectedMission && missionReadiness
+                    ? `${selectedMission.name} · ${missionReadiness.score}% ready`
+                    : `${cabin?.name ?? frame.name} · No contract`}
+              </span>
             </div>
             <div className="hangar-stat-strip">
               <MiniStat label="HP" value={stats.hp.toFixed(0)} />
@@ -596,13 +643,13 @@ export default function HangarPage() {
               <MiniStat label="SPD" value={stats.maxSpeed.toFixed(0)} />
               <MiniStat label="DPS" value={stats.dps.toFixed(1)} />
             </div>
-            {canTestBattle ? (
+            {canLaunchContract ? (
               <UiLinkButton href="/battle" size="sm" variant="primary">
-                Test Battle
+                Launch Contract
               </UiLinkButton>
             ) : (
               <UiButtonLabel size="sm" variant="primary">
-                Blocked
+                {!storeHydrated ? "Loading" : selectedMission ? "Blocked" : "Select Contract"}
               </UiButtonLabel>
             )}
           </header>
@@ -773,106 +820,144 @@ export default function HangarPage() {
             </div>
           </section>
 
-          <nav className="hangar-bottom-nav" aria-label="Hangar modules">
+          <nav className="hangar-bottom-nav" aria-label="Hangar controls">
             <details className="module-drawer" open>
               <summary>
                 <span>
-                  {buildMode === "structure"
-                    ? selectedPanel?.name ?? "Cabins & Panels"
-                    : selectedModule?.name ?? "Elements"}
+                  {hangarSection === "contracts"
+                    ? storeHydrated ? selectedMission?.name ?? "Mission Board" : "Mission Board"
+                    : buildMode === "structure"
+                      ? selectedPanel?.name ?? "Cabins & Panels"
+                      : selectedModule?.name ?? "Elements"}
                 </span>
                 <span className="small">
-                  Cells {buildGrid.activeCells.length} · Panels {(build.panels ?? []).length} · Energy {stats.energyBalance.toFixed(0)}
+                  {hangarSection === "contracts"
+                    ? storeHydrated
+                      ? selectedMission && missionReadiness
+                        ? `${missionReadiness.score}% ready · ${selectedMission.objective.label}`
+                        : "Select a contract to begin"
+                      : "Loading contracts…"
+                    : `Cells ${buildGrid.activeCells.length} · Panels ${(build.panels ?? []).length} · Energy ${stats.energyBalance.toFixed(0)}`}
                 </span>
               </summary>
               <div className="build-mode-tabs" role="tablist" aria-label="Build layer">
                 <button
-                  className={buildMode === "structure" ? "selected" : ""}
-                  onClick={() => setBuildMode("structure")}
+                  aria-selected={hangarSection === "contracts"}
+                  className={hangarSection === "contracts" ? "selected" : ""}
+                  onClick={() => setHangarSection("contracts")}
+                  role="tab"
                 >
-                  Cabins & Panels
+                  Contracts
                 </button>
                 <button
-                  className={buildMode === "modules" ? "selected" : ""}
-                  onClick={() => setBuildMode("modules")}
+                  aria-selected={hangarSection === "structure"}
+                  className={hangarSection === "structure" ? "selected" : ""}
+                  onClick={() => showBuildLayer("structure")}
+                  role="tab"
+                >
+                  Cabins
+                </button>
+                <button
+                  aria-selected={hangarSection === "modules"}
+                  className={hangarSection === "modules" ? "selected" : ""}
+                  onClick={() => showBuildLayer("modules")}
+                  role="tab"
                 >
                   Elements
                 </button>
               </div>
-              <div className="preset-list" aria-label="Ship presets">
-                {shipBuildPresets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    className={preset.id === build.id ? "selected" : ""}
-                    onClick={() => loadPreset(preset.id)}
-                  >
-                    <strong>{preset.name}</strong>
-                    <span>
-                      {preset.panels.length} panels · {preset.modules.filter((item) => getModule(item.moduleId).weapon).length} guns
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="module-list" ref={drawerRef}>
-                {buildMode === "structure"
-                  ? (
-                    <>
-                      {cabinPalette.map((item) => (
+              {hangarSection === "contracts" ? (
+                <div className="mission-drawer-content">
+                  {storeHydrated ? (
+                    <MissionSelectionPanel
+                      build={build}
+                      onClear={clearMission}
+                      onSelect={selectMission}
+                      onShowBuild={showBuildSection}
+                      selectedMissionId={selectedMissionId}
+                    />
+                  ) : (
+                    <div className="mission-drawer-loading">Loading contracts…</div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="preset-list" aria-label="Ship presets">
+                    {shipBuildPresets.map((preset) => (
                       <button
-                        key={item.id}
-                        className={`module-card cabin-card ${item.id === build.cabinId ? "selected" : ""}`}
-                        onClick={() => selectCabin(item.id)}
+                        key={preset.id}
+                        className={preset.id === build.id ? "selected" : ""}
+                        onClick={() => loadPreset(preset.id)}
                       >
-                        <span className="cabin-thumb" style={getCabinSpriteStyle(item)} />
-                        <strong>{item.name}</strong>
+                        <strong>{preset.name}</strong>
                         <span>
-                          cabin {item.shape.cells.length} cells · form {item.activeCells.length}
-                        </span>
-                        <span>
-                          {item.role} · crew {item.crew} · energy {item.baseEnergy}
-                        </span>
-                      </button>
-                      ))}
-                      {panelDefs.map((panel) => (
-                      <button
-                        key={panel.id}
-                        className={`module-card panel-card ${panel.id === selectedPanelId ? "selected" : ""}`}
-                        data-palette-kind="panel"
-                        data-palette-id={panel.id}
-                        onClick={() => selectPanel(panel.id)}
-                      >
-                        <span className="panel-thumb" style={getPanelSpriteStyle(panel)} />
-                        <strong>{panel.name}</strong>
-                        <span>
-                          {panel.shape.cells.length} cell
-                        </span>
-                        <span>
-                          {panel.role} · HP {panel.hp} · mass {panel.mass}
-                        </span>
-                      </button>
-                      ))}
-                    </>
-                  )
-                  : moduleDefs.map((module) => (
-                      <button
-                        key={module.id}
-                        className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}
-                        data-palette-kind="module"
-                        data-palette-id={module.id}
-                        onClick={() => selectModule(module.id)}
-                      >
-                        <span className="module-thumb ai-module-thumb" style={getAiModuleSpriteStyle(module)} />
-                        <strong>{module.name}</strong>
-                        <span>
-                          {labels[module.type]} · {module.shape.cells.length} cell · mass {module.mass}
-                        </span>
-                        <span>
-                          HP {module.hp} · EN {(module.energyProduction ?? 0) - (module.energyConsumption ?? 0)} · heat{" "}
-                          {(module.heatGeneration ?? 0) - (module.heatDissipation ?? 0)}
+                          {preset.panels.length} panels · {preset.modules.filter((item) => getModule(item.moduleId).weapon).length} guns
                         </span>
                       </button>
                     ))}
-              </div>
+                  </div>
+                  <div className="module-list" ref={drawerRef}>
+                    {buildMode === "structure"
+                      ? (
+                        <>
+                          {cabinPalette.map((item) => (
+                          <button
+                            key={item.id}
+                            className={`module-card cabin-card ${item.id === build.cabinId ? "selected" : ""}`}
+                            onClick={() => selectCabin(item.id)}
+                          >
+                            <span className="cabin-thumb" style={getCabinSpriteStyle(item)} />
+                            <strong>{item.name}</strong>
+                            <span>
+                              cabin {item.shape.cells.length} cells · form {item.activeCells.length}
+                            </span>
+                            <span>
+                              {item.role} · crew {item.crew} · energy {item.baseEnergy}
+                            </span>
+                          </button>
+                          ))}
+                          {panelDefs.map((panel) => (
+                          <button
+                            key={panel.id}
+                            className={`module-card panel-card ${panel.id === selectedPanelId ? "selected" : ""}`}
+                            data-palette-kind="panel"
+                            data-palette-id={panel.id}
+                            onClick={() => selectPanel(panel.id)}
+                          >
+                            <span className="panel-thumb" style={getPanelSpriteStyle(panel)} />
+                            <strong>{panel.name}</strong>
+                            <span>
+                              {panel.shape.cells.length} cell
+                            </span>
+                            <span>
+                              {panel.role} · HP {panel.hp} · mass {panel.mass}
+                            </span>
+                          </button>
+                          ))}
+                        </>
+                      )
+                      : moduleDefs.map((module) => (
+                          <button
+                            key={module.id}
+                            className={`module-card ${module.id === selectedModuleId ? "selected" : ""}`}
+                            data-palette-kind="module"
+                            data-palette-id={module.id}
+                            onClick={() => selectModule(module.id)}
+                          >
+                            <span className="module-thumb ai-module-thumb" style={getAiModuleSpriteStyle(module)} />
+                            <strong>{module.name}</strong>
+                            <span>
+                              {labels[module.type]} · {module.shape.cells.length} cell · mass {module.mass}
+                            </span>
+                            <span>
+                              HP {module.hp} · EN {(module.energyProduction ?? 0) - (module.energyConsumption ?? 0)} · heat{" "}
+                              {(module.heatGeneration ?? 0) - (module.heatDissipation ?? 0)}
+                            </span>
+                          </button>
+                        ))}
+                  </div>
+                </>
+              )}
             </details>
           </nav>
         </div>

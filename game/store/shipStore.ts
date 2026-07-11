@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultBuild } from "@/game/data/defaultBuild";
+import { isMissionId } from "@/game/data/missions";
 import { cloneShipBuild, shipBuildPresets } from "@/game/data/shipPresets";
 import {
   canInstallModule,
@@ -17,6 +18,7 @@ import {
 } from "@/game/ship/build";
 import { installedModuleToElement } from "@/game/ship/domainCompat";
 import { CURRENT_SHIP_BUILD_SCHEMA_VERSION, migrateShipBuild } from "@/game/ship/migration";
+import type { MissionId } from "@/game/mission/types";
 import type { BuildMode, Rotation, ShipBuild } from "@/game/types";
 
 const rotations: Rotation[] = [0, 90, 180, 270];
@@ -29,7 +31,10 @@ type ShipState = {
   selectedPanelId: string;
   rotation: Rotation;
   scrap: number;
+  selectedMissionId: MissionId | null;
   setBuildMode: (mode: BuildMode) => void;
+  selectMission: (id: MissionId) => void;
+  clearMission: () => void;
   loadPreset: (presetId: string) => void;
   selectCabin: (cabinId: string) => void;
   moveCabin: (position: { x: number; y: number }, rotation?: Rotation) => boolean;
@@ -55,8 +60,13 @@ function normalizePersistedState(persisted: unknown, current: ShipState): ShipSt
     buildMode: normalizeBuildMode(state.buildMode),
     selectedModuleId: state.selectedModuleId ?? "hull_block",
     selectedPanelId: state.selectedPanelId ?? "node_plate",
-    rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
+    rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0,
+    selectedMissionId: normalizeMissionId(state.selectedMissionId)
   };
+}
+
+function normalizeMissionId(value: unknown): MissionId | null {
+  return isMissionId(value) ? value : null;
 }
 
 function normalizeBuildMode(value: unknown): BuildMode {
@@ -74,7 +84,10 @@ export const useShipStore = create<ShipState>()(
       selectedPanelId: "node_plate",
       rotation: 0,
       scrap: 0,
+      selectedMissionId: null,
       setBuildMode: (mode) => set({ buildMode: mode }),
+      selectMission: (id) => set({ selectedMissionId: id }),
+      clearMission: () => set({ selectedMissionId: null }),
       loadPreset: (presetId) => {
         const preset = shipBuildPresets.find((item) => item.id === presetId);
         if (!preset) return;
@@ -278,6 +291,7 @@ export const useShipStore = create<ShipState>()(
     }),
     {
       name: "starframe-arena-ship",
+      skipHydration: true,
       version: CURRENT_SHIP_BUILD_SCHEMA_VERSION,
       migrate: (persisted) => {
         const state = persisted as Partial<ShipState>;
@@ -287,7 +301,8 @@ export const useShipStore = create<ShipState>()(
           buildMode: normalizeBuildMode(state.buildMode),
           selectedModuleId: state.selectedModuleId ?? "hull_block",
           selectedPanelId: state.selectedPanelId ?? "node_plate",
-          rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0
+          rotation: rotations.includes(state.rotation as Rotation) ? state.rotation as Rotation : 0,
+          selectedMissionId: normalizeMissionId(state.selectedMissionId)
         };
       },
       merge: (persisted, current) => normalizePersistedState(persisted, current)

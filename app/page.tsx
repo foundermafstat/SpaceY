@@ -9,8 +9,8 @@ export default function HomePage() {
           <HomeSceneCanvas />
           <div className="home-scene-overlay">
             <div className="home-scene-actions">
-              <UiLinkButton href="/battle" variant="secondary">
-                Battle
+              <UiLinkButton href="/hangar#contracts" variant="secondary">
+                Contracts
               </UiLinkButton>
               <UiLinkButton href="/hangar" variant="primary">
                 Hangar

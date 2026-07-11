@@ -1,8 +1,10 @@
 const baseUrl = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 
 const checks = [
-  { path: "/hangar", marker: "Test Battle" },
-  { path: "/battle", marker: "Survival Test" }
+  { path: "/", marker: "Contracts" },
+  { path: "/hangar", marker: "Mission Board" },
+  { path: "/battle", marker: "Loading Contract" },
+  { path: "/rewards", marker: "Open Pack" }
 ];
 
 for (const check of checks) {
