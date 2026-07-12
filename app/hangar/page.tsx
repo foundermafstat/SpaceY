@@ -8,9 +8,16 @@ import type {
 } from "@spacey/contracts";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { IconType } from "react-icons";
+import {
+  FiBox, FiBriefcase, FiCpu, FiCrosshair, FiEdit3, FiInfo, FiPackage,
+  FiPlay, FiShield, FiTarget, FiX, FiZap
+} from "react-icons/fi";
 import { MissionSelectionPanel } from "@/components/hangar/MissionSelectionPanel";
-import { WalletStrip } from "@/components/hangar/WalletStrip";
 import { UiButton } from "@/components/ui-kit/UiButton";
+import {
+  Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle
+} from "@/components/ui/drawer";
 import {
   ACTIVE_MISSION_ATTEMPT_STORAGE_KEY,
   abandonMissionAttempt,
@@ -30,6 +37,7 @@ export default function HangarPage() {
   const parts = build?.activeRevision.parts ?? [];
   const availableInventory = bootstrap.inventory.filter((item) => item.state === "available");
   const [section, setSection] = useState<HangarSection>("contracts");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null);
@@ -102,6 +110,7 @@ export default function HangarPage() {
 
   const showSection = useCallback((nextSection: HangarSection) => {
     setSection(nextSection);
+    setDrawerOpen(true);
     window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#${nextSection}`);
   }, []);
 
@@ -233,81 +242,30 @@ export default function HangarPage() {
   return (
     <main className="app-shell game-shell">
       <section className="mobile-frame game-frame game-frame--hangar">
-        <div className="screen hangar-screen server-hangar-screen">
-          <header className="topbar hangar-topbar">
-            <div className="brand">
+        <div className="screen server-hangar-screen mobile-hangar-shell">
+          <header className="mobile-hangar-hud">
+            <div className="mobile-hangar-identity">
+              <span className="mobile-hangar-kicker"><FiCpu aria-hidden="true" /> SERVER SHIP</span>
               <strong>{build?.activeRevision.name ?? "Server Ship"}</strong>
-              <span>{selectedMission ? selectedMission.name : `${bootstrap.profile.displayName} · No contract`}</span>
+              <small>{selectedMission?.name ?? "No contract selected"}</small>
             </div>
-            <div className="hangar-stat-strip">
-              <MiniStat label="REV" value={build ? String(build.activeRevision.revision) : "—"} />
-              <MiniStat label="PARTS" value={String(parts.length)} />
-              <MiniStat label="ITEMS" value={String(availableInventory.length)} />
-              <MiniStat label="CONTENT" value={bootstrap.contentRelease.version} />
+            <div className="mobile-hangar-wallet" aria-label="Wallet">
+              <span title="Credits"><FiZap aria-hidden="true" /><strong>{bootstrap.wallet.credits}</strong></span>
+              <span title="Scrap"><FiBox aria-hidden="true" /><strong>{bootstrap.wallet.scrap}</strong></span>
             </div>
-            <WalletStrip wallet={bootstrap.wallet} />
-            {bootstrap.capabilities.pvpMatchmaking ? (
-              <button
-                className="button primary small"
-                disabled={!build || matchmaking || Boolean(activeGameplay)}
-                onClick={() => void launchPvp()}
-                type="button"
-              >{matchmaking ? "Queueing…" : "Ranked PvP"}</button>
-            ) : null}
-            {selectedMission ? (
-              <button
-                className="button primary small"
-                disabled={!build || launchingMission || Boolean(activeGameplay)}
-                onClick={() => void launchPve()}
-                type="button"
-              >{launchingMission ? "Creating Attempt…" : "Launch Contract"}</button>
-            ) : (
-              <span className="button primary small" aria-disabled="true">Select Contract</span>
-            )}
+            <div className="mobile-hangar-tools" aria-label="Hangar panels">
+              <IconAction icon={FiBriefcase} label="Contracts" onClick={() => showSection("contracts")} />
+              <IconAction icon={FiEdit3} label="Build" onClick={() => showSection("build")} />
+              <IconAction badge={availableInventory.length} icon={FiPackage} label="Inventory" onClick={() => showSection("inventory")} />
+              <IconAction icon={FiInfo} label="Ship status" onClick={() => showSection("build")} />
+            </div>
           </header>
 
-          <section className="build-status-panel" aria-label="Server build status">
-            <StatusColumn title="Authority" items={["Server owned"]} tone="hint" />
-            <StatusColumn title="Revision" items={[build ? `Immutable v${build.activeRevision.revision}` : "No active build"]} tone={build ? "hint" : "danger"} />
-            <StatusColumn
-              title={saving ? "Saving" : "Validation"}
-              items={[serverMessage ?? (saving ? "Applying command…" : "Validated on server command and launch")]}
-              tone={serverMessageIsError ? "warn" : "hint"}
-            />
-            {activeGameplay ? (
-              <div className="status-column warn">
-                <strong>
-                  {activeGameplay.mode === "pve" ? "Active contract" : "Ranked PvP"}
-                  {" · "}
-                  {activeGameplay.mode === "pve"
-                    ? activeGameplay.attempt.status
-                    : activeGameplay.matchmakingTicket.status}
-                </strong>
-                <span>
-                  {activeGameplay.mode === "pve"
-                    ? activeGameplay.attempt.attemptId
-                    : activeGameplay.matchmakingTicket.match?.matchId ?? activeGameplay.matchmakingTicket.id}
-                </span>
-                <div className="footer-actions">
-                  <button
-                    className="button small"
-                    onClick={resumeActiveGameplay}
-                    type="button"
-                  >Resume</button>
-                  {activeGameplay.mode === "pve" || activeGameplay.matchmakingTicket.status === "queued" ? (
-                    <button
-                      className="button small"
-                      disabled={endingActiveGameplay}
-                      onClick={() => void endActiveGameplay()}
-                      type="button"
-                    >{endingActiveGameplay
-                        ? activeGameplay.mode === "pve" ? "Abandoning…" : "Cancelling…"
-                        : activeGameplay.mode === "pve" ? "Abandon" : "Cancel"}</button>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </section>
+          {serverMessage || saving ? (
+            <div className={`mobile-hangar-notice ${serverMessageIsError ? "error" : ""}`} role="status">
+              {serverMessage ?? "Applying server command…"}
+            </div>
+          ) : null}
 
           <section className="hangar-stage server-hangar-stage" aria-label="Server ship assembly grid">
             {build ? (
@@ -329,80 +287,104 @@ export default function HangarPage() {
               </div>
             )}
             <div className="server-hangar-watermark">
-              <span>SERVER AUTHORITATIVE</span>
-              <strong>{bootstrap.contentRelease.version}</strong>
+              <FiShield aria-hidden="true" />
+              <strong>v{build?.activeRevision.revision ?? "—"}</strong>
             </div>
           </section>
 
-          <nav className="hangar-bottom-nav" aria-label="Hangar controls">
-            <details className="module-drawer" open>
-              <summary>
-                <span>{section === "contracts" ? selectedMission?.name ?? "Mission Board" : section === "build" ? selectedPart?.definitionId ?? "Build Revision" : selectedInventory?.definitionId ?? "Inventory"}</span>
-                <span className="small">
-                  {section === "contracts"
-                    ? selectedMission?.objective.label ?? "Select a server contract"
-                    : section === "build"
-                      ? `Revision ${build?.activeRevision.revision ?? "—"} · ${parts.length} installed`
-                      : `${availableInventory.length} available server-owned items`}
-                </span>
-              </summary>
-              <div className="build-mode-tabs" role="tablist" aria-label="Hangar section">
-                <button aria-selected={section === "contracts"} className={section === "contracts" ? "selected" : ""} onClick={() => showSection("contracts")} role="tab">Contracts</button>
-                <button aria-selected={section === "build"} className={section === "build" ? "selected" : ""} onClick={() => showSection("build")} role="tab">Build</button>
-                <button aria-selected={section === "inventory"} className={section === "inventory" ? "selected" : ""} onClick={() => showSection("inventory")} role="tab">Inventory</button>
-              </div>
+          <footer className="mobile-hangar-actionbar">
+            {activeGameplay ? (
+              <>
+                <button className="mobile-hangar-launch" onClick={resumeActiveGameplay} type="button"><FiPlay aria-hidden="true" /> Resume</button>
+                {(activeGameplay.mode === "pve" || activeGameplay.matchmakingTicket.status === "queued") ? (
+                  <button className="mobile-hangar-secondary" disabled={endingActiveGameplay} onClick={() => void endActiveGameplay()} type="button">
+                    <FiX aria-hidden="true" /> {activeGameplay.mode === "pve" ? "Abandon" : "Cancel"}
+                  </button>
+                ) : null}
+              </>
+            ) : selectedMission ? (
+              <button className="mobile-hangar-launch" disabled={!build || launchingMission} onClick={() => void launchPve()} type="button">
+                <FiPlay aria-hidden="true" /> {launchingMission ? "Creating…" : "Launch"}
+              </button>
+            ) : (
+              <button className="mobile-hangar-launch" onClick={() => showSection("contracts")} type="button"><FiTarget aria-hidden="true" /> Select contract</button>
+            )}
+            {bootstrap.capabilities.pvpMatchmaking && !activeGameplay ? (
+              <button className="mobile-hangar-secondary" disabled={!build || matchmaking} onClick={() => void launchPvp()} type="button">
+                <FiCrosshair aria-hidden="true" /> {matchmaking ? "Queueing…" : "PvP"}
+              </button>
+            ) : null}
+          </footer>
 
-              {section === "contracts" ? (
-                <div className="mission-drawer-content">
+          <Drawer onOpenChange={setDrawerOpen} open={drawerOpen} swipeDirection="down">
+            <DrawerContent>
+              <DrawerHeader>
+                <div>
+                  <DrawerTitle>{section === "contracts" ? "Contracts" : section === "build" ? "Ship build" : "Inventory"}</DrawerTitle>
+                  <DrawerDescription>
+                    {section === "contracts"
+                      ? selectedMission?.objective.label ?? "Choose a server-authoritative mission"
+                      : section === "build"
+                        ? `Revision ${build?.activeRevision.revision ?? "—"} · ${parts.length} installed`
+                        : `${availableInventory.length} available · ${bootstrap.inventory.length} total`}
+                  </DrawerDescription>
+                </div>
+                <DrawerClose aria-label="Close panel" className="mobile-drawer-close"><FiX aria-hidden="true" /></DrawerClose>
+              </DrawerHeader>
+              <div className="mobile-drawer-tabs" role="tablist" aria-label="Hangar section">
+                <button aria-selected={section === "contracts"} onClick={() => setSection("contracts")} role="tab"><FiBriefcase aria-hidden="true" /><span>Contracts</span></button>
+                <button aria-selected={section === "build"} onClick={() => setSection("build")} role="tab"><FiEdit3 aria-hidden="true" /><span>Build</span></button>
+                <button aria-selected={section === "inventory"} onClick={() => setSection("inventory")} role="tab"><FiPackage aria-hidden="true" /><span>Inventory</span></button>
+              </div>
+              <div className="mobile-drawer-scroll">
+                {section === "contracts" ? (
                   <MissionSelectionPanel
                     missions={bootstrap.missions}
                     onClear={() => setSelectedMissionId(null)}
-                    onSelect={setSelectedMissionId}
-                    onShowBuild={() => showSection("build")}
+                    onSelect={(missionId) => { setSelectedMissionId(missionId); setDrawerOpen(false); }}
+                    onShowBuild={() => setSection("build")}
                     selectedMissionId={selectedMissionId}
                   />
-                </div>
-              ) : section === "build" ? (
-                <BuildCommandPanel
-                  buildName={buildName}
-                  disabled={saving || !build}
-                  onMove={moveSelectedPart}
-                  onNameChange={setBuildName}
-                  onRemove={() => {
-                    if (!selectedPart) return;
-                    void commit({ type: "remove", inventoryItemId: selectedPart.inventoryItemId }, "Part returned to inventory.")
-                      .then((saved) => {
+                ) : section === "build" ? (
+                  <BuildCommandPanel
+                    buildName={buildName}
+                    disabled={saving || !build}
+                    onMove={moveSelectedPart}
+                    onNameChange={setBuildName}
+                    onRemove={() => {
+                      if (!selectedPart) return;
+                      void commit({ type: "remove", inventoryItemId: selectedPart.inventoryItemId }, "Part returned to inventory.").then((saved) => {
                         if (saved) setSelectedPartId(null);
                       });
-                  }}
-                  onRename={() => {
-                    const name = buildName.trim();
-                    if (name) void commit({ type: "rename", name }, "Build name saved.");
-                  }}
-                  onRotate={() => {
-                    if (!selectedPart) return;
-                    void commit({
-                      type: "move",
-                      inventoryItemId: selectedPart.inventoryItemId,
-                      gridX: selectedPart.gridX,
-                      gridY: selectedPart.gridY,
-                      rotation: nextRotation(selectedPart.rotation)
-                    }, "Part rotation saved.");
-                  }}
-                  selectedPart={selectedPart}
-                />
-              ) : (
-                <InventoryPalette
-                  inventory={bootstrap.inventory}
-                  onSelect={setSelectedInventoryId}
-                  selectedId={selectedInventoryId}
-                />
-              )}
-            </details>
-          </nav>
+                    }}
+                    onRename={() => {
+                      const name = buildName.trim();
+                      if (name) void commit({ type: "rename", name }, "Build name saved.");
+                    }}
+                    onRotate={() => {
+                      if (!selectedPart) return;
+                      void commit({ type: "move", inventoryItemId: selectedPart.inventoryItemId, gridX: selectedPart.gridX, gridY: selectedPart.gridY, rotation: nextRotation(selectedPart.rotation) }, "Part rotation saved.");
+                    }}
+                    selectedPart={selectedPart}
+                  />
+                ) : (
+                  <InventoryPalette inventory={bootstrap.inventory} onSelect={setSelectedInventoryId} selectedId={selectedInventoryId} />
+                )}
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
       </section>
     </main>
+  );
+}
+
+function IconAction({ icon: Icon, label, onClick, badge }: { icon: IconType; label: string; onClick: () => void; badge?: number }) {
+  return (
+    <button aria-label={label} className="mobile-hangar-icon-action" onClick={onClick} title={label} type="button">
+      <Icon aria-hidden="true" />
+      {typeof badge === "number" && badge > 0 ? <span>{badge > 99 ? "99+" : badge}</span> : null}
+    </button>
   );
 }
 
@@ -549,19 +531,6 @@ function InventoryPalette({
       ))}
     </div>
   );
-}
-
-function StatusColumn({ title, items, tone }: { title: string; items: string[]; tone: "danger" | "warn" | "hint" }) {
-  return (
-    <div className={`status-column ${tone}`}>
-      <strong>{title}</strong>
-      {items.map((item) => <span key={item}>{item}</span>)}
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: string }) {
-  return <div><span>{label}</span><strong>{value}</strong></div>;
 }
 
 function getGridBounds(parts: ShipBuildPartDto[]) {
