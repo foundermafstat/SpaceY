@@ -383,73 +383,79 @@ Drawer открывается снизу поверх ангара после н
 Скопируйте следующий блок целиком в генератор интерфейсов:
 
 ```text
-Design a production-quality portrait mobile game interface for SpaceY, a serious sci-fi modular spaceship construction and contract game running as a Telegram Mini App.
+Create several distinct high-fidelity visual concepts for the mobile game interface of SpaceY. Do not follow a predetermined layout. Explore original compositions and interaction patterns, and let each concept propose its own hierarchy, positioning, navigation and way of revealing secondary information.
 
-Canvas: 390 x 844 px, portrait mobile screen, approximately 19.5:9. Also prepare the system so it can adapt to 430 x 932 px portrait and 932 x 430 px landscape. Respect iOS and Android safe areas, Telegram top controls, camera cutouts, Dynamic Island and bottom home indicator. No interactive element may overlap system UI.
+FORMAT
+Portrait mobile game screen, 390 x 844 px, approximately 19.5:9. The interface runs inside a Telegram Mini App and must visually respect mobile safe areas. The result should clearly look like a real mobile game rather than a desktop website.
 
-SETTING AND MOOD
-The player is inside a dark industrial orbital shipyard. The background contains restrained metal panels, service rails, cables, maintenance machinery and subtle cyan work lights. The central area is darker and contains a technical construction grid. The visual direction is premium tactical science fiction: dark glass, anodized metal, holographic cyan edges, restrained violet accents, military engineering terminal, serious and sophisticated rather than cartoonish or casual. The interface must feel native to a space game, not like a SaaS dashboard or website.
+GAME SETTING
+SpaceY is a serious science-fiction game about constructing modular spacecraft, managing ship parts and completing contracts. The player is standing inside a large industrial orbital shipyard surrounded by dark metal structures, service rails, mechanical equipment, cables, docking systems, repair machinery and distant space. The active ship is assembled from separate functional modules on a technical construction field.
 
-CORE COMPOSITION
-Keep the spaceship construction field as the dominant visual area, occupying roughly 68–76 percent of the screen height. Use only three persistent layers: a compact top HUD, a large central ship viewport, and a compact bottom action bar. Move secondary content into a swipeable bottom Drawer. Keep the center and lower-middle playfield visually clear. Never display all panels at once.
+The atmosphere should feel like premium tactical science fiction: orbital engineering, military spacecraft systems, industrial technology, precise server-controlled machinery and dangerous deep-space missions. The mood is serious, immersive, intelligent and technologically advanced, not cartoonish or casual.
 
-TOP HUD
-Create a compact dark translucent HUD with a thin cyan technical border. Show a tiny processor/server icon with the label SERVER SHIP, the active ship name Contract Breaker, and one short secondary line showing the selected contract Convoy Guard or No contract selected. All text must truncate safely.
+AVAILABLE INTERFACE ELEMENTS
+The interface may use and arrange the following elements in any effective way:
 
-On the right show only two compact wallet chips: a lightning/credit icon with the Credits amount and a metal crate/scrap icon with the Scrap amount. Do not permanently show Alloy or Data Shards.
+- active modular spaceship as the main game object;
+- technical ship construction grid or assembly field;
+- ship name, for example Contract Breaker;
+- selected contract or mission status;
+- player currencies: Credits, Scrap, Alloy and Data Shards;
+- Contracts control and mission list;
+- Build or Edit Ship control;
+- Inventory control and item list;
+- Ship Info or technical status control;
+- primary Launch Contract action;
+- secondary Ranked PvP action;
+- server validation, saving, loading, warning and error states;
+- ship revision and installed module count;
+- module details, durability, category, position and orientation;
+- controls for moving, rotating, installing and removing modules;
+- mission cards with risk, objective, duration and reward preview;
+- inventory cards with rarity, durability and state;
+- temporary panels, drawers, sheets, floating controls, contextual menus, radial menus, tabs, overlays or any other mobile-game navigation pattern proposed by the model.
 
-Below or beside the identity area place four 44 x 44 px icon-only touch controls: Contracts with a briefcase/mission icon, Build with an edit/schematic icon, Inventory with a crate icon and a small numeric badge, and Ship Info with an info/shield icon. Use accessible, recognizable outline icons with consistent stroke weight.
+The modular ship may contain a core, reactor, hull blocks, blaster, autocannon, shield, main engine, ion engine and maneuver thruster. Different module categories should be visually distinguishable.
 
-SHIP VIEWPORT
-The central viewport shows a modular spaceship centered on a subtle coordinate grid. Empty cells are very dark and low contrast. Installed module tiles use category colors: cyan steel for structure/core/hull, crimson for weapons, amber for engines/thrusters, violet-blue for reactor/power/shield. Each tile contains a large category icon, a short module name or abbreviation, and a small orientation arrow. Never allow long identifiers to overflow.
+BASE COLOR PALETTE
 
-Build the visible Contract Breaker ship from ten connected modules: starter core, small reactor, two hull blocks, starter blaster, autocannon, starter shield, starter engine, ion engine and maneuver thruster. Highlight one selected module with a sharp cyan border and subtle glow. Add a tiny corner status with a shield icon, revision v1 and a green server-validated dot. Do not show a long content version watermark.
+- near-black deep-space background: #030610 and #050914;
+- dark blue-black interface surfaces: approximately #091122 with translucent variations;
+- primary cyan: #49D7FF;
+- bright cyan highlight: #7DF8FF;
+- restrained violet accent: #9B5CFF;
+- success and valid state: #53E7A4;
+- engine, energy or warning amber: #FFC857;
+- weapon, damage or danger red: #FF596A;
+- primary text: #EDF7FF;
+- secondary text: #8FA4B8.
 
-BOTTOM ACTION BAR
-Create one dominant cyan-to-violet gradient action button. If no mission is selected it shows a target icon and Select contract. If a mission is selected it shows a play icon and Launch. Add one smaller dark secondary button for PvP with a crosshair icon. Touch targets must be at least 48 px high. Launch must have clearly stronger visual hierarchy than PvP.
+These colors are a foundation, not a rigid rule. Each concept may vary their proportions, brightness, materials and lighting while remaining recognizably part of SpaceY.
 
-SERVER FEEDBACK
-Saving, validation and error feedback appears only as a temporary compact one-line status strip, not as three permanent information cards. Use cyan/green for success, amber for warning and red for error.
+VISUAL STYLE
 
-DRAWER SYSTEM
-Design a shadcn/Base UI style bottom Drawer opened by the icon triggers. It uses a dark nearly opaque sci-fi panel, dimmed backdrop, swipe handle, clear close X button, mandatory title and short description, internal vertical scrolling and a maximum height of about 80–82 percent of the viewport. It respects safe areas and blocks ship-grid interaction while open. Include three compact tabs: Contracts, Build and Inventory. On very narrow screens the tabs may show icons only.
+- dark industrial orbital sci-fi;
+- premium mobile game UI;
+- dark glass, anodized metal and layered technical surfaces;
+- holographic cyan edges and subtle energy illumination;
+- thin engineering lines, restrained grid patterns and precise iconography;
+- controlled glow rather than excessive neon bloom;
+- strong contrast and readable information on a real phone;
+- condensed futuristic typography for major labels combined with a highly readable font for values;
+- coherent outline or technical-symbol icon system;
+- tactile touch controls suitable for thumbs;
+- visual depth created by transparency, lighting, material layers and the orbital hangar behind the interface.
 
-CONTRACTS DRAWER STATE
-Show compact mission cards for Starter Scout, Convoy Guard, Salvage Sweep and Ranked Duel. Each card includes a risk badge, mission-type icon, short title, one-line objective, duration, compact Credits/Scrap reward preview, server-validation indicator and View briefing action. Selected mission uses a cyan border and checkmark. Do not place mission cards on the default ship screen.
+CREATIVE FREEDOM
+Do not assume a top HUD, bottom navigation, drawer placement, fixed card grid or any existing SpaceY screen composition. Invent the final interface structure. The spacecraft should remain visually important, but decide independently how much space it receives and how the user accesses contracts, inventory and build controls.
 
-BUILD DRAWER STATE
-Show ship name, revision, installed module count and a small server-validated indicator. Include a compact rename field with icon save action. When a module is selected show its icon, short name, durability, coordinate, orientation, a directional movement pad, rotate action and a visually separated return-to-inventory action. When no module is selected show the short instruction Tap a ship module to edit.
+Generate 4 to 6 meaningfully different design directions, not minor color variations. Explore different concepts such as an integrated cockpit terminal, holographic orbital workbench, tactical engineering console, minimal cinematic hangar HUD, radial ship-control interface, or layered industrial command system. Keep the same game setting, available elements and base palette across all variants, while changing composition, hierarchy and navigation substantially.
 
-INVENTORY DRAWER STATE
-Show available and total item counts. Use a compact two-column item grid. Each inventory item has a large category icon, truncated short name, rarity badge, durability indicator and state: available, installed, damaged or destroyed. Installed items are disabled. Damaged items use amber or red damage treatment. Available items can be selected for installation. On 360 px screens switch to one column.
-
-LANDSCAPE ADAPTATION
-For 932 x 430 px landscape, use one compact horizontal HUD at the top, a large ship viewport in the left/center area and a narrow vertical action bar on the right. Open secondary content as a bottom Drawer or right-side Drawer. Never use three permanently expanded columns.
-
-COLOR SYSTEM
-Background #030610 and #050914. Panels rgba(9,17,34,0.92). Primary cyan #49D7FF and highlight #7DF8FF. Violet accent #9B5CFF. Success #53E7A4. Engine/warning amber #FFC857. Danger/weapon red #FF596A. Main text #EDF7FF. Muted text #8FA4B8.
-
-TYPOGRAPHY AND LEGIBILITY
-Use a narrow condensed sci-fi display font for headings and a highly readable sans-serif for values and controls. Use tabular numeric figures for currency. Important labels and buttons must remain readable on a real phone. Avoid ultra-thin typography. All long text must truncate or wrap within its container.
-
-INTERACTION STATES
-Represent default, pressed, selected, disabled, loading, server validated, warning, error and damaged states. Motion is restrained: smooth Drawer swipe, short cyan success pulse, subtle selected-module glow and one strong launch transition. Support reduced motion.
-
-AVOID
-No SaaS dashboard layout, no permanent REV/PARTS/ITEMS/CONTENT text row, no long content version over the ship, no four permanent currency boxes, no permanent Authority/Revision/Validation cards, no always-open mission/build/inventory panels, no page-level horizontal scrolling, no content under Telegram system controls, no tiny touch targets, no overflowing labels, no excessive neon bloom, no emoji icon mixing, and no modal that unnecessarily covers the ship.
-
-Output polished high-fidelity mobile game UI mockups with consistent components across all Drawer states. The default screen must immediately read as a playable spaceship hangar with the ship as the hero, not as a data-heavy web application.
+The purpose is concept exploration. Prioritize original, production-quality mobile game interface ideas and give the design model freedom to surprise the viewer.
 ```
 
-## 18. Рекомендуемый набор изображений
+## 18. Рекомендуемый результат генерации
 
-Для дальнейшей разработки сгенерировать минимум шесть изображений с одинаковой дизайн-системой:
+Запросить **4–6 разных концепций** основного мобильного экрана ангара в размере 390 × 844 px. Каждый вариант должен предлагать самостоятельную композицию и механику навигации.
 
-1. `hangar-default-390x844.png`;
-2. `hangar-contract-selected-390x844.png`;
-3. `hangar-contracts-drawer-390x844.png`;
-4. `hangar-build-drawer-390x844.png`;
-5. `hangar-inventory-drawer-390x844.png`;
-6. `hangar-landscape-932x430.png`.
-
-Все изображения должны показывать один и тот же корабль, одинаковую палитру, одинаковые размеры компонентов и одинаковую систему иконок.
+Это должны быть не цветовые вариации одного макета, а существенно разные дизайн-направления. После выбора лучшей концепции можно отдельно генерировать её детальные состояния — Contracts, Build, Inventory и landscape.
