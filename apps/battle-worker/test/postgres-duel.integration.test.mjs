@@ -4,7 +4,7 @@ import pg from "pg";
 
 import { createUuidV7 } from "@spacey/db";
 import { DuelSimulation } from "@spacey/simulation";
-import { PostgresBattleFinalizer } from "../src/postgres-finalizer.ts";
+import { hashSimulationConfig, PostgresBattleFinalizer } from "../src/postgres-finalizer.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -172,6 +172,12 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
         },
       ],
     };
+    await client.query(
+      `UPDATE battle_sessions
+          SET simulation_config = $2::jsonb, simulation_config_hash = $3, updated_at = NOW()
+        WHERE id = $1`,
+      [ids.session, JSON.stringify(simulationConfig), hashSimulationConfig(simulationConfig)],
+    );
     const simulation = new DuelSimulation(simulationConfig);
     assert.deepEqual(simulation.enqueueInput(ids.alphaUser, {
       seq: 1,

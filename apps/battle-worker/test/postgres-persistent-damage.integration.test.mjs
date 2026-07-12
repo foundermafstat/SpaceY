@@ -4,7 +4,7 @@ import pg from "pg";
 
 import { createUuidV7 } from "@spacey/db";
 import { MissionSimulation } from "@spacey/simulation";
-import { PostgresBattleFinalizer } from "../src/postgres-finalizer.ts";
+import { hashSimulationConfig, PostgresBattleFinalizer } from "../src/postgres-finalizer.ts";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 
@@ -149,6 +149,12 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
         attackCooldownTicks: 30,
       },
     };
+    await client.query(
+      `UPDATE battle_sessions
+          SET simulation_config = $2::jsonb, simulation_config_hash = $3, updated_at = NOW()
+        WHERE id = $1`,
+      [ids.session, JSON.stringify(simulationConfig), hashSimulationConfig(simulationConfig)],
+    );
     const simulation = new MissionSimulation(simulationConfig);
     simulation.advanceTicks(30);
     const outcome = simulation.forceForfeit();
