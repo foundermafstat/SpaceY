@@ -20,6 +20,7 @@
     "typecheck": "pnpm run generate && tsc -p tsconfig.json --noEmit",
     "test": "tsx --test src/*.test.ts",
     "db:seed": "tsx prisma/seed.ts",
+    "db:provision-dev-fleet": "tsx prisma/provision-dev-fleet.ts",
     "generate": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma generate --config prisma.config.ts",
     "validate": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma validate --config prisma.config.ts",
     "format": "DATABASE_URL=postgresql://placeholder:placeholder@127.0.0.1:1/spacey prisma format --config prisma.config.ts",
