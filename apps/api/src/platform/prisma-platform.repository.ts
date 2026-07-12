@@ -3182,7 +3182,9 @@ export class PrismaPlatformRepository implements PlatformRepository, OnModuleDes
 
   private async assertBuildLaunchable(tx: TransactionClient, buildRevisionId: string): Promise<void> {
     try {
-      await tx.$queryRaw`SELECT spacey_assert_owned_build_launchable(${buildRevisionId}::uuid)`;
+      // PostgreSQL returns `void`; cast it before Prisma attempts to decode the
+      // result, while preserving the function's locking and validation errors.
+      await tx.$queryRaw`SELECT spacey_assert_owned_build_launchable(${buildRevisionId}::uuid)::text AS result`;
     } catch (error) {
       if (this.postgresCode(error) === "23514") {
         throw new ApiError(
