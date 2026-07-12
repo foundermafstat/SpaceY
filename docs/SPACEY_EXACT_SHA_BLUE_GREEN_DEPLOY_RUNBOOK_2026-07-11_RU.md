@@ -1,7 +1,36 @@
 # SpaceY: exact-SHA blue/green production runbook
 
 Дата: 2026-07-11  
-Статус: deployment scaffold; до staging rehearsal не является доказательством production readiness
+Статус: исполняемый conditional workflow; production разрешён только после `DEPLOY_READY`
+
+## 0. Авторизация `/deploy`
+
+Legacy `deploy.sh`, PM2 и web-only rollout запрещены. `/deploy` не собирает images локально,
+не коммитит и не пушит код: он принимает только уже опубликованный CI release с неизменяемыми
+digest. До подключения к production host необходимо выполнить локальный gate:
+
+```bash
+chmod 0600 /path/to/readiness-evidence.json
+/Users/irine/.codex/skills/deploy/scripts/deploy_spacey.sh check \
+  --sha "<full-40-character-git-sha>" \
+  --manifest /path/to/spacey-release-manifest.json \
+  --readiness /path/to/readiness-evidence.json \
+  --repository foundermafstat/SpaceY \
+  --workspace /Users/irine/Desktop/SpaceY
+```
+
+Gate проверяет SHA в `origin/main`, структуру и GitHub attestation manifest, успешные
+`platform-ci`/`release-images` для этого SHA, совпадение workflow run IDs и свежий staging
+readiness record. Формат readiness record задан в
+`infra/deploy/readiness-evidence.example.json`; проверка выполняется
+`infra/deploy/validate-readiness-evidence.mjs`. Каждый из 12 gates должен иметь `true` и SHA-256
+digest отдельного доказательства; placeholder digest запрещён. Record действует семь дней,
+связан с SHA-256 конкретного manifest и хранится с mode `0600`.
+
+Только вывод `DEPLOY_READY` разрешает продолжить разделы ниже. Любой `DEPLOY_BLOCKED` или сбой
+последующего шага останавливает rollout. SSH допускается только через настроенный ключ/agent с
+`BatchMode=yes` и `StrictHostKeyChecking=yes`; пароль, DB URL или token нельзя передавать в
+командной строке, чате, Git или deployment report.
 
 ## 1. Предусловия
 
@@ -28,6 +57,18 @@ Production PostgreSQL является частью `infra/compose.production-da
 Текущий общий Dockerfile сохраняет весь установленный monorepo и dev dependencies в runtime stage. Это известный остаточный image-bloat риск, а не нарушение изоляции runtime: Compose запускает непривилегированного пользователя, read-only rootfs, drop-all capabilities и exact service filter. Переход на проверенный per-service prune/standalone layout выполняется отдельным hardening change после runtime regression tests.
 
 ## 2. Первичная подготовка host
+
+Перед назначением slot ports сохранить фактическую карту слушателей и убедиться, что порты
+выбранного неактивного slot свободны:
+
+```bash
+ss -ltnp
+docker ps --format '{{.Names}}\t{{.Ports}}'
+readlink -f /etc/spacey/nginx/active
+```
+
+Если порт занят не соответствующим SpaceY slot, rollout блокируется: чужой процесс не
+останавливается автоматически и порт не переназначается без изменения проверенного env/config.
 
 ```bash
 install -d -m 0700 /etc/spacey /etc/spacey/valkey /etc/spacey/postgres

@@ -534,6 +534,7 @@ paths:
     post:
       tags: [Developer]
       operationId: revokeDeveloperApiKey
+      summary: Revoke an API key immediately
       security: [{ playerAccess: [] }]
       parameters:
         - { $ref: "#/components/parameters/ApiClientId" }
@@ -581,6 +582,7 @@ paths:
     post:
       tags: [Developer]
       operationId: revokeDeveloperWebhook
+      summary: Revoke a webhook subscription immediately
       security: [{ playerAccess: [] }]
       parameters:
         - { $ref: "#/components/parameters/ApiClientId" }
