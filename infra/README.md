@@ -2,8 +2,35 @@
 
 ## Local integration stack
 
-The local Compose file builds the current workspace and starts game-web, API, battle worker,
-admin UI/API, bot, jobs, PostgreSQL, Valkey, and MinIO replay storage.
+For fast visual work on the real Hangar components, no Telegram, backend, or database is needed:
+
+```bash
+pnpm dev:ui
+# Open http://localhost:3000 (it redirects to /dev/ui)
+```
+
+The sandbox provides mobile viewport presets and server-state fixtures. Its preview runs in an
+iframe with the real `HangarSurface`, Drawer and production CSS; only the session/data provider is
+replaced. Therefore UI edits are shared with the Telegram Mini App rather than duplicated. The
+`/dev/ui` route returns 404 in production, and fixture actions never call the API.
+
+For an end-to-end local player flow, one command creates untracked random local credentials,
+starts PostgreSQL, Valkey, MinIO, API and battle worker, runs migrations/content seed, then starts
+the local Next.js client with development browser authentication:
+
+```bash
+pnpm dev:stack
+# Open http://localhost:3000
+```
+
+On macOS, `dev:stack` starts Docker Desktop automatically when it is installed but not running,
+then waits up to 60 seconds for the engine. On other systems, start the Docker daemon first.
+
+Containers remain available between frontend restarts. Stop them with `pnpm dev:stack:down`.
+The generated credentials live only in `.spacey/local-compose.env` (mode 0600, Git-ignored).
+
+The underlying Compose file can still start the complete workspace, including game-web, admin,
+bot and jobs, when explicitly requested:
 
 ```bash
 cp infra/env/compose.local.env.example /tmp/spacey-compose.env

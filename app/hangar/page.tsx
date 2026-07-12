@@ -28,16 +28,32 @@ import {
 } from "@/game/server/api-client";
 import { useServerSession } from "@/game/server/session-context";
 
-type HangarSection = "contracts" | "build" | "inventory";
+export type HangarSection = "contracts" | "build" | "inventory";
 
 export default function HangarPage() {
+  return <HangarSurface />;
+}
+
+export function HangarSurface({
+  sandbox = false,
+  initialSection = "contracts",
+  initialDrawerOpen = false,
+  initialServerMessage = null,
+  initialServerMessageIsError = false,
+}: {
+  sandbox?: boolean;
+  initialSection?: HangarSection;
+  initialDrawerOpen?: boolean;
+  initialServerMessage?: string | null;
+  initialServerMessageIsError?: boolean;
+}) {
   const router = useRouter();
   const { bootstrap, mutateActiveBuild, refreshBootstrap } = useServerSession();
   const build = bootstrap.activeBuild;
   const parts = build?.activeRevision.parts ?? [];
   const availableInventory = bootstrap.inventory.filter((item) => item.state === "available");
-  const [section, setSection] = useState<HangarSection>("contracts");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [section, setSection] = useState<HangarSection>(initialSection);
+  const [drawerOpen, setDrawerOpen] = useState(initialDrawerOpen);
   const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null);
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null);
@@ -47,8 +63,8 @@ export default function HangarPage() {
   const [matchmaking, setMatchmaking] = useState(false);
   const [activeGameplay, setActiveGameplay] = useState<ActiveGameplayDto | null>(bootstrap.activeGameplay[0] ?? null);
   const [endingActiveGameplay, setEndingActiveGameplay] = useState(false);
-  const [serverMessage, setServerMessage] = useState<string | null>(null);
-  const [serverMessageIsError, setServerMessageIsError] = useState(false);
+  const [serverMessage, setServerMessage] = useState<string | null>(initialServerMessage);
+  const [serverMessageIsError, setServerMessageIsError] = useState(initialServerMessageIsError);
   const missionLaunchRef = useRef<{ key: string; idempotencyKey: string } | null>(null);
 
   const selectedMission = bootstrap.missions.find((mission) => mission.id === selectedMissionId) ?? null;
@@ -172,6 +188,11 @@ export default function HangarPage() {
     setLaunchingMission(true);
     setServerMessage(null);
     setServerMessageIsError(false);
+    if (sandbox) {
+      setServerMessage(`Fixture launch preview: ${selectedMission.name}. No server request was sent.`);
+      setLaunchingMission(false);
+      return;
+    }
     try {
       const attempt = await createMissionAttempt({
         missionId: selectedMission.id,
@@ -185,7 +206,7 @@ export default function HangarPage() {
       setServerMessage(error instanceof Error ? error.message : "Mission attempt could not be created.");
       setLaunchingMission(false);
     }
-  }, [activeGameplay, build?.activeRevision.id, launchingMission, router, selectedMission]);
+  }, [activeGameplay, build?.activeRevision.id, launchingMission, router, sandbox, selectedMission]);
 
   const endActiveGameplay = useCallback(async () => {
     if (!activeGameplay || endingActiveGameplay) return;
@@ -225,6 +246,11 @@ export default function HangarPage() {
     setMatchmaking(true);
     setServerMessage(null);
     setServerMessageIsError(false);
+    if (sandbox) {
+      setServerMessage("Fixture PvP queue preview. No server request was sent.");
+      setMatchmaking(false);
+      return;
+    }
     try {
       const ticket = await createMatchmakingTicket({
         queue: "ranked-eu",
@@ -237,7 +263,7 @@ export default function HangarPage() {
       setServerMessage(error instanceof Error ? error.message : "PvP matchmaking could not be started.");
       setMatchmaking(false);
     }
-  }, [activeGameplay, build?.activeRevision.id, matchmaking, router]);
+  }, [activeGameplay, build?.activeRevision.id, matchmaking, router, sandbox]);
 
   return (
     <main className="app-shell game-shell">

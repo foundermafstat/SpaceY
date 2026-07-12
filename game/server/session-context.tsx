@@ -35,16 +35,15 @@ export type TelegramLaunchContext = {
 
 type SessionStatus = "starting" | "ready" | "blocked" | "error";
 
-type ServerSessionValue = {
+export type ServerSessionValue = {
   bootstrap: BootstrapResponseDto;
   refreshBootstrap: () => Promise<BootstrapResponseDto>;
   mutateActiveBuild: (commands: ShipBuildCommandDto[]) => Promise<ShipBuildDto>;
 };
 
-const ServerSessionContext = createContext<ServerSessionValue | null>(null);
+export const ServerSessionContext = createContext<ServerSessionValue | null>(null);
 
-const developmentBrowserAuthEnabled = process.env.NODE_ENV !== "production"
-  && process.env.NEXT_PUBLIC_ALLOW_BROWSER_AUTH === "true";
+const developmentBrowserAuthEnabled = process.env.NEXT_PUBLIC_ALLOW_BROWSER_AUTH === "true";
 
 export function ServerSessionProvider({
   children,

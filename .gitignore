@@ -21,3 +21,4 @@ tmp/
 # system/editor
 .DS_Store
 *.log
+.spacey/

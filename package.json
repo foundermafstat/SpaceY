@@ -4,7 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "dev:stack": "turbo run dev --parallel",
+    "dev:ui": "SPACEY_UI_SANDBOX=true NEXT_PUBLIC_ALLOW_BROWSER_AUTH=false next dev",
+    "dev:services": "turbo run dev --parallel",
+    "dev:stack": "bash infra/dev-stack.sh",
+    "dev:stack:down": "docker compose --env-file .spacey/local-compose.env -f infra/compose.local.yml down",
     "build": "next build",
     "build:all": "turbo run build && pnpm run build",
     "start": "next start",

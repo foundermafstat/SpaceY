@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { ServerBoundaryStatus } from "@/components/server/ServerBoundaryStatus";
 import {
   ServerSessionProvider,
@@ -90,11 +91,14 @@ async function configureTelegramPresentation(
 }
 
 export function TelegramMiniAppRuntime({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const developmentUiRoute = process.env.NODE_ENV !== "production" && pathname.startsWith("/dev/ui");
   const [launch, setLaunch] = useState<TelegramLaunchContext | null>(null);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    if (developmentUiRoute) return;
     let active = true;
     runtimePromise ??= initializeTelegramMiniApp();
     void runtimePromise.then((context) => {
@@ -108,7 +112,9 @@ export function TelegramMiniAppRuntime({ children }: { children: React.ReactNode
     return () => {
       active = false;
     };
-  }, [retryKey]);
+  }, [developmentUiRoute, retryKey]);
+
+  if (developmentUiRoute) return children;
 
   if (runtimeError) {
     return (
