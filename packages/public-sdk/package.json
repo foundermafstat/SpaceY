@@ -34,7 +34,7 @@
     "clean": "node scripts/clean.mjs",
     "build": "pnpm run check:generated && pnpm run clean && tsc -p tsconfig.json",
     "typecheck": "pnpm run check:generated && tsc -p tsconfig.json --noEmit && tsc -p tsconfig.contract.json",
-    "test": "tsc -p tsconfig.contract.json && node --test test/*.test.mjs",
+    "test": "pnpm run build && tsc -p tsconfig.contract.json && node --test test/*.test.mjs",
     "prepack": "pnpm run build && pnpm run test"
   },
   "dependencies": {
