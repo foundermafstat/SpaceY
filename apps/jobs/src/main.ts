@@ -15,6 +15,13 @@ import {
 import { S3PrivacyExportObjectStore } from "./s3-privacy-export-store.js";
 import type { DomainEventHandler } from "./ports.js";
 import { FetchWebhookTransport, PostgresWebhookRepository, WebhookFanoutHandler } from "./webhook-handler.js";
+import {
+  PostgresStaleAttemptMaintenance,
+  StaleAttemptCleanupHandler,
+  StaleAttemptMaintenanceScheduler,
+  STALE_ATTEMPT_EVENT_TYPE,
+  ValkeyStaleAttemptRouteStore,
+} from "./stale-attempt-maintenance.js";
 
 async function bootstrap() {
   const config = loadJobsConfig();
@@ -31,12 +38,16 @@ async function bootstrap() {
   const privacyRepository = new PostgresPrivacyWorkflowRepository(pool);
   const retentionMaintenance = new PostgresRetentionMaintenance(pool, config.retentionBatchSize);
   const retentionScheduler = new RetentionMaintenanceScheduler(retentionMaintenance, config.retentionIntervalMs);
+  const staleAttemptMaintenance = new PostgresStaleAttemptMaintenance(pool, config.staleAttemptSweepBatchSize);
+  const staleAttemptScheduler = new StaleAttemptMaintenanceScheduler(staleAttemptMaintenance, config.staleAttemptSweepIntervalMs);
+  const staleAttemptRouteStore = new ValkeyStaleAttemptRouteStore(connection);
   const privacyObjectStore = config.privacyExportStorage
     ? new S3PrivacyExportObjectStore(config.privacyExportStorage)
     : new UnconfiguredPrivacyExportObjectStore();
   const handlers = new Map<string, DomainEventHandler>([
     ["privacy.export.requested", new PrivacyExportHandler(privacyRepository, privacyObjectStore)],
     ["privacy.delete.requested", new PrivacyDeleteHandler(privacyRepository)],
+    [STALE_ATTEMPT_EVENT_TYPE, new StaleAttemptCleanupHandler(staleAttemptRouteStore)],
     ["*", webhookHandler],
   ]);
   const processor = new IdempotentJobProcessor(idempotency, handlers, config.queueName, 120_000);
@@ -48,8 +59,12 @@ async function bootstrap() {
     dispatcher,
     worker,
     250,
-    [privacyObjectStore, retentionMaintenance],
-    retentionScheduler,
+    [privacyObjectStore, retentionMaintenance, staleAttemptMaintenance],
+    {
+      start: () => { retentionScheduler.start(); staleAttemptScheduler.start(); },
+      stop: async () => { await Promise.all([retentionScheduler.stop(), staleAttemptScheduler.stop()]); },
+    },
+    [staleAttemptRouteStore],
   );
 
   await runtime.startHealthServer(config.healthPort, config.healthHost);

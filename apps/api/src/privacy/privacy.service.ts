@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import type { CreatePrivacyRequestDto, UpdatePrivacyPreferencesRequestDto } from "@spacey/contracts";
 import { ApiError } from "../common/api-error.js";
+import { BattleTicketStore } from "../battle/battle-ticket.store.js";
 import { PLATFORM_REPOSITORY, type PlatformRepository } from "../platform/platform.repository.js";
 import {
   PRIVACY_EXPORT_DOWNLOAD_SIGNER,
@@ -12,6 +13,7 @@ export class PrivacyService {
   constructor(
     @Inject(PLATFORM_REPOSITORY) private readonly repository: PlatformRepository,
     @Inject(PRIVACY_EXPORT_DOWNLOAD_SIGNER) private readonly downloadSigner: PrivacyExportDownloadSigner,
+    private readonly battleTickets: BattleTicketStore,
   ) {}
 
   async getPreferences(userId: string) {
@@ -24,8 +26,10 @@ export class PrivacyService {
     return this.repository.updatePrivacyPreferences(userId, input);
   }
 
-  createRequest(userId: string, input: CreatePrivacyRequestDto) {
-    return this.repository.createPrivacyRequest(userId, input);
+  async createRequest(userId: string, input: CreatePrivacyRequestDto) {
+    const request = await this.repository.createPrivacyRequest(userId, input);
+    if (input.type === "delete") await this.battleTickets.revokeUser(userId);
+    return request;
   }
 
   async getRequest(userId: string, requestId: string) {

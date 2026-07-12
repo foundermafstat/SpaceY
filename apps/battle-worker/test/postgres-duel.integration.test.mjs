@@ -120,7 +120,7 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
     const materialized = await client.query(
       `SELECT * FROM spacey_materialize_pvp_match(
         $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5::uuid, $6::uuid, $7::uuid,
-        $8::uuid, $9::uuid, 2::bigint, '1.0.0'::text
+        $8::uuid, $9::uuid, 2::bigint, '2.0.0'::text
       )`,
       [
         ids.alphaTicket, ids.betaTicket, ids.match, ids.alphaParticipant, ids.betaParticipant,
@@ -146,7 +146,7 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
       sessionId: ids.session,
       seed: 2,
       contentVersion: `pvp-integration-${ids.release}`,
-      simulationVersion: "1.0.0",
+      simulationVersion: "2.0.0",
       durationSeconds: 90,
       arenaWidthUnits: 600,
       arenaHeightUnits: 300,
@@ -156,14 +156,14 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
           userId: ids.alphaUser,
           side: "alpha",
           shipBuildRevisionId: ids.alphaRevision,
-          buildStats: buildStats(),
+          buildStats: buildStats(ids.alphaItem),
         },
         {
           participantId: ids.betaParticipant,
           userId: ids.betaUser,
           side: "beta",
           shipBuildRevisionId: ids.betaRevision,
-          buildStats: buildStats(),
+          buildStats: buildStats(ids.betaItem),
         },
       ],
     };
@@ -180,6 +180,14 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
     simulation.advanceTicks(12);
     const outcome = simulation.forceForfeit(ids.betaUser);
     const finalCheckpoint = simulation.createCheckpoint();
+    const replay = {
+      storageKey: `integration/pvp/${ids.match}.jsonl.gz`,
+      checksumSha256: "e".repeat(64),
+      compression: "gzip",
+      sizeBytes: 128,
+      tickCount: outcome.finalTick,
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    };
     const request = {
       idempotencyKey: `pvp-match:${ids.match}`,
       sessionId: ids.session,
@@ -190,14 +198,8 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
       ],
       simulationConfig,
       finalCheckpoint,
-      replay: {
-        storageKey: `integration/pvp/${ids.match}.jsonl.gz`,
-        checksumSha256: "e".repeat(64),
-        compression: "gzip",
-        sizeBytes: 128,
-        tickCount: outcome.finalTick,
-        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
-      },
+      replay: null,
+      cancellation: null,
       outcome,
     };
 
@@ -206,6 +208,14 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
     const first = await finalizer.finalizeDuelOnce(request);
     const replayed = await finalizer.finalizeDuelOnce(request);
     assert.deepEqual(replayed, first);
+    const replayRequest = {
+      kind: "pvp",
+      idempotencyKey: `${request.idempotencyKey}:replay`,
+      matchId: ids.match,
+      replay,
+    };
+    await finalizer.attachReplayOnce(replayRequest);
+    await finalizer.attachReplayOnce(replayRequest);
     await client.query("RESET ROLE");
 
     const ratings = await client.query(
@@ -230,6 +240,15 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
       "SELECT count(*)::int AS count FROM replay_metadata WHERE pvp_match_id = $1",
       [ids.match],
     )).rows[0].count), 1);
+    assert.deepEqual((await client.query(
+      `SELECT DISTINCT metrics ? 'replayStatus' AS "hasReplayStatus",
+                       metrics ? 'progressionAfter' AS "hasProgressionSnapshot",
+                       rewards ? 'walletAfter' AS "hasWalletSnapshot"
+         FROM mission_results result
+         JOIN mission_attempts attempt ON attempt.id = result.mission_attempt_id
+        WHERE attempt.pvp_match_id = $1`,
+      [ids.match],
+    )).rows, [{ hasReplayStatus: false, hasProgressionSnapshot: true, hasWalletSnapshot: true }]);
     const damagedItems = await client.query(
       `SELECT id, state::text, durability
          FROM inventory_items
@@ -274,7 +293,7 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
   }
 });
 
-function buildStats() {
+function buildStats(inventoryItemId) {
   return {
     hull: 300,
     speedUnitsPerSecond: 240,
@@ -283,6 +302,14 @@ function buildStats() {
     weaponCooldownTicks: 6,
     projectileSpeedUnitsPerSecond: 900,
     collisionRadiusUnits: 30,
+    modules: [{
+      id: inventoryItemId,
+      inventoryItemId,
+      category: "core",
+      hp: 300,
+      gridX: 0,
+      gridY: 0,
+    }],
   };
 }
 

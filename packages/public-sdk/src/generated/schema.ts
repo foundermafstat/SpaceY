@@ -177,6 +177,108 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mission-attempts/{attemptId}/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate and issue a one-time PvE connection ticket */
+        post: operations["createMissionAttemptConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mission-attempts/{attemptId}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Abandon an owned unfinished PvE attempt */
+        post: operations["abandonMissionAttempt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/battle-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List owned authoritative battle results */
+        get: operations["listBattleResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/battle-results/{resultId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one owned authoritative battle result */
+        get: operations["getBattleResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/repairs/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Quote a full repair from immutable module content */
+        post: operations["createRepairQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/repairs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit a quoted full repair exactly once */
+        post: operations["commitRepair"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pvp/matchmaking-tickets": {
         parameters: {
             query?: never;
@@ -323,6 +425,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/developer/clients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List API clients owned by the authenticated player */
+        get: operations["listDeveloperApiClients"];
+        put?: never;
+        /** Create an API client and reveal its initial OAuth secret once */
+        post: operations["createDeveloperApiClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/oauth-secret/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate the OAuth secret with a bounded overlap window */
+        post: operations["rotateDeveloperOAuthSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke a client, all keys, OAuth secrets and webhook subscriptions */
+        post: operations["revokeDeveloperApiClient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an API key and reveal it once */
+        post: operations["createDeveloperApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/keys/{apiKeyId}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a replacement key and expire the previous key after a bounded overlap */
+        post: operations["rotateDeveloperApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/keys/{apiKeyId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revokeDeveloperApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register a public HTTPS webhook and reveal its signing secret once */
+        post: operations["createDeveloperWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/webhooks/{webhookId}/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate the signing secret and dual-sign during the bounded overlap */
+        post: operations["rotateDeveloperWebhookSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/developer/clients/{apiClientId}/webhooks/{webhookId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revokeDeveloperWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/v1/oauth/token": {
         parameters: {
             query?: never;
@@ -421,7 +675,7 @@ export interface webhooks {
         put?: never;
         /**
          * Receive an idempotent signed SpaceY domain event
-         * @description Verify HMAC-SHA256 over `<timestamp>.<event-id>.<raw-body>` with `SHA-256(raw webhook secret)` as the key. Reject stale timestamps and deduplicate by event ID.
+         * @description Verify every comma-separated `v1=<hex>` signature over `<timestamp>.<event-id>.<raw-body>` with `SHA-256(raw webhook secret)` as the HMAC-SHA256 key. Rotation overlap may include both new and previous signatures. Reject stale timestamps and deduplicate by event ID.
          */
         post: operations["receiveSpaceyWebhook"];
         delete?: never;
@@ -433,6 +687,34 @@ export interface webhooks {
 }
 export interface components {
     schemas: {
+        PublicApiScopes: ("catalog:read" | "leaderboards:read" | "profiles:read" | "stats:read")[];
+        PublicWebhookEventTypes: ("content.release.published" | "leaderboard.updated" | "season.started" | "season.ended" | "aggregate.stats.updated")[];
+        SecretOverlap: {
+            /** @default 3600 */
+            overlapSeconds: number;
+        };
+        DeveloperApiClient: {
+            /** Format: uuid */
+            id: string;
+            clientId: string;
+            name: string;
+            /** @enum {unknown} */
+            status: "active" | "suspended" | "revoked";
+            scopes: components["schemas"]["PublicApiScopes"];
+            rateLimitPerMinute: number;
+            /** Format: date-time */
+            previousOAuthSecretValidUntil: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            apiKeys: {
+                [key: string]: unknown;
+            }[];
+            webhooks: {
+                [key: string]: unknown;
+            }[];
+        };
         ApiError: {
             error: {
                 code: string;
@@ -525,6 +807,35 @@ export interface components {
             alloy: number;
             dataShards: number;
         };
+        InventoryItem: {
+            /** Format: uuid */
+            id: string;
+            definitionId: string;
+            contentVersion: string;
+            /** @enum {unknown} */
+            rarity: "common" | "uncommon" | "superRare";
+            /** @enum {unknown} */
+            state: "available" | "installed" | "damaged" | "destroyed";
+            durability: number;
+            category: string;
+            shape: {
+                cells: number[][];
+            };
+            stats: {
+                [key: string]: unknown;
+            };
+            visualKey: string;
+            installedBuildRevisionId: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        Progression: {
+            level: number;
+            experience: number;
+            researchNodeIds: string[];
+            seasonId: string | null;
+            seasonRating: number | null;
+        };
         Mission: {
             id: string;
             contentVersion: string;
@@ -565,13 +876,16 @@ export interface components {
             profile: components["schemas"]["PlayerProfile"];
             wallet: components["schemas"]["Wallet"];
             activeBuild: components["schemas"]["ShipBuild"] | null;
-            inventory: {
-                [key: string]: unknown;
-            }[];
+            inventory: components["schemas"]["InventoryItem"][];
             contentRelease: {
                 [key: string]: unknown;
             };
             missions: components["schemas"]["Mission"][];
+            activeGameplay: components["schemas"]["ActiveGameplay"][];
+            capabilities: {
+                pvpMatchmaking: boolean;
+                repair: boolean;
+            };
         };
         BattleConnection: {
             /** Format: uuid */
@@ -649,6 +963,102 @@ export interface components {
             reconnect: {
                 [key: string]: unknown;
             };
+        };
+        ActiveGameplay: {
+            /** @constant */
+            mode: "pve";
+            attempt: components["schemas"]["MissionAttemptStatus"];
+        } | {
+            /** @constant */
+            mode: "pvp";
+            matchmakingTicket: components["schemas"]["MatchmakingTicket"];
+            attempt: components["schemas"]["MissionAttemptStatus"] | null;
+        };
+        BattleResult: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            attemptId: string;
+            /** @enum {unknown} */
+            mode: "pve" | "pvp";
+            /** @enum {unknown} */
+            outcome: "victory" | "defeat" | "forfeit" | "draw";
+            reason: string;
+            mission: {
+                id: string;
+                name: string;
+            };
+            durationTicks: number;
+            finalStateHash: string;
+            rewards: {
+                credits?: number;
+                scrap?: number;
+                alloy?: number;
+                dataShards?: number;
+            };
+            grantedItems: {
+                /** Format: uuid */
+                inventoryItemId: string;
+                definitionId: string;
+                /** @enum {unknown} */
+                rarity: "common" | "uncommon" | "superRare";
+            }[];
+            experience: number;
+            walletAfter: components["schemas"]["Wallet"];
+            progressionAfter: components["schemas"]["Progression"];
+            moduleDamage: {
+                /** Format: uuid */
+                inventoryItemId: string;
+                definitionId: string;
+                durabilityBefore: number;
+                durabilityAfter: number;
+                damage: number;
+                /** @enum {unknown} */
+                state: "available" | "installed" | "damaged" | "destroyed";
+            }[];
+            mmr: null | {
+                before: number;
+                after: number;
+            };
+            /** @enum {unknown} */
+            replayStatus: "pending" | "available" | "failed";
+            /** Format: date-time */
+            finalizedAt: string;
+        };
+        CreateRepairQuote: {
+            /** Format: uuid */
+            inventoryItemId: string;
+            idempotencyKey: string;
+        };
+        RepairQuote: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            inventoryItemId: string;
+            definitionId: string;
+            durabilityBefore: number;
+            /** @constant */
+            durabilityAfter: 10000;
+            /** @constant */
+            currency: "credits";
+            cost: number;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        CommitRepair: {
+            /** Format: uuid */
+            quoteId: string;
+            idempotencyKey: string;
+        };
+        RepairResult: {
+            /** Format: uuid */
+            quoteId: string;
+            inventoryItem: components["schemas"]["InventoryItem"];
+            walletAfter: components["schemas"]["Wallet"];
+            /** Format: uuid */
+            ledgerEntryId: string;
+            /** Format: date-time */
+            repairedAt: string;
         };
         PublicCatalog: {
             contentRelease: {
@@ -765,6 +1175,9 @@ export interface components {
     };
     parameters: {
         BuildId: string;
+        ApiClientId: string;
+        ApiKeyId: string;
+        WebhookId: string;
     };
     requestBodies: never;
     headers: never;
@@ -936,13 +1349,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description One-time, 30-second battle connection ticket. */
+            /** @description Server-owned attempt created. A one-time ticket is issued only by the connection endpoint. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BattleConnection"];
+                    "application/json": components["schemas"]["MissionAttemptStatus"];
                 };
             };
             422: components["responses"]["Conflict"];
@@ -992,6 +1405,152 @@ export interface operations {
                 };
             };
             404: components["responses"]["NotFound"];
+        };
+    };
+    createMissionAttemptConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fresh one-time ticket; any previous ticket is revoked. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BattleConnection"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    abandonMissionAttempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Attempt is terminal and no longer holds the build. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MissionAttemptStatus"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBattleResults: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cursor page ordered by finalization time. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["BattleResult"][];
+                        /** Format: uuid */
+                        nextCursor: string | null;
+                    };
+                };
+            };
+        };
+    };
+    getBattleResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resultId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable result, rewards, damage, progression and replay status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BattleResult"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createRepairQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRepairQuote"];
+            };
+        };
+        responses: {
+            /** @description Five-minute quote bound to item durability and request hash. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairQuote"];
+                };
+            };
+            409: components["responses"]["Conflict"];
+        };
+    };
+    commitRepair: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommitRepair"];
+            };
+        };
+        responses: {
+            /** @description Wallet ledger, item durability and transition committed atomically. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RepairResult"];
+                };
+            };
+            409: components["responses"]["Conflict"];
         };
     };
     createMatchmakingTicket: {
@@ -1221,6 +1780,235 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             503: components["responses"]["Conflict"];
+        };
+    };
+    listDeveloperApiClients: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Credential metadata only; secret hashes and raw secrets are never returned. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperApiClient"][];
+                };
+            };
+        };
+    };
+    createDeveloperApiClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    scopes: components["schemas"]["PublicApiScopes"];
+                };
+            };
+        };
+        responses: {
+            /** @description API client and one-time OAuth client secret. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            409: components["responses"]["Conflict"];
+        };
+    };
+    rotateDeveloperOAuthSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretOverlap"];
+            };
+        };
+        responses: {
+            /** @description New secret revealed once; previous secret remains valid only until the returned deadline. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeDeveloperApiClient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createDeveloperApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name: string;
+                    scopes: components["schemas"]["PublicApiScopes"];
+                    /** @default 90 */
+                    expiresInDays?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description API key revealed once. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rotateDeveloperApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+                apiKeyId: components["parameters"]["ApiKeyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretOverlap"];
+            };
+        };
+        responses: {
+            /** @description Replacement API key revealed once. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeDeveloperApiKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+                apiKeyId: components["parameters"]["ApiKeyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createDeveloperWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uri */
+                    url: string;
+                    eventTypes: components["schemas"]["PublicWebhookEventTypes"];
+                };
+            };
+        };
+        responses: {
+            /** @description Webhook and signing secret revealed once. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    rotateDeveloperWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+                webhookId: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SecretOverlap"];
+            };
+        };
+        responses: {
+            /** @description New webhook secret revealed once. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    revokeDeveloperWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                apiClientId: components["parameters"]["ApiClientId"];
+                webhookId: components["parameters"]["WebhookId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["Ok"];
+            404: components["responses"]["NotFound"];
         };
     };
     createPublicAccessToken: {

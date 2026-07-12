@@ -28,8 +28,9 @@ lifecycle and must call `$disconnect()` during graceful shutdown.
 
 ## Environment and commands
 
-Use a pooled `DATABASE_URL` only in application services. Set `DIRECT_URL` to a
-direct Neon endpoint for migrations; Prisma prefers it when both are present.
+Use a role-scoped `DATABASE_URL` only in application services. Set `DIRECT_URL`
+only for the migrator against the internal Docker hostname `postgres:5432`;
+Prisma prefers it when both are present.
 
 ```bash
 pnpm --filter @spacey/db validate
@@ -42,19 +43,19 @@ SPACEY_SEED_ENV=local pnpm --filter @spacey/db db:seed
 `generate` and `validate` use a deliberately unreachable placeholder URL and do
 not open a database connection. Migration commands fail unless `DIRECT_URL` or
 `DATABASE_URL` is supplied. Never use a credential copied into tickets, chat or
-source control; rotate an exposed Neon password before first connection.
+source control; rotate any exposed PostgreSQL password before first connection.
 
 The seed is repeatable but intentionally restricted to explicit `local` or
-`staging` use. It publishes one Starter Scout release with DB-driven bootstrap
-inventory/build configuration and retires any other published release in that
-environment. Production content is created and promoted only through the
-audited admin contour.
+`staging` use. It creates the three authoritative PvE definitions and DB-driven
+bootstrap inventory/build configuration; local mode publishes the fixture while
+staging leaves it as a draft for admin validation. Published production content
+is created and promoted only through the audited admin contour.
 
 ## Empty database bootstrap
 
-1. Run `sql/roles.bootstrap.template.sql` as the Neon project owner. It creates
-   NOLOGIN group roles only; credential-bearing login roles are provisioned in
-   the secret manager and are not part of this repository.
+1. Run the one-shot `access-bootstrap` profile from `infra/compose.production-data.yml`.
+   It applies `sql/roles.bootstrap.template.sql`, creates credential logins from
+   root-owned files and grants exactly one NOLOGIN group role per service.
 2. Configure the migration login to `SET ROLE spacey_migrator` by default, then
    apply the baseline with the direct connection.
 3. Run `sql/roles.grants.template.sql` as the object owner after migrations.

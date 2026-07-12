@@ -1,15 +1,23 @@
 "use client";
 
-import type { BattleConnectionDto, PvpBattleParticipantConnectionDto } from "@spacey/contracts";
+import type {
+  BattleConnectionDto,
+  MissionAttemptStatusDto,
+  PvpBattleParticipantConnectionDto
+} from "@spacey/contracts";
 import type { BattleServerMessage } from "@spacey/protocol";
+import type { Route } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
+  ACTIVE_MISSION_ATTEMPT_STORAGE_KEY,
+  abandonMissionAttempt,
   cancelMatchmakingTicket,
-  createMissionAttempt,
   getMatchmakingTicket,
+  getMissionAttemptStatus,
+  reconnectMissionAttempt,
   requestPvpMatchConnection
 } from "@/game/server/api-client";
 import { resolvePvpMatchmakingAction } from "@/game/server/pvp-matchmaking";
@@ -40,87 +48,125 @@ function ServerBattlePage() {
 
 function PveServerBattlePage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { bootstrap, refreshBootstrap } = useServerSession();
-  const requestedMissionId = searchParams.get("mission");
-  const mission = useMemo(
-    () => requestedMissionId
-      ? bootstrap.missions.find((candidate) => candidate.id === requestedMissionId) ?? null
-      : bootstrap.missions[0] ?? null,
-    [bootstrap.missions, requestedMissionId]
-  );
-  const buildRevisionId = bootstrap.activeBuild?.activeRevision.id ?? null;
+  const attemptId = searchParams.get("attemptId");
   const requestRef = useRef<{
     key: string;
-    idempotencyKey: string;
-    promise: Promise<BattleConnectionDto> | null;
+    promise: Promise<{ status: MissionAttemptStatusDto; connection: BattleConnectionDto | null }> | null;
   } | null>(null);
+  const [attemptStatus, setAttemptStatus] = useState<MissionAttemptStatusDto | null>(null);
   const [connection, setConnection] = useState<BattleConnectionDto | null>(null);
   const [result, setResult] = useState<BattleEndedMessage | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [abandoning, setAbandoning] = useState(false);
+
+  const requestReconnect = useCallback(() => {
+    if (!attemptId) return Promise.reject(new Error("Mission attempt ID is missing."));
+    return reconnectMissionAttempt(attemptId);
+  }, [attemptId]);
 
   useEffect(() => {
-    if (!mission || !buildRevisionId) return;
-    const key = `${mission.id}:${buildRevisionId}`;
+    if (!attemptId) return;
+    const key = `${attemptId}:${retryKey}`;
     if (!requestRef.current || requestRef.current.key !== key) {
-      requestRef.current = { key, idempotencyKey: crypto.randomUUID(), promise: null };
+      requestRef.current = { key, promise: null };
     }
     const request = requestRef.current;
-    request.promise ??= createMissionAttempt({
-      missionId: mission.id,
-      shipBuildRevisionId: buildRevisionId,
-      idempotencyKey: request.idempotencyKey
+    request.promise ??= getMissionAttemptStatus(attemptId).then(async (status) => {
+      if (status.status === "completed" || status.status === "failed") return { status, connection: null };
+      if (!status.reconnect.permitted) {
+        throw new Error("This mission attempt is not eligible for reconnect.");
+      }
+      return { status, connection: await requestReconnect() };
     });
     let active = true;
     setConnection(null);
     setErrorMessage(null);
-    void request.promise.then((nextConnection) => {
-      if (active) setConnection(nextConnection);
+    void request.promise.then((next) => {
+      if (!active) return;
+      if (next.status.resultId) {
+        window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+        router.replace(resultRoute(next.status.resultId));
+        return;
+      }
+      setAttemptStatus(next.status);
+      setConnection(next.connection);
     }).catch((error: unknown) => {
       request.promise = null;
-      if (active) setErrorMessage(error instanceof Error ? error.message : "Mission attempt could not be created.");
+      if (active) setErrorMessage(error instanceof Error ? error.message : "Mission attempt could not be resumed.");
     });
     return () => {
       active = false;
     };
-  }, [buildRevisionId, mission, retryKey]);
+  }, [attemptId, requestReconnect, retryKey, router]);
 
   const handleEnded = useCallback((nextResult: BattleEndedMessage) => {
     setResult(nextResult);
+    window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
     void refreshBootstrap();
-  }, [refreshBootstrap]);
+    router.replace(resultRoute(nextResult.resultId));
+  }, [refreshBootstrap, router]);
 
   const retry = useCallback(() => setRetryKey((value) => value + 1), []);
+
+  const abandon = useCallback(async () => {
+    if (!attemptId || abandoning) return;
+    setAbandoning(true);
+    try {
+      await abandonMissionAttempt(attemptId);
+      window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+      await refreshBootstrap().catch(() => undefined);
+      router.push("/hangar#contracts");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Mission attempt could not be abandoned.");
+      setAbandoning(false);
+    }
+  }, [abandoning, attemptId, refreshBootstrap, router]);
 
   return (
     <main className="app-shell game-shell">
       <section className="mobile-frame game-frame game-frame--battle">
         <div className="battle-host">
-          {connection && mission && !result ? (
-            <AuthoritativeBattle connection={connection} mission={mission} onEnded={handleEnded} />
+          {connection && !result ? (
+            <AuthoritativeBattle connection={connection} onEnded={handleEnded} requestReconnect={requestReconnect} />
           ) : null}
           <div className="battle-overlay">
-            {!mission ? (
+            {!attemptId ? (
               <BattleGate
-                message="No published mission is available in the active content release."
-                title="Contract Required"
-              />
-            ) : !buildRevisionId ? (
-              <BattleGate
-                message="Create and validate a server-owned ship build before launch."
-                title="Ship Build Required"
+                message="Create or resume a server-owned mission attempt from the Hangar."
+                title="Mission Attempt Required"
               />
             ) : errorMessage ? (
-              <BattleStatusPanel message={errorMessage} onRetry={retry} title="Launch Failed" />
+              <BattleStatusPanel
+                cancelLabel={abandoning ? "Abandoning…" : "Abandon Attempt"}
+                message={errorMessage}
+                onCancel={abandoning ? undefined : () => void abandon()}
+                onRetry={retry}
+                title="Resume Failed"
+              />
+            ) : attemptStatus && (attemptStatus.status === "completed" || attemptStatus.status === "failed") ? (
+              <BattleGate
+                message={`Attempt is ${attemptStatus.status}${attemptStatus.resultId ? ` · result ${attemptStatus.resultId}` : ""}.`}
+                title="Mission Attempt Closed"
+              />
             ) : !connection && !result ? (
-              <BattleStatusPanel message="Creating a server-owned attempt and one-time battle ticket…" title="Preparing Battle" />
+              <BattleStatusPanel
+                cancelLabel={abandoning ? "Abandoning…" : "Abandon Attempt"}
+                message={attemptStatus
+                  ? `${attemptStatus.status} · requesting a fresh one-time connection ticket…`
+                  : "Checking the server-owned attempt and reconnect window…"}
+                onCancel={abandoning ? undefined : () => void abandon()}
+                title="Resuming Battle"
+              />
             ) : null}
-            {result && mission ? (
+            {result ? (
               <div className="mission-result-layer">
                 <section className="mission-result-overlay panel" data-outcome={result.outcome}>
                   <div className="panel-title">
-                    <span className="eyebrow">Server finalized · {mission.name}</span>
-                    <h2>{result.outcome === "victory" ? "Contract Complete" : result.outcome === "forfeit" ? "Connection Forfeit" : "Mission Failed"}</h2>
+                    <span className="eyebrow">Server finalized · mission attempt</span>
+                    <h2>{result.outcome === "victory" ? "Contract Complete" : result.outcome === "draw" ? "Draw" : result.outcome === "forfeit" ? "Connection Forfeit" : "Mission Failed"}</h2>
                   </div>
                   <p className="mission-result-reason">{result.reason}</p>
                   <dl className="server-result-facts">
@@ -151,6 +197,7 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
   const [statusMessage, setStatusMessage] = useState("Waiting for an opponent in ranked-eu…");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [canCancel, setCanCancel] = useState(true);
 
   const requestConnection = useCallback(
     () => requestPvpMatchConnection(matchmakingTicketId),
@@ -166,14 +213,29 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
         if (!active) return;
         const action = resolvePvpMatchmakingAction(ticket);
         if (action.type === "poll") {
+          setCanCancel(true);
           setStatusMessage(`Waiting for opponent · MMR ${ticket.mmr} · ${ticket.region.toUpperCase()}`);
           timer = setTimeout(() => void poll(), 1_000);
           return;
         }
+        if (action.type === "result") {
+          setCanCancel(false);
+          setStatusMessage("Match complete · loading the authoritative result…");
+          const attempt = await getMissionAttemptStatus(action.attemptId);
+          if (!active) return;
+          if (attempt.resultId) {
+            router.replace(resultRoute(attempt.resultId));
+            return;
+          }
+          timer = setTimeout(() => void poll(), 1_000);
+          return;
+        }
         if (action.type === "terminal") {
+          setCanCancel(false);
           setErrorMessage(action.message);
           return;
         }
+        setCanCancel(false);
         setStatusMessage("Opponent found · issuing participant ticket…");
         const nextConnection = await requestConnection();
         if (active) setConnection(nextConnection);
@@ -183,17 +245,19 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
     };
     setConnection(null);
     setErrorMessage(null);
+    setCanCancel(true);
     void poll();
     return () => {
       active = false;
       if (timer) clearTimeout(timer);
     };
-  }, [matchmakingTicketId, requestConnection, retryKey]);
+  }, [matchmakingTicketId, requestConnection, retryKey, router]);
 
   const handleEnded = useCallback((nextResult: BattleEndedMessage) => {
     setResult(nextResult);
     void refreshBootstrap();
-  }, [refreshBootstrap]);
+    router.replace(resultRoute(nextResult.resultId));
+  }, [refreshBootstrap, router]);
 
   const cancel = useCallback(async () => {
     try {
@@ -225,7 +289,7 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
             ) : !connection && !result ? (
               <BattleStatusPanel
                 message={statusMessage}
-                onCancel={() => void cancel()}
+                onCancel={canCancel ? () => void cancel() : undefined}
                 title="Ranked Matchmaking"
               />
             ) : null}
@@ -234,7 +298,7 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
                 <section className="mission-result-overlay panel" data-outcome={result.outcome}>
                   <div className="panel-title">
                     <span className="eyebrow">Server finalized · Ranked Duel</span>
-                    <h2>{result.outcome === "victory" ? "Victory" : result.outcome === "forfeit" ? "Forfeit" : "Defeat"}</h2>
+                    <h2>{result.outcome === "victory" ? "Victory" : result.outcome === "draw" ? "Draw" : result.outcome === "forfeit" ? "Forfeit" : "Defeat"}</h2>
                   </div>
                   <p className="mission-result-reason">{result.reason}</p>
                   <dl className="server-result-facts">
@@ -255,6 +319,10 @@ function PvpServerBattlePage({ matchmakingTicketId }: { matchmakingTicketId: str
       </section>
     </main>
   );
+}
+
+function resultRoute(resultId: string): Route {
+  return `/results/${encodeURIComponent(resultId)}` as Route;
 }
 
 function BattleGate({ title, message }: { title: string; message: string }) {
@@ -297,12 +365,14 @@ function BattleStatusPanel({
   title,
   message,
   onRetry,
-  onCancel
+  onCancel,
+  cancelLabel = "Cancel Queue"
 }: {
   title: string;
   message: string;
   onRetry?: () => void;
   onCancel?: () => void;
+  cancelLabel?: string;
 }) {
   return (
     <div className="result-panel panel" aria-live="polite">
@@ -312,7 +382,7 @@ function BattleStatusPanel({
       </div>
       {onRetry || onCancel ? (
         <div className={onRetry && onCancel ? "footer-actions" : "footer-actions footer-actions--single"}>
-          {onCancel ? <button className="button" onClick={onCancel} type="button">Cancel Queue</button> : null}
+          {onCancel ? <button className="button" onClick={onCancel} type="button">{cancelLabel}</button> : null}
           {onRetry ? <button className="button primary" onClick={onRetry} type="button">Retry</button> : null}
         </div>
       ) : null}

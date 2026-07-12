@@ -12,7 +12,7 @@ import {
 import { ADMIN_DATABASE, type AdminDatabase, type AdminSqlClient } from "./admin-database.js";
 
 type JsonObject = Record<string, unknown>;
-type StateRow = Readonly<{ state: JsonObject }>;
+type StateRow = Readonly<{ state: JsonObject; release_status?: string }>;
 type RevisionRow = Readonly<{ revision: number }>;
 type WalletAdjustmentRow = Readonly<{
   before_balance: string;
@@ -183,11 +183,22 @@ class PostgresAdminMutationTransaction implements AdminMutationTransaction {
 
     const table = contentTable(command.resourceType);
     const beforeResult = await this.client.query<StateRow>(
-      `SELECT to_jsonb(target.*) AS state FROM ${table} AS target WHERE id = $1::uuid FOR UPDATE`,
+      `SELECT to_jsonb(target.*) AS state, release.status::text AS release_status
+       FROM ${table} AS target
+       JOIN content_releases AS release ON release.id = target.content_release_id
+       WHERE target.id = $1::uuid
+       FOR UPDATE OF target, release`,
       [command.resourceId],
     );
-    const before = beforeResult.rows[0]?.state;
+    const locked = beforeResult.rows[0];
+    const before = locked?.state;
     if (!before) throw new NotFoundException(`${command.resourceType} content resource was not found`);
+    if (locked.release_status !== "DRAFT") {
+      throw new ConflictException({
+        code: "CONTENT_RELEASE_IMMUTABLE",
+        releaseStatus: locked.release_status,
+      });
+    }
 
     const afterResult = await this.client.query<StateRow>(contentUpdateSql(command.resourceType), [
       command.resourceId,

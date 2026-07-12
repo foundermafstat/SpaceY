@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { navigationForPermissions } from "../../lib/navigation";
 import type { AdminSession } from "../../lib/private-admin-client";
+import { AdminLogoutButton } from "./admin-logout-button";
 
 export function AdminShell({
   session,
@@ -27,7 +28,10 @@ export function AdminShell({
             <Link key={item.href} href={item.href}>{item.label}</Link>
           ))}
         </nav>
-        <p className="operator">{session.role}<br /><span>{session.authenticationMethod}</span></p>
+        <div className="operator">
+          <p>{session.role}<br /><span>{session.authenticationMethod}</span></p>
+          <AdminLogoutButton />
+        </div>
       </aside>
       <section className="workspace">
         <p className="eyebrow">{eyebrow}</p>

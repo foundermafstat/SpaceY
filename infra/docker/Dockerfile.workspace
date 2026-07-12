@@ -8,15 +8,14 @@ WORKDIR /workspace
 RUN corepack enable && corepack prepare pnpm@10.30.0 --activate
 
 COPY . .
+RUN test -s /workspace/specs/player-public.openapi.yaml
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
 ARG APP_FILTER
 ARG NEXT_PUBLIC_API_URL=""
-ARG NEXT_PUBLIC_BATTLE_WS_URL=""
 ARG NEXT_PUBLIC_ALLOW_BROWSER_AUTH="false"
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_BATTLE_WS_URL=$NEXT_PUBLIC_BATTLE_WS_URL
 ENV NEXT_PUBLIC_ALLOW_BROWSER_AUTH=$NEXT_PUBLIC_ALLOW_BROWSER_AUTH
 RUN test -n "$APP_FILTER" && pnpm exec turbo run build --filter="$APP_FILTER"
 

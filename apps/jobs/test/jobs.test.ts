@@ -125,6 +125,28 @@ test("webhook transport rejects loopback destinations before network I/O", async
   }), /non-public address/);
 });
 
+test("webhook rotation overlap dual-signs with current and previous secrets", async () => {
+  const current = createHash("sha256").update("current-secret").digest("hex");
+  const previous = createHash("sha256").update("previous-secret").digest("hex");
+  let sent: Parameters<WebhookTransport["send"]>[0] | undefined;
+  const repository: WebhookRepository = {
+    claim: async () => [{
+      id: "delivery-overlap", url: "https://example.com/events", secretHash: current,
+      previousSecretHash: previous, attemptCount: 1,
+    }],
+    markDelivered: async () => undefined,
+    markFailed: async () => assert.fail("successful delivery cannot be marked failed"),
+  };
+  await new WebhookFanoutHandler(repository, {
+    send: async (input) => { sent = input; return 204; },
+  }, 3).handle(asJob(event));
+  assert.ok(sent);
+  const timestamp = sent.headers["x-spacey-timestamp"]!;
+  assert.equal(sent.headers["x-spacey-signature"], [current, previous]
+    .map((secret) => `v1=${signWebhook(secret, timestamp, event.id, sent!.body)}`)
+    .join(","));
+});
+
 test("public webhook allowlist excludes player and economy events", () => {
   assert.equal(isPublicWebhookEventType("content.release.published"), true);
   assert.equal(isPublicWebhookEventType("battle.result.finalized"), false);

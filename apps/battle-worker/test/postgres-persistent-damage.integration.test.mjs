@@ -95,13 +95,13 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
       `INSERT INTO mission_attempts
         (id, user_id, mission_definition_id, content_release_id, build_revision_id, type,
          status, seed, simulation_version, idempotency_key, updated_at)
-       VALUES ($1, $2, $3, $4, $5, 'PVE', 'CONNECTING', 7, '1.0.0', $6, NOW())`,
+       VALUES ($1, $2, $3, $4, $5, 'PVE', 'CONNECTING', 7, '2.0.0', $6, NOW())`,
       [ids.attempt, ids.user, ids.mission, ids.release, ids.revision, `fixture:${ids.attempt}`],
     );
     await client.query(
       `INSERT INTO battle_sessions
         (id, mission_attempt_id, content_release_id, simulation_version, updated_at)
-       VALUES ($1, $2, $3, '1.0.0', NOW())`,
+       VALUES ($1, $2, $3, '2.0.0', NOW())`,
       [ids.session, ids.attempt, ids.release],
     );
 
@@ -112,7 +112,7 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
       mode: "pve",
       seed: 7,
       contentVersion: `pve-damage-${ids.release}`,
-      simulationVersion: "1.0.0",
+      simulationVersion: "2.0.0",
       shipBuildRevisionId: ids.revision,
       durationSeconds: 90,
       objective: { type: "survive_seconds", targetSeconds: 90 },
@@ -126,6 +126,14 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
         weaponRangeUnits: 100,
         weaponCooldownTicks: 30,
         projectileSpeedUnitsPerSecond: 100,
+        modules: [{
+          id: ids.item,
+          inventoryItemId: ids.item,
+          category: "core",
+          hp: 300,
+          gridX: 0,
+          gridY: 0,
+        }],
       },
       enemy: {
         hull: 100,
@@ -141,6 +149,14 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
     const outcome = simulation.forceForfeit();
     const finalCheckpoint = simulation.createCheckpoint();
     assert.equal(finalCheckpoint.state.player.hull, 240);
+    const replay = {
+      storageKey: `integration/pve/${ids.attempt}.jsonl.gz`,
+      checksumSha256: "f".repeat(64),
+      compression: "gzip",
+      sizeBytes: 128,
+      tickCount: outcome.finalTick,
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    };
     const request = {
       idempotencyKey: `pve-result:${ids.attempt}`,
       sessionId: ids.session,
@@ -149,14 +165,7 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
       mode: "pve",
       simulationConfig,
       finalCheckpoint,
-      replay: {
-        storageKey: `integration/pve/${ids.attempt}.jsonl.gz`,
-        checksumSha256: "f".repeat(64),
-        compression: "gzip",
-        sizeBytes: 128,
-        tickCount: outcome.finalTick,
-        expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
-      },
+      replay: null,
       outcome,
     };
 
@@ -164,7 +173,32 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
     finalizer.pool = { connect: async () => transactionClient };
     const first = await finalizer.finalizeOnce(request);
     assert.deepEqual(await finalizer.finalizeOnce(request), first);
+    const replayRequest = {
+      kind: "pve",
+      idempotencyKey: `${request.idempotencyKey}:replay`,
+      attemptId: ids.attempt,
+      replay,
+    };
+    await finalizer.attachReplayOnce(replayRequest);
+    await finalizer.attachReplayOnce(replayRequest);
     await client.query("RESET ROLE");
+
+    const resultSnapshot = (await client.query(
+      `SELECT metrics ? 'replayStatus' AS "hasReplayStatus",
+              metrics ? 'progressionAfter' AS "hasProgressionSnapshot",
+              rewards ? 'walletAfter' AS "hasWalletSnapshot"
+         FROM mission_results WHERE mission_attempt_id = $1`,
+      [ids.attempt],
+    )).rows[0];
+    assert.deepEqual(resultSnapshot, {
+      hasReplayStatus: false,
+      hasProgressionSnapshot: true,
+      hasWalletSnapshot: true,
+    });
+    assert.equal(Number((await client.query(
+      "SELECT count(*)::int AS count FROM replay_metadata WHERE mission_attempt_id = $1",
+      [ids.attempt],
+    )).rows[0].count), 1);
 
     const item = (await client.query(
       "SELECT state::text, durability FROM inventory_items WHERE id = $1",
@@ -184,6 +218,14 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
       after: 6600,
       damagedBelow: 7000,
       destroyedAt: 0,
+    });
+    assert.deepEqual(transitions.rows[0].metadata.authoritativeModule, {
+      moduleId: ids.item,
+      inventoryItemId: ids.item,
+      hpBefore: 300,
+      hpAfter: 240,
+      hpLoss: 60,
+      detached: false,
     });
     await client.query("SET LOCAL ROLE spacey_runtime");
     await client.query("SELECT set_config('spacey.user_id', $1, true)", [ids.user]);

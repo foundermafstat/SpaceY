@@ -1,9 +1,10 @@
 import type { PoolClient } from "pg";
 
 import { createUuidV7 } from "@spacey/db/uuidv7";
+import type { AuthoritativeModuleDamage } from "@spacey/simulation";
 
 export const PERSISTENT_DAMAGE_RULE = {
-  version: "persistent-damage-v1",
+  version: "persistent-damage-v2-module-hp",
   durabilityScale: 10_000,
   damagedBelow: 7_000,
   destroyedAt: 0,
@@ -29,12 +30,11 @@ export type PersistentDamageInput = {
   sourceType: "MISSION_RESULT" | "PVP_MATCH";
   sourceId: string;
   idempotencyPrefix: string;
-  maximumHull: number;
-  remainingHull: number;
+  moduleDamage: readonly AuthoritativeModuleDamage[];
 };
 
 export type PersistentDamageResult = {
-  hullDamage: number;
+  totalModuleHpLoss: number;
   totalDurabilityLoss: number;
   affectedItemCount: number;
 };
@@ -42,27 +42,29 @@ export type PersistentDamageResult = {
 export function calculatePersistentDamage(input: {
   mode: PersistentDamageMode;
   currentDurability: number;
-  maximumHull: number;
-  remainingHull: number;
+  moduleHpBefore: number;
+  moduleHpAfter: number;
 }): { durabilityLoss: number; nextDurability: number; nextState: PersistentItemState } {
-  const maximumHull = boundedInteger(input.maximumHull, 1, 1_000_000, "maximum hull");
-  const remainingHull = boundedInteger(input.remainingHull, 0, maximumHull, "remaining hull");
+  const moduleHpBefore = boundedInteger(input.moduleHpBefore, 1, 1_000_000, "module HP before");
+  const moduleHpAfter = boundedInteger(input.moduleHpAfter, 0, moduleHpBefore, "module HP after");
   const currentDurability = boundedInteger(
     input.currentDurability,
     PERSISTENT_DAMAGE_RULE.destroyedAt,
     PERSISTENT_DAMAGE_RULE.durabilityScale,
     "current durability",
   );
-  const hullDamage = maximumHull - remainingHull;
+  const moduleHpLoss = moduleHpBefore - moduleHpAfter;
   const maximumLoss = PERSISTENT_DAMAGE_RULE.maximumLoss[input.mode];
-  const configuredLoss = hullDamage === 0
+  const configuredLoss = moduleHpLoss === 0
     ? 0
-    : Math.max(1, Math.ceil((hullDamage * maximumLoss) / maximumHull));
+    : Math.max(1, Math.ceil((moduleHpLoss * maximumLoss) / moduleHpBefore));
   const nextDurability = Math.max(PERSISTENT_DAMAGE_RULE.destroyedAt, currentDurability - configuredLoss);
   const durabilityLoss = currentDurability - nextDurability;
   const nextState = nextDurability === PERSISTENT_DAMAGE_RULE.destroyedAt
     ? "DESTROYED"
-    : nextDurability < PERSISTENT_DAMAGE_RULE.damagedBelow ? "DAMAGED" : "INSTALLED";
+    : durabilityLoss > 0 || nextDurability < PERSISTENT_DAMAGE_RULE.damagedBelow
+      ? "DAMAGED"
+      : "INSTALLED";
   return { durabilityLoss, nextDurability, nextState };
 }
 
@@ -74,9 +76,7 @@ export async function applyPersistentDamage(
   client: PoolClient,
   input: PersistentDamageInput,
 ): Promise<PersistentDamageResult> {
-  const maximumHull = boundedInteger(input.maximumHull, 1, 1_000_000, "maximum hull");
-  const remainingHull = boundedInteger(input.remainingHull, 0, maximumHull, "remaining hull");
-  const hullDamage = maximumHull - remainingHull;
+  const moduleDamage = normalizeModuleDamage(input.moduleDamage);
   const installed = await client.query<InstalledItemRow>(
     `SELECT inventory.id,
             inventory.state::text,
@@ -92,18 +92,25 @@ export async function applyPersistentDamage(
   if (installed.rows.length === 0) {
     throw new Error("Authoritative build revision contains no installed inventory items.");
   }
+  if (moduleDamage.size !== installed.rows.length
+    || installed.rows.some((item) => !moduleDamage.has(item.id))) {
+    throw new Error("Authoritative module damage does not match the installed build revision.");
+  }
 
   let affectedItemCount = 0;
+  let totalModuleHpLoss = 0;
   let totalDurabilityLoss = 0;
   for (const item of installed.rows) {
     if (item.state !== "INSTALLED" && item.state !== "DAMAGED") {
       throw new Error(`Installed inventory item ${item.id} is not launchable from state ${item.state}.`);
     }
+    const authoritative = moduleDamage.get(item.id)!;
+    totalModuleHpLoss += authoritative.hpLoss;
     const damage = calculatePersistentDamage({
       mode: input.mode,
       currentDurability: item.durability,
-      maximumHull,
-      remainingHull,
+      moduleHpBefore: authoritative.hpBefore,
+      moduleHpAfter: authoritative.hpAfter,
     });
     if (damage.durabilityLoss === 0) continue;
 
@@ -129,10 +136,13 @@ export async function applyPersistentDamage(
           ruleVersion: PERSISTENT_DAMAGE_RULE.version,
           mode: input.mode,
           buildRevisionId: input.buildRevisionId,
-          authoritativeHull: {
-            maximum: maximumHull,
-            remaining: remainingHull,
-            damage: hullDamage,
+          authoritativeModule: {
+            moduleId: authoritative.moduleId,
+            inventoryItemId: authoritative.inventoryItemId,
+            hpBefore: authoritative.hpBefore,
+            hpAfter: authoritative.hpAfter,
+            hpLoss: authoritative.hpLoss,
+            detached: authoritative.detached,
           },
           durability: {
             before: item.durability,
@@ -163,7 +173,30 @@ export async function applyPersistentDamage(
     totalDurabilityLoss += damage.durabilityLoss;
   }
 
-  return { hullDamage, totalDurabilityLoss, affectedItemCount };
+  return { totalModuleHpLoss, totalDurabilityLoss, affectedItemCount };
+}
+
+function normalizeModuleDamage(
+  entries: readonly AuthoritativeModuleDamage[],
+): Map<string, AuthoritativeModuleDamage> {
+  const byInventoryItemId = new Map<string, AuthoritativeModuleDamage>();
+  const moduleIds = new Set<string>();
+  for (const entry of entries) {
+    if (!entry.moduleId || !entry.inventoryItemId
+      || moduleIds.has(entry.moduleId)
+      || byInventoryItemId.has(entry.inventoryItemId)) {
+      throw new Error("Authoritative module damage contains duplicate or missing identities.");
+    }
+    const hpBefore = boundedInteger(entry.hpBefore, 1, 1_000_000, "module HP before");
+    const hpAfter = boundedInteger(entry.hpAfter, 0, hpBefore, "module HP after");
+    if (!Number.isSafeInteger(entry.hpLoss) || entry.hpLoss !== hpBefore - hpAfter
+      || typeof entry.detached !== "boolean") {
+      throw new Error(`Authoritative module damage is invalid for ${entry.moduleId}.`);
+    }
+    moduleIds.add(entry.moduleId);
+    byInventoryItemId.set(entry.inventoryItemId, entry);
+  }
+  return byInventoryItemId;
 }
 
 function boundedInteger(value: number, minimum: number, maximum: number, label: string): number {

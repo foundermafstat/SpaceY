@@ -133,6 +133,35 @@ async function postJson<T>(path: string, payload: unknown, operation: "authentic
   return response.json() as Promise<T>;
 }
 
+export type AdminContentRelease = Readonly<{
+  id: string;
+  version: string;
+  status: "DRAFT" | "PUBLISHED" | "RETIRED";
+  configHash: string;
+  schemaVersion: number;
+  notes: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  counts: Readonly<{ missions: number; modules: number; enemies: number; dropTables: number }>;
+}>;
+
+export type ContentReleaseActionResult = Readonly<{
+  releaseId: string;
+  version: string;
+  status: "DRAFT" | "PUBLISHED";
+  configHash?: string;
+  correlationId: string;
+}>;
+
+export type ContentValidationResult = Readonly<{
+  releaseId: string;
+  valid: boolean;
+  configHash: string;
+  simulationVersion: string;
+  violations: readonly Readonly<{ code: string; path: string; message: string }>[];
+}>;
+
 export function beginWebAuthnAuthentication(loginHint: string) {
   return postJson<WebAuthnAuthenticationChallenge>(
     "/internal/admin/v1/auth/webauthn/authentication/options",
@@ -162,4 +191,24 @@ export function applyContentRevision(payload: unknown) {
 
 export function applyEconomyAdjustment(payload: unknown) {
   return postJson<AdminMutationResult>("/internal/admin/v1/mutations/economy/adjustments", payload, "mutation");
+}
+
+export function cloneContentRelease(releaseId: string, payload: unknown) {
+  return postJson<ContentReleaseActionResult>(`/internal/admin/v1/content/releases/${releaseId}/clone`, payload, "mutation");
+}
+
+export function rollbackContentRelease(releaseId: string, payload: unknown) {
+  return postJson<ContentReleaseActionResult>(`/internal/admin/v1/content/releases/${releaseId}/rollback`, payload, "mutation");
+}
+
+export function publishContentRelease(releaseId: string, payload: unknown) {
+  return postJson<ContentReleaseActionResult>(`/internal/admin/v1/content/releases/${releaseId}/publish`, payload, "mutation");
+}
+
+export function validateContentRelease(releaseId: string) {
+  return postJson<ContentValidationResult>(`/internal/admin/v1/content/releases/${releaseId}/validate`, {}, "mutation");
+}
+
+export function revokeCurrentAdminSession() {
+  return postJson<Readonly<{ revoked: true }>>("/internal/admin/v1/session/logout", {}, "mutation");
 }

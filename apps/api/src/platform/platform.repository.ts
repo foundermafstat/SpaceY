@@ -1,6 +1,10 @@
 import type {
   ApplyShipBuildCommandsRequestDto,
+  BattleResultDto,
+  BattleResultPageDto,
   BootstrapResponseDto,
+  CommitRepairRequestDto,
+  CreateRepairQuoteRequestDto,
   LegacyBuildImportProposalDto,
   LegacyBuildImportResultDto,
   MissionAttemptStatusDto,
@@ -13,10 +17,18 @@ import type {
   PublicAggregateStatsDto,
   PublicLeaderboardEntryDto,
   PublicProfileDto,
+  RepairQuoteDto,
+  RepairResultDto,
   ShipBuildDto
 } from "@spacey/contracts";
 import type { MissionSimulationConfig } from "@spacey/simulation";
 import type { DuelSimulationConfig } from "@spacey/simulation";
+import type {
+  CreateDeveloperApiKeyRecord,
+  CreateDeveloperClientRecord,
+  CreateDeveloperWebhookRecord,
+  DeveloperApiClientView,
+} from "../public/developer-api.types.js";
 
 export const PLATFORM_REPOSITORY = Symbol("PLATFORM_REPOSITORY");
 
@@ -49,6 +61,8 @@ export type MissionAttemptRecord = {
   sessionId: string;
   mode: "pve";
   simulationConfig: MissionSimulationConfig;
+  previousTicketHash: string | null;
+  ticketVersion: number;
 };
 
 export type MatchmakingQueuePolicy = {
@@ -79,6 +93,9 @@ export type MaterializedPvpMatch = {
   matchId: string;
   sessionId: string;
   tickets: Array<{ ticketId: string; attemptId: string }>;
+  participants: Array<{ userId: string; attemptId: string; participantId: string; side: 0 | 1 }>;
+  simulationConfig: DuelSimulationConfig;
+  readyDeadlineAtMs: number;
 };
 
 export type PvpConnectionRecord = {
@@ -90,6 +107,7 @@ export type PvpConnectionRecord = {
   participantId: string;
   side: 0 | 1;
   previousTicketHash: string | null;
+  ticketVersion: number;
   simulationConfig: DuelSimulationConfig;
   participants: Array<{ userId: string; attemptId: string; participantId: string; side: 0 | 1 }>;
 };
@@ -108,6 +126,7 @@ export type PrivacyExportDownloadTarget = {
 
 export interface PlatformRepository {
   ping(): Promise<void>;
+  isAccessSessionActive(userId: string, sessionId: string): Promise<boolean>;
   authenticateTelegram(input: {
     initDataHash: string;
     authDate: Date;
@@ -149,8 +168,6 @@ export interface PlatformRepository {
     missionId: string;
     shipBuildRevisionId: string;
     idempotencyKey: string;
-    ticketHash: string;
-    ticketExpiresAt: Date;
   }): Promise<MissionAttemptRecord>;
   renewMissionAttemptTicket(input: {
     userId: string;
@@ -159,6 +176,11 @@ export interface PlatformRepository {
     ticketExpiresAt: Date;
   }): Promise<MissionAttemptRecord | null>;
   getMissionAttemptStatus(userId: string, attemptId: string): Promise<MissionAttemptStatusDto | null>;
+  abandonMissionAttempt(userId: string, attemptId: string): Promise<MissionAttemptStatusDto | null>;
+  getBattleResult(userId: string, resultId: string): Promise<BattleResultDto | null>;
+  listBattleResults(userId: string, cursor: string | null, limit: number): Promise<BattleResultPageDto>;
+  createRepairQuote(userId: string, input: CreateRepairQuoteRequestDto): Promise<RepairQuoteDto>;
+  commitRepair(userId: string, input: CommitRepairRequestDto): Promise<RepairResultDto>;
   createMatchmakingTicket(input: {
     userId: string;
     shipBuildRevisionId: string;
@@ -178,8 +200,19 @@ export interface PlatformRepository {
     ticketHash: string;
     ticketExpiresAt: Date;
   }): Promise<PvpConnectionRecord | null>;
+  listDeveloperApiClients(userId: string): Promise<DeveloperApiClientView[]>;
+  createDeveloperApiClient(userId: string, input: CreateDeveloperClientRecord): Promise<DeveloperApiClientView>;
+  rotateDeveloperOAuthSecret(userId: string, apiClientId: string, nextSecretHash: string, previousSecretExpiresAt: Date): Promise<DeveloperApiClientView | null>;
+  revokeDeveloperApiClient(userId: string, apiClientId: string): Promise<boolean>;
+  createDeveloperApiKey(userId: string, input: CreateDeveloperApiKeyRecord): Promise<DeveloperApiClientView | null>;
+  rotateDeveloperApiKey(userId: string, apiClientId: string, apiKeyId: string, input: CreateDeveloperApiKeyRecord, previousKeyExpiresAt: Date): Promise<DeveloperApiClientView | null>;
+  revokeDeveloperApiKey(userId: string, apiClientId: string, apiKeyId: string): Promise<boolean>;
+  createDeveloperWebhook(userId: string, input: CreateDeveloperWebhookRecord): Promise<DeveloperApiClientView | null>;
+  rotateDeveloperWebhookSecret(userId: string, apiClientId: string, webhookId: string, nextSecretHash: string, previousSecretExpiresAt: Date): Promise<DeveloperApiClientView | null>;
+  revokeDeveloperWebhook(userId: string, apiClientId: string, webhookId: string): Promise<boolean>;
   authenticatePublicApiKey(secretHash: string): Promise<PublicApiPrincipal | null>;
   authenticatePublicClient(clientId: string, secretHash: string): Promise<PublicApiPrincipal | null>;
+  getActivePublicClient(clientId: string): Promise<PublicApiPrincipal | null>;
   getPublicCatalog(): Promise<PublicCatalogDto>;
   getPublicLeaderboard(limit: number): Promise<PublicLeaderboardEntryDto[]>;
   getPublicProfile(userId: string): Promise<PublicProfileDto | null>;

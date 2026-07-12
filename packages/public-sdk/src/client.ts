@@ -8,7 +8,7 @@ import createClient, {
 
 import type { paths } from "./generated/schema.js";
 
-const DEFAULT_PUBLIC_API_URL = "https://api.spacey.aima.space";
+const DEFAULT_PUBLIC_API_URL = "https://spacey.aima.space";
 
 export type PublicPaths = Pick<
   paths,

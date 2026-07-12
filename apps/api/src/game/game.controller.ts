@@ -74,6 +74,20 @@ export class GameController {
     return connection;
   }
 
+  @Post("mission-attempts/:attemptId/connection")
+  async connectMissionAttempt(@Req() request: PlayerRequest, @Param("attemptId") attemptId: string) {
+    const connection = await this.game.reconnectMissionAttempt(request.player.userId, id.parse(attemptId));
+    if (!connection) throw new NotFoundException();
+    return connection;
+  }
+
+  @Post("mission-attempts/:attemptId/abandon")
+  async abandonMissionAttempt(@Req() request: PlayerRequest, @Param("attemptId") attemptId: string) {
+    const status = await this.game.abandonMissionAttempt(request.player.userId, id.parse(attemptId));
+    if (!status) throw new NotFoundException();
+    return status;
+  }
+
   @Get("mission-attempts/:attemptId")
   async getMissionAttempt(@Req() request: PlayerRequest, @Param("attemptId") attemptId: string) {
     const status = await this.game.getAttemptStatus(request.player.userId, id.parse(attemptId));

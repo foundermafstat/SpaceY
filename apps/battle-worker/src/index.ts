@@ -5,6 +5,7 @@ export * from "./fixed-tick-loop.js";
 export * from "./gateway.js";
 export * from "./logger.js";
 export * from "./postgres-finalizer.js";
+export * from "./pending-pvp-session-broker.js";
 export * from "./persistent-damage.js";
 export * from "./protobuf-codec.js";
 export * from "./ports.js";

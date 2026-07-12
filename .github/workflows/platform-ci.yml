@@ -48,7 +48,6 @@ jobs:
       DIRECT_URL: postgresql://spacey_ci:local-ci-only@127.0.0.1:5432/spacey_ci?schema=public
       TEST_DATABASE_URL: postgresql://spacey_ci:local-ci-only@127.0.0.1:5432/spacey_ci?schema=public
       NEXT_PUBLIC_API_URL: http://127.0.0.1:7800
-      NEXT_PUBLIC_BATTLE_WS_URL: ws://127.0.0.1:7801/battle
       NEXT_PUBLIC_ALLOW_BROWSER_AUTH: "false"
     steps:
       - uses: actions/checkout@v4
@@ -120,7 +119,7 @@ jobs:
           set -euo pipefail
           work=/tmp/spacey-proto-current
           mkdir -p "$work"
-          cp packages/protocol/proto/*.proto "$work/"
+          cp -R packages/protocol/proto/. "$work/"
           printf 'version: v2\nmodules:\n  - path: .\nlint:\n  use:\n    - STANDARD\nbreaking:\n  use:\n    - FILE\n' > "$work/buf.yaml"
           buf lint "$work"
           buf build "$work" --output /tmp/spacey-battle.binpb
@@ -151,11 +150,17 @@ jobs:
         run: |
           set -euo pipefail
           base_ref="origin/${{ github.base_ref }}"
-          if git cat-file -e "$base_ref:packages/protocol/proto/battle.proto" 2>/dev/null; then
+          canonical=packages/protocol/proto/spacey/battle/v1/battle.proto
+          legacy=packages/protocol/proto/battle.proto
+          if git cat-file -e "$base_ref:$canonical" 2>/dev/null || git cat-file -e "$base_ref:$legacy" 2>/dev/null; then
             current=/tmp/spacey-proto-current
             base=/tmp/spacey-proto-base
-            mkdir -p "$base"
-            git show "$base_ref:packages/protocol/proto/battle.proto" > "$base/battle.proto"
+            mkdir -p "$base/spacey/battle/v1"
+            if git cat-file -e "$base_ref:$canonical" 2>/dev/null; then
+              git show "$base_ref:$canonical" > "$base/spacey/battle/v1/battle.proto"
+            else
+              git show "$base_ref:$legacy" > "$base/spacey/battle/v1/battle.proto"
+            fi
             cp "$current/buf.yaml" "$base/buf.yaml"
             buf breaking "$current" --against "$base"
           else

@@ -9,6 +9,7 @@ datasource db {
 
 enum UserStatus {
   ACTIVE
+  DELETION_PENDING
   SUSPENDED
   DELETED
 
@@ -57,6 +58,15 @@ enum WalletCurrency {
   STARS
 
   @@map("wallet_currency")
+}
+
+enum RepairQuoteStatus {
+  ACTIVE
+  COMMITTED
+  EXPIRED
+  INVALIDATED
+
+  @@map("repair_quote_status")
 }
 
 enum MissionAttemptType {
@@ -303,6 +313,7 @@ model User {
   inventoryTransitions InventoryTransition[]
   walletBalances       WalletBalance[]
   walletLedgerEntries  WalletLedgerEntry[]
+  repairQuotes         RepairQuote[]
   missionAttempts      MissionAttempt[]
   pvpParticipants      PvpMatchParticipant[]
   matchmakingTickets   MatchmakingTicket[]
@@ -617,6 +628,7 @@ model InventoryItem {
   contentRelease   ContentRelease        @relation(fields: [contentReleaseId], references: [id], onDelete: Restrict)
   installations    BuildRevisionItem[]
   transitions      InventoryTransition[]
+  repairQuotes     RepairQuote[]
 
   @@index([userId])
   @@index([contentReleaseId])
@@ -624,6 +636,36 @@ model InventoryItem {
   @@index([definitionKey, state])
   @@index([createdAt, id])
   @@map("inventory_items")
+}
+
+model RepairQuote {
+  id                   String            @id @db.Uuid
+  userId               String            @map("user_id") @db.Uuid
+  inventoryItemId      String            @map("inventory_item_id") @db.Uuid
+  definitionKey        String            @map("definition_key")
+  durabilityBefore     Int               @map("durability_before")
+  currency             WalletCurrency    @default(CREDITS)
+  cost                 BigInt
+  requestHash          String            @map("request_hash")
+  idempotencyKey       String            @map("idempotency_key")
+  status               RepairQuoteStatus @default(ACTIVE)
+  expiresAt            DateTime          @map("expires_at") @db.Timestamptz(6)
+  commitIdempotencyKey String?           @unique @map("commit_idempotency_key")
+  commitRequestHash    String?           @map("commit_request_hash")
+  ledgerEntryId        String?           @unique @map("ledger_entry_id") @db.Uuid
+  committedAt          DateTime?         @map("committed_at") @db.Timestamptz(6)
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventoryItem        InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  ledgerEntry          WalletLedgerEntry? @relation(fields: [ledgerEntryId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId])
+  @@index([inventoryItemId])
+  @@index([userId, status, expiresAt])
+  @@index([createdAt, id])
+  @@map("repair_quotes")
 }
 
 model BuildRevisionItem {
@@ -696,6 +738,7 @@ model WalletLedgerEntry {
   createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   user            User           @relation(fields: [userId], references: [id], onDelete: Restrict)
   walletBalance   WalletBalance  @relation(fields: [walletBalanceId], references: [id], onDelete: Restrict)
+  repairQuote     RepairQuote?
 
   @@index([userId])
   @@index([walletBalanceId])
@@ -811,7 +854,9 @@ model MissionAttempt {
   simulationVersion   String               @map("simulation_version")
   wsTicketHash        String?              @unique @map("ws_ticket_hash")
   wsTicketExpiresAt   DateTime?            @map("ws_ticket_expires_at") @db.Timestamptz(6)
+  ticketVersion       Int                  @default(0) @map("ticket_version")
   idempotencyKey      String               @unique @map("idempotency_key")
+  requestHash         String               @default("0000000000000000000000000000000000000000000000000000000000000000") @map("request_hash")
   startedAt           DateTime?            @map("started_at") @db.Timestamptz(6)
   disconnectedAt      DateTime?            @map("disconnected_at") @db.Timestamptz(6)
   reconnectDeadline   DateTime?            @map("reconnect_deadline") @db.Timestamptz(6)
@@ -884,6 +929,8 @@ model ApiClient {
   ownerUserId          String?               @map("owner_user_id") @db.Uuid
   clientId             String                @unique @map("client_id")
   clientSecretHash     String?               @unique @map("client_secret_hash")
+  previousClientSecretHash String?            @unique @map("previous_client_secret_hash")
+  previousClientSecretExpiresAt DateTime?     @map("previous_client_secret_expires_at") @db.Timestamptz(6)
   name                 String
   status               ApiClientStatus       @default(ACTIVE)
   scopes               String[]
@@ -925,6 +972,8 @@ model WebhookSubscription {
   apiClientId String            @map("api_client_id") @db.Uuid
   url         String
   secretHash  String            @map("secret_hash")
+  previousSecretHash String?    @map("previous_secret_hash")
+  previousSecretExpiresAt DateTime? @map("previous_secret_expires_at") @db.Timestamptz(6)
   eventTypes  String[]          @map("event_types")
   status      WebhookStatus     @default(ACTIVE)
   createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1242,6 +1291,8 @@ model BattleSession {
   status                  BattleSessionStatus @default(CREATED)
   workerId                String?             @map("worker_id")
   simulationVersion       String              @map("simulation_version")
+  simulationConfig        Json                @default("{}") @map("simulation_config")
+  simulationConfigHash    String              @default("0000000000000000000000000000000000000000000000000000000000000000") @map("simulation_config_hash")
   lastTick                Int                 @default(0) @map("last_tick")
   lastInputSequence       BigInt              @default(0) @map("last_input_sequence")
   lastCheckpointSequence  Int                 @default(0) @map("last_checkpoint_sequence")

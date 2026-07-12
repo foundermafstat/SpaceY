@@ -40,10 +40,47 @@ export type BattleEntitySnapshot = {
   hull: number;
   hullMax: number;
   flags: number;
+  weaponId?: string;
+  shipSystems?: BattleShipSystemsSnapshot;
+};
+
+export type BattleModuleSnapshot = {
+  id: string;
+  visualKey: string;
+  category: "core" | "reactor" | "engine" | "weapon" | "shield" | "utility";
+  hp: number;
+  hpMax: number;
+  gridX: number;
+  gridY: number;
+  parentModuleId: string | null;
+  powered: boolean;
+  detached: boolean;
+  enabled: boolean;
+};
+
+export type BattleWeaponSnapshot = {
+  id: string;
+  moduleId: string | null;
+  cooldownRemaining: number;
+  ready: boolean;
+};
+
+export type BattleShipSystemsSnapshot = {
+  energy: number;
+  energyMax: number;
+  heat: number;
+  heatMax: number;
+  shield: number;
+  shieldMax: number;
+  shieldRegenDelayRemaining: number;
+  overheated: boolean;
+  brownout: boolean;
+  modules: BattleModuleSnapshot[];
+  weapons: BattleWeaponSnapshot[];
 };
 
 export type BattleObjectiveSnapshot = {
-  type: "destroy_all" | "survive_seconds" | "destroy_opponent";
+  type: "destroy_all" | "survive_seconds" | "protect_target" | "collect_scrap" | "destroy_opponent";
   progress: number;
   target: number;
 };
@@ -53,9 +90,11 @@ export type BattleSnapshot = {
   tick: number;
   stateHash: string;
   lastProcessedInputSequence: number;
-  status: "active" | "victory" | "defeat";
+  status: "active" | "victory" | "defeat" | "draw";
   objective: BattleObjectiveSnapshot;
   entities: BattleEntitySnapshot[];
+  arenaWidthMilli: number;
+  arenaHeightMilli: number;
 };
 
 export type ReconnectMetadata = {
@@ -82,11 +121,21 @@ export type BattleServerMessage =
       reconnect: ReconnectMetadata;
     }
   | { type: "battle.snapshot"; snapshot: BattleSnapshot }
-  | { type: "battle.event"; eventId: number; tick: number; eventType: string; entityIds: string[] }
+  | {
+      type: "battle.event";
+      eventId: number;
+      tick: number;
+      eventType: string;
+      entityIds: string[];
+      moduleIds?: string[];
+      userIds?: string[];
+      weaponId?: string;
+      value?: number;
+    }
   | {
       type: "battle.ended";
       resultId: EntityId;
-      outcome: "victory" | "defeat" | "forfeit";
+      outcome: "victory" | "defeat" | "forfeit" | "draw";
       reason: string;
       finalTick: number;
       finalStateHash: string;

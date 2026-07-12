@@ -11,7 +11,7 @@
       "development": "./src/index.ts",
       "import": "./dist/index.js"
     },
-    "./battle.proto": "./proto/battle.proto",
+    "./spacey/battle/v1/battle.proto": "./proto/spacey/battle/v1/battle.proto",
     "./asyncapi.yaml": "./asyncapi.yaml"
   },
   "files": [

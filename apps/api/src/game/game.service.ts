@@ -1,9 +1,16 @@
 import { randomBytes, createHash } from "node:crypto";
 import { Inject, Injectable } from "@nestjs/common";
-import type { ApplyShipBuildCommandsRequestDto, BattleConnectionDto, CreateMissionAttemptRequestDto, LegacyBuildImportProposalDto } from "@spacey/contracts";
+import type {
+  ApplyShipBuildCommandsRequestDto,
+  BattleConnectionDto,
+  CreateMissionAttemptRequestDto,
+  LegacyBuildImportProposalDto,
+  MissionAttemptStatusDto,
+} from "@spacey/contracts";
 import { BATTLE_PROTOCOL_VERSION } from "@spacey/protocol";
 import { env } from "../config/env.js";
-import { PLATFORM_REPOSITORY, type PlatformRepository } from "../platform/platform.repository.js";
+import { ApiError } from "../common/api-error.js";
+import { PLATFORM_REPOSITORY, type MissionAttemptRecord, type PlatformRepository } from "../platform/platform.repository.js";
 import { BattleTicketStore } from "../battle/battle-ticket.store.js";
 import { routedBattleWebsocketUrl } from "../battle/battle-routing.js";
 
@@ -26,19 +33,16 @@ export class GameService {
     return this.repository.importLegacyBuild(userId, proposal);
   }
 
-  async createMissionAttempt(userId: string, input: CreateMissionAttemptRequestDto): Promise<BattleConnectionDto> {
-    const rawTicket = randomBytes(32).toString("base64url");
-    const ticketHash = createHash("sha256").update(rawTicket).digest("hex");
-    const ticketExpiresAt = new Date(Date.now() + 30_000);
+  async createMissionAttempt(userId: string, input: CreateMissionAttemptRequestDto): Promise<MissionAttemptStatusDto> {
     const attempt = await this.repository.createMissionAttempt({
       userId,
       missionId: input.missionId,
       shipBuildRevisionId: input.shipBuildRevisionId,
       idempotencyKey: input.idempotencyKey,
-      ticketHash,
-      ticketExpiresAt
     });
-    return this.issueConnection(rawTicket, ticketExpiresAt, userId, attempt);
+    const status = await this.repository.getMissionAttemptStatus(userId, attempt.attemptId);
+    if (!status) throw new ApiError("mission_attempt_missing", 500, "Created mission attempt could not be loaded.");
+    return status;
   }
 
   async reconnectMissionAttempt(userId: string, attemptId: string): Promise<BattleConnectionDto | null> {
@@ -57,17 +61,24 @@ export class GameService {
     rawTicket: string,
     ticketExpiresAt: Date,
     userId: string,
-    attempt: { sessionId: string; attemptId: string; mode: "pve"; simulationConfig: import("@spacey/simulation").MissionSimulationConfig }
+    attempt: MissionAttemptRecord,
   ): Promise<BattleConnectionDto> {
     await this.tickets.issueDefinition(attempt.sessionId, { kind: "pve", userId, simulationConfig: attempt.simulationConfig });
-    await this.tickets.issue(rawTicket, {
+    await this.tickets.rotatePveTicket({
+      rawTicket,
+      previousTicketHash: attempt.previousTicketHash,
+      ticketVersion: attempt.ticketVersion,
+      claims: {
+        sessionId: attempt.sessionId,
+        attemptId: attempt.attemptId,
+        mode: attempt.mode,
+        userId,
+      },
+    });
+    return {
       sessionId: attempt.sessionId,
       attemptId: attempt.attemptId,
       mode: attempt.mode,
-      userId
-    });
-    return {
-      ...attempt,
       websocketUrl: routedBattleWebsocketUrl(env.BATTLE_WS_PUBLIC_URL, attempt.sessionId),
       ticket: rawTicket,
       ticketExpiresAt: ticketExpiresAt.toISOString(),
@@ -77,5 +88,11 @@ export class GameService {
 
   getAttemptStatus(userId: string, attemptId: string) {
     return this.repository.getMissionAttemptStatus(userId, attemptId);
+  }
+
+  async abandonMissionAttempt(userId: string, attemptId: string) {
+    const status = await this.repository.abandonMissionAttempt(userId, attemptId);
+    if (status) await this.tickets.revokeAttempt(attemptId);
+    return status;
   }
 }

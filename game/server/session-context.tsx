@@ -21,6 +21,12 @@ import {
   markLegacyBuildV3ProposalAccepted,
   readLegacyBuildV3Proposal
 } from "@/game/server/legacy-build-v3";
+import {
+  fingerprintTelegramInitData,
+  readTelegramLaunchClaim,
+  telegramUserIdFromInitData,
+  writeTelegramLaunchClaim
+} from "@/game/server/telegram-launch-claim";
 
 export type TelegramLaunchContext = {
   isTelegram: boolean;
@@ -77,27 +83,70 @@ export function ServerSessionProvider({
       setErrorMessage(null);
       clearAccessToken();
       try {
-        try {
-          await refreshAccessToken();
-        } catch (error) {
-          if (!(error instanceof ServerApiError) || (error.status !== 401 && error.status !== 403)) throw error;
-          if (launch.isTelegram && launch.initData) {
-            await authenticateTelegram(launch.initData);
-          } else if (!launch.isTelegram && developmentBrowserAuthEnabled) {
-            await authenticateDevelopment();
-          } else {
+        let expectedTelegramUserId: string | null = null;
+        if (launch.isTelegram && launch.initData) {
+          expectedTelegramUserId = telegramUserIdFromInitData(launch.initData);
+          if (!expectedTelegramUserId) {
             if (active) {
               setStatus("blocked");
-              setErrorMessage(launch.isTelegram
-                ? "Telegram did not provide valid launch authorization. Close and reopen the Mini App."
-                : "SpaceY production gameplay is available only from the Telegram Mini App.");
+              setErrorMessage("Telegram launch authorization does not contain a valid user. Close and reopen the Mini App.");
             }
             return;
+          }
+          const fingerprint = await fingerprintTelegramInitData(launch.initData);
+          const claimedLaunch = readTelegramLaunchClaim(window.sessionStorage, fingerprint);
+          if (claimedLaunch?.telegramUserId === expectedTelegramUserId) {
+            try {
+              await refreshAccessToken();
+            } catch (error) {
+              if (!(error instanceof ServerApiError) || (error.status !== 401 && error.status !== 403)) throw error;
+              if (active) {
+                setStatus("blocked");
+                setErrorMessage("This Telegram launch was already used and its session expired. Close and reopen the Mini App.");
+              }
+              return;
+            }
+          } else {
+            // A new Telegram launch must replace any refresh cookie belonging to
+            // another account; the single-use claim is stored only after the
+            // server has verified the payload successfully.
+            const authenticated = await authenticateTelegram(launch.initData);
+            if (authenticated.profile.telegramUserId !== expectedTelegramUserId) {
+              clearAccessToken();
+              throw new Error("Telegram launch identity does not match the verified server profile.");
+            }
+            writeTelegramLaunchClaim(window.sessionStorage, {
+              fingerprint,
+              telegramUserId: authenticated.profile.telegramUserId
+            });
+          }
+        } else {
+          try {
+            await refreshAccessToken();
+          } catch (error) {
+            if (!(error instanceof ServerApiError) || (error.status !== 401 && error.status !== 403)) throw error;
+            if (!launch.isTelegram && developmentBrowserAuthEnabled) {
+              await authenticateDevelopment();
+            } else {
+              if (active) {
+                setStatus("blocked");
+                setErrorMessage(launch.isTelegram
+                  ? "Telegram did not provide valid launch authorization. Close and reopen the Mini App."
+                  : "SpaceY production gameplay is available only from the Telegram Mini App.");
+              }
+              return;
+            }
           }
         }
 
         const nextBootstrap = await getBootstrap();
         if (!active) return;
+        if (expectedTelegramUserId && nextBootstrap.profile.telegramUserId !== expectedTelegramUserId) {
+          clearAccessToken();
+          setStatus("blocked");
+          setErrorMessage("The active server session belongs to another Telegram account. Close and reopen the Mini App.");
+          return;
+        }
         setBootstrap(nextBootstrap);
         setStatus("ready");
 

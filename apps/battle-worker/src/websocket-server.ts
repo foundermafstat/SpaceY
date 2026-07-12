@@ -13,6 +13,7 @@ import {
   type BattleProtocolCodec,
   type BattleServerMessage
 } from "@spacey/protocol";
+import { battleWorkerMetrics } from "@spacey/observability";
 
 import type { BattleGateway } from "./gateway.js";
 import type { BattleConnection, BattleWorkerLogger } from "./ports.js";
@@ -188,19 +189,31 @@ export class BattleWorkerServer {
   }
 }
 
-class WsBattleConnection implements BattleConnection {
+const OUTBOUND_HIGH_WATER_BYTES = 512 * 1_024;
+const MAX_RELIABLE_QUEUE_MESSAGES = 2_048;
+const MAX_RELIABLE_QUEUE_BYTES = 4 * 1_024 * 1_024;
+const OUTBOUND_RETRY_MS = 10;
+
+export class WsBattleConnection implements BattleConnection {
   readonly id = randomUUID();
   private readonly messageHandlers = new Set<(message: BattleClientMessage) => void | Promise<void>>();
   private readonly closeHandlers = new Set<() => void | Promise<void>>();
   private readonly bufferedMessages: BattleClientMessage[] = [];
   private inboundChain: Promise<void> = Promise.resolve();
   private closed = false;
+  private readonly reliableOutbound: Uint8Array[] = [];
+  private reliableOutboundBytes = 0;
+  private pendingSnapshot: Uint8Array | null = null;
+  private outboundInFlight = false;
+  private outboundTimer: NodeJS.Timeout | null = null;
+  private requestedClose: { code: number; reason: string } | null = null;
 
   constructor(
     private readonly socket: WebSocket,
     private readonly codec: BattleProtocolCodec,
     private readonly logger: BattleWorkerLogger
   ) {
+    battleWorkerMetrics.websocketOpened(this.id);
     (socket as WebSocket & { isAlive?: boolean }).isAlive = true;
     socket.on("message", (data: RawData, isBinary: boolean) => {
       this.inboundChain = this.inboundChain
@@ -214,6 +227,12 @@ class WsBattleConnection implements BattleConnection {
     });
     socket.once("close", () => {
       this.closed = true;
+      if (this.outboundTimer) clearTimeout(this.outboundTimer);
+      this.outboundTimer = null;
+      this.reliableOutbound.length = 0;
+      this.reliableOutboundBytes = 0;
+      this.pendingSnapshot = null;
+      battleWorkerMetrics.websocketClosed(this.id);
       for (const handler of this.closeHandlers) void handler();
       this.closeHandlers.clear();
       this.messageHandlers.clear();
@@ -224,13 +243,34 @@ class WsBattleConnection implements BattleConnection {
   }
 
   send(message: BattleServerMessage): void {
-    if (this.socket.readyState !== WebSocket.OPEN) return;
-    this.socket.send(this.codec.encodeServer(message), { binary: true });
+    if (this.socket.readyState !== WebSocket.OPEN || this.requestedClose) return;
+    const payload = this.codec.encodeServer(message);
+    if (message.type === "battle.snapshot") {
+      if (this.pendingSnapshot) recordSnapshotDrop();
+      this.pendingSnapshot = payload;
+      this.drainOutbound();
+      return;
+    }
+    if (this.reliableOutbound.length >= MAX_RELIABLE_QUEUE_MESSAGES
+      || this.reliableOutboundBytes + payload.byteLength > MAX_RELIABLE_QUEUE_BYTES) {
+      this.logger.warn("Reliable battle WebSocket queue overflow");
+      this.pendingSnapshot = null;
+      this.socket.close(1013, "slow battle client");
+      return;
+    }
+    this.reliableOutbound.push(payload);
+    this.reliableOutboundBytes += payload.byteLength;
+    this.drainOutbound();
   }
 
   close(code: number, reason: string): void {
     if (this.socket.readyState === WebSocket.CLOSED || this.socket.readyState === WebSocket.CLOSING) return;
-    this.socket.close(code, reason);
+    this.requestedClose ??= { code, reason };
+    if (this.pendingSnapshot) {
+      this.pendingSnapshot = null;
+      recordSnapshotDrop();
+    }
+    this.drainOutbound();
   }
 
   onMessage(handler: (message: BattleClientMessage) => void | Promise<void>): () => void {
@@ -257,6 +297,46 @@ class WsBattleConnection implements BattleConnection {
       return;
     }
     for (const handler of this.messageHandlers) await handler(message);
+  }
+
+  private drainOutbound(): void {
+    if (this.closed || this.outboundInFlight || this.socket.readyState !== WebSocket.OPEN) return;
+    if (this.socket.bufferedAmount >= OUTBOUND_HIGH_WATER_BYTES) {
+      this.scheduleOutboundDrain();
+      return;
+    }
+    const reliable = this.reliableOutbound.shift();
+    const payload = reliable ?? this.takePendingSnapshot();
+    if (!payload) {
+      if (this.requestedClose) this.socket.close(this.requestedClose.code, this.requestedClose.reason);
+      return;
+    }
+    if (reliable) this.reliableOutboundBytes -= payload.byteLength;
+    this.outboundInFlight = true;
+    this.socket.send(payload, { binary: true }, (error?: Error) => {
+      this.outboundInFlight = false;
+      if (error) {
+        this.logger.warn("Battle WebSocket outbound send failed", { errorName: error.name });
+        this.socket.close(1011, "battle transport failed");
+        return;
+      }
+      this.drainOutbound();
+    });
+  }
+
+  private takePendingSnapshot(): Uint8Array | null {
+    const snapshot = this.pendingSnapshot;
+    this.pendingSnapshot = null;
+    return snapshot;
+  }
+
+  private scheduleOutboundDrain(): void {
+    if (this.outboundTimer) return;
+    this.outboundTimer = setTimeout(() => {
+      this.outboundTimer = null;
+      this.drainOutbound();
+    }, OUTBOUND_RETRY_MS);
+    this.outboundTimer.unref?.();
   }
 }
 
@@ -313,4 +393,8 @@ async function delay(ms: number): Promise<void> {
     const timer = setTimeout(resolve, ms);
     timer.unref?.();
   });
+}
+
+function recordSnapshotDrop(): void {
+  (battleWorkerMetrics as typeof battleWorkerMetrics & { snapshotDropped?: () => void }).snapshotDropped?.();
 }

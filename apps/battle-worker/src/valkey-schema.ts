@@ -6,6 +6,9 @@ export function battleTicketKey(rawTicket: string): string {
   return `spacey:ws-ticket:${createHash("sha256").update(rawTicket).digest("hex")}`;
 }
 
+export const battleTicketStateKeyPrefix = "spacey:ws-ticket-state:";
+export const battleTicketUserKeyPrefix = "spacey:ws-ticket-user:";
+
 export function parseBattleTicketClaims(serialized: string): BattleTicketClaims | null {
   let value: unknown;
   try {
@@ -57,6 +60,10 @@ export function inputJournalKey(sessionId: string): string {
 export function routeKey(sessionId: string): string {
   return `spacey:battle:route:${sessionId}`;
 }
+
+export const pendingPvpSessionsKey = "spacey:battle:pending:pvp:sessions";
+export const pendingPvpClaimsKey = "spacey:battle:pending:pvp:claims";
+export const pendingPvpClaimLeasesKey = "spacey:battle:pending:pvp:claim-leases";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

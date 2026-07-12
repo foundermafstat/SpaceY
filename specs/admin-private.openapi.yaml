@@ -33,6 +33,119 @@ paths:
       responses:
         "200": { description: "Current admin principal, role and permissions." }
         "401": { description: Admin session missing or invalid. }
+  /session/logout:
+    post:
+      operationId: revokeCurrentAdminSession
+      summary: Revoke the current admin session and clear host-only cookies
+      parameters: [{ $ref: "#/components/parameters/CsrfToken" }]
+      responses:
+        "201": { description: Current database session revoked and browser cookies expired. }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: Origin or CSRF validation failed. }
+  /content/releases:
+    get:
+      operationId: listContentReleases
+      summary: List the most recent content releases and definition counts
+      responses:
+        "200":
+          description: Up to 100 draft, published and retired releases.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [releases]
+                properties:
+                  releases:
+                    type: array
+                    items: { $ref: "#/components/schemas/ContentRelease" }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin or content:read permission rejected." }
+  /content/releases/{releaseId}/revisions:
+    get:
+      operationId: listContentReleaseRevisions
+      summary: Read immutable release and definition revision history
+      parameters: [{ $ref: "#/components/parameters/ReleaseId" }]
+      responses:
+        "200":
+          description: Latest 100 release audit or definition revision records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ContentHistoryEntry" }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin or content:read permission rejected." }
+        "404": { description: Release not found. }
+  /content/releases/{releaseId}/validate:
+    post:
+      operationId: validateContentRelease
+      summary: Validate a draft and preview its canonical configuration hash
+      parameters:
+        - $ref: "#/components/parameters/ReleaseId"
+        - $ref: "#/components/parameters/CsrfToken"
+      responses:
+        "201":
+          description: Semantic validation result; invalid content is returned as violations without mutation.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ContentValidationResult" } } }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or content:read permission rejected." }
+        "409": { description: Release is not a draft. }
+        "404": { description: Release not found. }
+  /content/releases/{releaseId}/clone:
+    post:
+      operationId: clonePublishedContentRelease
+      summary: Clone an immutable published or retired release into a new draft
+      parameters:
+        - $ref: "#/components/parameters/ReleaseId"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CloneContentRelease" } } }
+      responses:
+        "201": { description: New draft and immutable audit committed atomically. }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or content:write permission rejected." }
+        "409": { description: Source is a draft or target version already exists. }
+        "422": { description: Source contains an invalid cross-release reference. }
+  /content/releases/{releaseId}/rollback:
+    post:
+      operationId: rollbackContentReleaseAsDraft
+      summary: Create a new audited draft from a prior immutable release
+      parameters:
+        - $ref: "#/components/parameters/ReleaseId"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CloneContentRelease" } } }
+      responses:
+        "201": { description: Rollback draft created; prior release history remains unchanged. }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or content:write permission rejected." }
+        "409": { description: Source is a draft or target version already exists. }
+  /content/releases/{releaseId}/publish:
+    post:
+      operationId: publishContentRelease
+      summary: Atomically validate and publish a draft while retiring the previous release
+      parameters:
+        - $ref: "#/components/parameters/ReleaseId"
+        - $ref: "#/components/parameters/CsrfToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [reason]
+              properties:
+                reason: { type: string, minLength: 1, maxLength: 500 }
+      responses:
+        "201": { description: "Canonical hash, publication, prior retirement, audit and outbox event committed atomically." }
+        "401": { description: Admin session missing or invalid. }
+        "403": { description: "Origin, CSRF or content:write permission rejected." }
+        "409": { description: Release is no longer a draft. }
+        "422": { description: Semantic validation failed; response contains violations. }
   /auth/webauthn/authentication/options:
     post:
       operationId: beginAdminWebAuthnAuthentication
@@ -198,6 +311,11 @@ components:
       in: header
       required: true
       schema: { type: string, minLength: 32 }
+    ReleaseId:
+      name: releaseId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   securitySchemes:
     adminSession:
       type: apiKey
@@ -218,3 +336,68 @@ components:
       properties:
         challengeId: { type: string, format: uuid }
         credential: { type: object, additionalProperties: true }
+    CloneContentRelease:
+      type: object
+      additionalProperties: false
+      required: [version, reason]
+      properties:
+        version: { type: string, pattern: "^[A-Za-z0-9][A-Za-z0-9._-]{2,79}$" }
+        reason: { type: string, minLength: 1, maxLength: 500 }
+    ContentRelease:
+      type: object
+      additionalProperties: false
+      required: [id, version, status, configHash, schemaVersion, publishedAt, createdAt, updatedAt, counts]
+      properties:
+        id: { type: string, format: uuid }
+        version: { type: string }
+        status: { enum: [DRAFT, PUBLISHED, RETIRED] }
+        configHash: { type: string, pattern: "^[a-f0-9]{64}$" }
+        schemaVersion: { type: integer, minimum: 1 }
+        notes: { type: [string, "null"] }
+        publishedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        counts:
+          type: object
+          additionalProperties: false
+          required: [missions, modules, enemies, dropTables]
+          properties:
+            missions: { type: integer, minimum: 0 }
+            modules: { type: integer, minimum: 0 }
+            enemies: { type: integer, minimum: 0 }
+            dropTables: { type: integer, minimum: 0 }
+    ContentValidationResult:
+      type: object
+      additionalProperties: false
+      required: [releaseId, valid, configHash, simulationVersion, violations]
+      properties:
+        releaseId: { type: string, format: uuid }
+        valid: { type: boolean }
+        configHash: { type: string, pattern: "^[a-f0-9]{64}$" }
+        simulationVersion: { type: string, pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$" }
+        violations:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [code, path, message]
+            properties:
+              code: { type: string }
+              path: { type: string }
+              message: { type: string }
+    ContentHistoryEntry:
+      type: object
+      additionalProperties: false
+      required: [kind, action, resourceType, resourceId, revision, reason, actorAdminId, correlationId, before, after, createdAt]
+      properties:
+        kind: { enum: [release, definition] }
+        action: { type: string }
+        resourceType: { type: string }
+        resourceId: { type: string }
+        revision: { type: [integer, "null"], minimum: 1 }
+        reason: { type: string }
+        actorAdminId: { type: [string, "null"], format: uuid }
+        correlationId: { type: [string, "null"], format: uuid }
+        before: true
+        after: true
+        createdAt: { type: string, format: date-time }

@@ -19,14 +19,37 @@ Valkey ACL material is also external to Git:
 - `/etc/spacey/valkey/users.acl`
 - `/etc/spacey/valkey/health-password`
 
-Use the pooled Neon URL as `DATABASE_URL` for runtime services and a direct Neon URL as
-`DIRECT_URL` only for migrations and backup tooling. Use distinct least-privilege database
-roles for player runtime, admin, and migrations.
+The self-hosted PostgreSQL data-plane requires root-owned bootstrap/rotation files that are
+never exposed to application containers:
+
+- `/etc/spacey/postgres/superuser-password`
+- `/etc/spacey/postgres/backup-password`
+- `/etc/spacey/postgres/migrator-password`
+- `/etc/spacey/postgres/runtime-password`
+- `/etc/spacey/postgres/battle-worker-password`
+- `/etc/spacey/postgres/admin-password`
+- `/etc/spacey/postgres/jobs-password`
+- `/etc/spacey/postgres/telegram-bot-password`
+- `/etc/spacey/postgres/readonly-password`
+
+Encrypted off-host backups additionally use root-owned mode `0600` files:
+
+- `/etc/spacey/backup/postgres.env` — non-secret policy and paths;
+- `/etc/spacey/backup/restic-password` — Restic repository encryption key;
+- `/etc/spacey/backup/s3.env` — scoped S3 credentials (`Get/List/Put/Delete` only on the backup prefix).
+
+The backup login has `pg_read_all_data`, `BYPASSRLS`, read-only sessions and a connection limit of
+two; it has no write, ownership, role-management or server-file privilege. Never reuse it in an app.
+
+Use host `postgres:5432` only from the isolated data-plane Docker network. Each service env file
+uses its own credential-bearing login mapped to exactly one NOLOGIN group role; only
+`migrator.env` may use the migration owner and `DIRECT_URL`. The container bootstrap superuser
+must never appear in an application `DATABASE_URL`.
 
 PostgreSQL role settings such as `statement_timeout`,
 `idle_in_transaction_session_timeout`, and `default_transaction_read_only` on the
 NOLOGIN group roles are not a substitute for login-role settings. Apply the matching
-settings explicitly to every credential-bearing Neon login role during provisioning and
+settings explicitly to every credential-bearing PostgreSQL login role during provisioning and
 verify them with `SHOW` through that exact credential.
 
 Required separation:
@@ -61,3 +84,7 @@ otherwise `export_expires_at` is only an application access boundary, not storag
 Apply `infra/s3/battle-replays-lifecycle.json` to the private replay bucket as well. It enforces
 the 30-day replay retention policy and removes noncurrent versions; the `Expires` object header
 alone is not a deletion control.
+Run the one-shot `access-bootstrap` Compose profile before migrations and after
+credential rotation. It is idempotent and never exposes PostgreSQL on a host
+port. Application `DATABASE_URL` values must use the matching `*_login` role;
+the migrator URL must set role `spacey_migrator` for object ownership.

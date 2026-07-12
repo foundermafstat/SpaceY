@@ -1,5 +1,5 @@
 import type { DomainEventJob, OutboxEvent } from "./domain.js";
-import { captureException } from "@spacey/observability";
+import { captureException, jobsMetrics } from "@spacey/observability";
 import type { JobDispatcher, OutboxRepository } from "./ports.js";
 
 function asJob(event: OutboxEvent): DomainEventJob {
@@ -33,6 +33,7 @@ export class OutboxPump {
     });
 
     for (const event of events) {
+      jobsMetrics.outboxEventClaimed(event.createdAt);
       try {
         await this.dispatcher.dispatch(asJob(event));
         await this.repository.markPublished(event.id, this.options.workerId);

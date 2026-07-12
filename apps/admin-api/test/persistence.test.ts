@@ -163,6 +163,42 @@ test("content revision rejects stale optimistic revision before update", async (
   assert.equal(sql.some((statement) => statement.startsWith("UPDATE mission_definitions")), false);
 });
 
+test("content revision rejects resources outside a draft release", async () => {
+  const sql: string[] = [];
+  const client: AdminSqlClient = {
+    query: async (text) => {
+      sql.push(text);
+      if (text.includes("COALESCE(max(revision)")) return queryResult([{ revision: 0 }]);
+      if (text.includes("JOIN content_releases")) {
+        return queryResult([{ state: { id: "01900000-0000-7000-8000-000000000108" }, release_status: "PUBLISHED" }]);
+      }
+      return queryResult([], 1);
+    },
+  };
+  const unitOfWork = new PostgresAdminMutationUnitOfWork(fakeDatabase({
+    transaction: async (operation) => operation(client),
+  }));
+
+  await assert.rejects(
+    unitOfWork.transaction((transaction) => transaction.applyContentRevision({
+      resourceType: "mission",
+      resourceId: "01900000-0000-7000-8000-000000000108",
+      expectedRevision: 0,
+      payload: { title: "Must clone first" },
+      reason: "Attempted live edit",
+      actor: {
+        adminId: ADMIN_ID,
+        sessionId: SESSION_ID,
+        role: "ContentEditor",
+        authenticationMethod: "webauthn",
+      },
+    })),
+    (error: unknown) => error instanceof ConflictException
+      && (error.getResponse() as { code?: string }).code === "CONTENT_RELEASE_IMMUTABLE",
+  );
+  assert.equal(sql.some((statement) => statement.startsWith("UPDATE mission_definitions")), false);
+});
+
 test("content semantic validation rejects unknown and malformed fields", () => {
   assert.throws(
     () => validateContentPayload({ resourceType: "enemy", payload: { clientReward: 999 } }),

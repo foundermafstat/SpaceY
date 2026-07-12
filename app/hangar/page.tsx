@@ -1,17 +1,24 @@
 "use client";
 
 import type {
+  ActiveGameplayDto,
   InventoryItemDto,
   ShipBuildCommandDto,
   ShipBuildPartDto
 } from "@spacey/contracts";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MissionSelectionPanel } from "@/components/hangar/MissionSelectionPanel";
 import { WalletStrip } from "@/components/hangar/WalletStrip";
 import { UiButton } from "@/components/ui-kit/UiButton";
-import { createMatchmakingTicket } from "@/game/server/api-client";
+import {
+  ACTIVE_MISSION_ATTEMPT_STORAGE_KEY,
+  abandonMissionAttempt,
+  cancelMatchmakingTicket,
+  createMatchmakingTicket,
+  createMissionAttempt,
+  getMissionAttemptStatus
+} from "@/game/server/api-client";
 import { useServerSession } from "@/game/server/session-context";
 
 type HangarSection = "contracts" | "build" | "inventory";
@@ -28,9 +35,13 @@ export default function HangarPage() {
   const [selectedInventoryId, setSelectedInventoryId] = useState<string | null>(null);
   const [buildName, setBuildName] = useState(build?.activeRevision.name ?? "");
   const [saving, setSaving] = useState(false);
+  const [launchingMission, setLaunchingMission] = useState(false);
   const [matchmaking, setMatchmaking] = useState(false);
+  const [activeGameplay, setActiveGameplay] = useState<ActiveGameplayDto | null>(bootstrap.activeGameplay[0] ?? null);
+  const [endingActiveGameplay, setEndingActiveGameplay] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [serverMessageIsError, setServerMessageIsError] = useState(false);
+  const missionLaunchRef = useRef<{ key: string; idempotencyKey: string } | null>(null);
 
   const selectedMission = bootstrap.missions.find((mission) => mission.id === selectedMissionId) ?? null;
   const selectedPart = parts.find((part) => part.inventoryItemId === selectedPartId) ?? null;
@@ -55,6 +66,39 @@ export default function HangarPage() {
     window.addEventListener("hashchange", syncHash);
     return () => window.removeEventListener("hashchange", syncHash);
   }, []);
+
+  useEffect(() => {
+    const serverGameplay = bootstrap.activeGameplay[0] ?? null;
+    if (serverGameplay) {
+      setActiveGameplay(serverGameplay);
+      if (serverGameplay.mode === "pve") {
+        window.sessionStorage.setItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY, serverGameplay.attempt.attemptId);
+      } else {
+        window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+      }
+      return;
+    }
+    const attemptId = window.sessionStorage.getItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+    if (!attemptId) {
+      setActiveGameplay(null);
+      return;
+    }
+    let active = true;
+    void getMissionAttemptStatus(attemptId).then((status) => {
+      if (!active) return;
+      if (status.status === "completed" || status.status === "failed") {
+        window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+        setActiveGameplay(null);
+        return;
+      }
+      setActiveGameplay({ mode: "pve", attempt: status });
+    }).catch(() => {
+      if (active) setServerMessage("Saved mission attempt status is temporarily unavailable.");
+    });
+    return () => {
+      active = false;
+    };
+  }, [bootstrap.activeGameplay]);
 
   const showSection = useCallback((nextSection: HangarSection) => {
     setSection(nextSection);
@@ -109,13 +153,66 @@ export default function HangarPage() {
     });
   }, [commit, selectedInventory]);
 
-  const launchHref = selectedMission
-    ? { pathname: "/battle" as const, query: { mission: selectedMission.id } }
-    : null;
+  const launchPve = useCallback(async () => {
+    const shipBuildRevisionId = build?.activeRevision.id;
+    if (!selectedMission || !shipBuildRevisionId || launchingMission || activeGameplay) return;
+    const key = `${selectedMission.id}:${shipBuildRevisionId}`;
+    if (!missionLaunchRef.current || missionLaunchRef.current.key !== key) {
+      missionLaunchRef.current = { key, idempotencyKey: crypto.randomUUID() };
+    }
+    setLaunchingMission(true);
+    setServerMessage(null);
+    setServerMessageIsError(false);
+    try {
+      const attempt = await createMissionAttempt({
+        missionId: selectedMission.id,
+        shipBuildRevisionId,
+        idempotencyKey: missionLaunchRef.current.idempotencyKey
+      });
+      window.sessionStorage.setItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY, attempt.attemptId);
+      router.push(`/battle?attemptId=${encodeURIComponent(attempt.attemptId)}`);
+    } catch (error) {
+      setServerMessageIsError(true);
+      setServerMessage(error instanceof Error ? error.message : "Mission attempt could not be created.");
+      setLaunchingMission(false);
+    }
+  }, [activeGameplay, build?.activeRevision.id, launchingMission, router, selectedMission]);
+
+  const endActiveGameplay = useCallback(async () => {
+    if (!activeGameplay || endingActiveGameplay) return;
+    setEndingActiveGameplay(true);
+    setServerMessage(null);
+    setServerMessageIsError(false);
+    try {
+      if (activeGameplay.mode === "pve") {
+        await abandonMissionAttempt(activeGameplay.attempt.attemptId);
+      } else {
+        await cancelMatchmakingTicket(activeGameplay.matchmakingTicket.id);
+      }
+      window.sessionStorage.removeItem(ACTIVE_MISSION_ATTEMPT_STORAGE_KEY);
+      setActiveGameplay(null);
+      await refreshBootstrap().catch(() => undefined);
+      setServerMessage(activeGameplay.mode === "pve"
+        ? "Mission attempt abandoned; the build is available again."
+        : "Ranked matchmaking cancelled; the build is available again.");
+    } catch (error) {
+      setServerMessageIsError(true);
+      setServerMessage(error instanceof Error ? error.message : "Active gameplay could not be ended.");
+    } finally {
+      setEndingActiveGameplay(false);
+    }
+  }, [activeGameplay, endingActiveGameplay, refreshBootstrap]);
+
+  const resumeActiveGameplay = useCallback(() => {
+    if (!activeGameplay) return;
+    router.push(activeGameplay.mode === "pve"
+      ? `/battle?attemptId=${encodeURIComponent(activeGameplay.attempt.attemptId)}`
+      : `/battle?matchmakingTicket=${encodeURIComponent(activeGameplay.matchmakingTicket.id)}`);
+  }, [activeGameplay, router]);
 
   const launchPvp = useCallback(async () => {
     const shipBuildRevisionId = build?.activeRevision.id;
-    if (!shipBuildRevisionId || matchmaking) return;
+    if (!shipBuildRevisionId || matchmaking || activeGameplay) return;
     setMatchmaking(true);
     setServerMessage(null);
     setServerMessageIsError(false);
@@ -131,7 +228,7 @@ export default function HangarPage() {
       setServerMessage(error instanceof Error ? error.message : "PvP matchmaking could not be started.");
       setMatchmaking(false);
     }
-  }, [build?.activeRevision.id, matchmaking, router]);
+  }, [activeGameplay, build?.activeRevision.id, matchmaking, router]);
 
   return (
     <main className="app-shell game-shell">
@@ -149,14 +246,21 @@ export default function HangarPage() {
               <MiniStat label="CONTENT" value={bootstrap.contentRelease.version} />
             </div>
             <WalletStrip wallet={bootstrap.wallet} />
-            <button
-              className="button primary small"
-              disabled={!build || matchmaking}
-              onClick={() => void launchPvp()}
-              type="button"
-            >{matchmaking ? "Queueing…" : "Ranked PvP"}</button>
-            {launchHref ? (
-              <Link className="button primary small" href={launchHref}>Launch Contract</Link>
+            {bootstrap.capabilities.pvpMatchmaking ? (
+              <button
+                className="button primary small"
+                disabled={!build || matchmaking || Boolean(activeGameplay)}
+                onClick={() => void launchPvp()}
+                type="button"
+              >{matchmaking ? "Queueing…" : "Ranked PvP"}</button>
+            ) : null}
+            {selectedMission ? (
+              <button
+                className="button primary small"
+                disabled={!build || launchingMission || Boolean(activeGameplay)}
+                onClick={() => void launchPve()}
+                type="button"
+              >{launchingMission ? "Creating Attempt…" : "Launch Contract"}</button>
             ) : (
               <span className="button primary small" aria-disabled="true">Select Contract</span>
             )}
@@ -170,6 +274,39 @@ export default function HangarPage() {
               items={[serverMessage ?? (saving ? "Applying command…" : "Validated on server command and launch")]}
               tone={serverMessageIsError ? "warn" : "hint"}
             />
+            {activeGameplay ? (
+              <div className="status-column warn">
+                <strong>
+                  {activeGameplay.mode === "pve" ? "Active contract" : "Ranked PvP"}
+                  {" · "}
+                  {activeGameplay.mode === "pve"
+                    ? activeGameplay.attempt.status
+                    : activeGameplay.matchmakingTicket.status}
+                </strong>
+                <span>
+                  {activeGameplay.mode === "pve"
+                    ? activeGameplay.attempt.attemptId
+                    : activeGameplay.matchmakingTicket.match?.matchId ?? activeGameplay.matchmakingTicket.id}
+                </span>
+                <div className="footer-actions">
+                  <button
+                    className="button small"
+                    onClick={resumeActiveGameplay}
+                    type="button"
+                  >Resume</button>
+                  {activeGameplay.mode === "pve" || activeGameplay.matchmakingTicket.status === "queued" ? (
+                    <button
+                      className="button small"
+                      disabled={endingActiveGameplay}
+                      onClick={() => void endActiveGameplay()}
+                      type="button"
+                    >{endingActiveGameplay
+                        ? activeGameplay.mode === "pve" ? "Abandoning…" : "Cancelling…"
+                        : activeGameplay.mode === "pve" ? "Abandon" : "Cancel"}</button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section className="hangar-stage server-hangar-stage" aria-label="Server ship assembly grid">
@@ -256,7 +393,7 @@ export default function HangarPage() {
                 />
               ) : (
                 <InventoryPalette
-                  inventory={availableInventory}
+                  inventory={bootstrap.inventory}
                   onSelect={setSelectedInventoryId}
                   selectedId={selectedInventoryId}
                 />
@@ -400,13 +537,14 @@ function InventoryPalette({
         <button
           aria-pressed={item.id === selectedId}
           className={item.id === selectedId ? "selected" : ""}
+          disabled={item.state !== "available"}
           key={item.id}
-          onClick={() => onSelect(item.id === selectedId ? null : item.id)}
+          onClick={() => item.state === "available" && onSelect(item.id === selectedId ? null : item.id)}
           type="button"
         >
           <span className="server-inventory-glyph" data-kind={visualPartKind(item.definitionId)}>{partGlyph(item.definitionId)}</span>
           <strong>{item.definitionId}</strong>
-          <small>{item.rarity} · {item.durability}% · {item.contentVersion}</small>
+          <small>{item.rarity} · {item.state} · {item.durability / 100}% · {item.contentVersion}</small>
         </button>
       ))}
     </div>

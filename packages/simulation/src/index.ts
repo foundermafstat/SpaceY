@@ -1,4 +1,29 @@
-export const SIMULATION_VERSION = "1.0.0" as const;
+import {
+  applyRichShipDamage,
+  cloneRichShipState,
+  cloneRichShipStats,
+  consumeEnginePower,
+  createAuthoritativeModuleDamage,
+  createRichShipState,
+  createShipSystemsSnapshot,
+  prepareRichShipTick,
+  richShipConfigTokens,
+  richShipStateTokens,
+  tryFireRichWeapon,
+  validateRichShipConfig,
+  type RichShipRuntimeState,
+  type RichShipSystemsConfig,
+  type AuthoritativeModuleDamage,
+  type ShipSystemsSnapshot
+} from "./rich.js";
+import {
+  ceilPositiveRatio,
+  fixedRotationMilliRadians,
+  isWithinFixedRadius,
+  normalizeFixedAxis
+} from "./fixed.js";
+
+export const SIMULATION_VERSION = "2.0.0" as const;
 export const SIMULATION_TICK_RATE = 30 as const;
 export const SNAPSHOT_INTERVAL_TICKS = 3 as const;
 export const CHECKPOINT_INTERVAL_TICKS = 60 as const;
@@ -12,15 +37,28 @@ export type MissionSimulationMode = "pve" | "pvp";
 export type MissionSimulationStatus = "active" | "victory" | "defeat";
 export type MissionOutcomeReason =
   | "objective_complete"
+  | "objective_failed"
   | "player_destroyed"
   | "time_expired"
   | "disconnect_forfeit";
 
 export type SimulationObjectiveConfig =
   | { type: "destroy_all"; targetKills: number }
-  | { type: "survive_seconds"; targetSeconds: number };
+  | { type: "survive_seconds"; targetSeconds: number }
+  | {
+      type: "protect_target";
+      targetSeconds: number;
+      targetHull: number;
+      collisionRadiusUnits: number;
+    }
+  | {
+      type: "collect_scrap";
+      targetScrap: number;
+      scrapCount: number;
+      collectionRadiusUnits: number;
+    };
 
-export type ShipSimulationStats = {
+export type ShipSimulationStats = RichShipSystemsConfig & {
   hull: number;
   speedUnitsPerSecond: number;
   weaponDamage: number;
@@ -38,6 +76,12 @@ export type EnemySimulationStats = {
   attackCooldownTicks: number;
 };
 
+export type EnemySimulationRosterEntry = {
+  definitionKey: string;
+  count: number;
+  stats: EnemySimulationStats;
+};
+
 export type MissionSimulationConfig = {
   sessionId: string;
   attemptId: string;
@@ -51,9 +95,12 @@ export type MissionSimulationConfig = {
   objective: SimulationObjectiveConfig;
   arenaWidthUnits: number;
   arenaHeightUnits: number;
-  enemyCount: number;
+  enemyRoster?: EnemySimulationRosterEntry[];
+  /** @deprecated Checkpoint compatibility for pre-v2-rich fixtures. */
+  enemyCount?: number;
   player: ShipSimulationStats;
-  enemy: EnemySimulationStats;
+  /** @deprecated Checkpoint compatibility for pre-v2-rich fixtures. */
+  enemy?: EnemySimulationStats;
 };
 
 export type SimulationInputCommand = {
@@ -78,7 +125,7 @@ export type InputAcceptance =
 
 export type SimulationEntitySnapshot = {
   id: string;
-  kind: "player" | "enemy" | "projectile";
+  kind: "player" | "enemy" | "projectile" | "objective";
   xMilli: number;
   yMilli: number;
   velocityXMilliPerTick: number;
@@ -87,6 +134,8 @@ export type SimulationEntitySnapshot = {
   hull: number;
   hullMax: number;
   flags: number;
+  weaponId?: string;
+  shipSystems?: ShipSystemsSnapshot;
 };
 
 export type SimulationSnapshot = {
@@ -106,8 +155,21 @@ export type SimulationSnapshot = {
 export type SimulationEvent = {
   id: number;
   tick: number;
-  type: "weapon_fired" | "entity_damaged" | "entity_destroyed" | "battle_ended";
+  type:
+    | "weapon_fired"
+    | "entity_damaged"
+    | "entity_destroyed"
+    | "battle_ended"
+    | "shield_hit"
+    | "part_damaged"
+    | "module_detached"
+    | "power_state_changed"
+    | "overheated"
+    | "objective_collected";
   entityIds: string[];
+  moduleIds?: string[];
+  weaponId?: string;
+  value?: number;
 };
 
 export type MissionOutcome = {
@@ -115,6 +177,7 @@ export type MissionOutcome = {
   reason: MissionOutcomeReason;
   finalTick: number;
   finalStateHash: string;
+  moduleDamage: AuthoritativeModuleDamage[];
 };
 
 type KinematicBody = {
@@ -128,18 +191,30 @@ type PlayerState = KinematicBody & {
   id: "player";
   hull: number;
   hullMax: number;
-  weaponCooldownRemaining: number;
+  systems: RichShipRuntimeState;
 };
 
 type EnemyState = KinematicBody & {
   id: string;
+  definitionKey: string;
+  stats: EnemySimulationStats;
   hull: number;
   hullMax: number;
   attackCooldownRemaining: number;
 };
 
+type ObjectiveEntityState = KinematicBody & {
+  id: string;
+  objectiveKind: "protected_target" | "scrap";
+  hull: number;
+  hullMax: number;
+  collisionRadiusUnits: number;
+  collected: boolean;
+};
+
 type ProjectileState = KinematicBody & {
   id: string;
+  weaponId: string;
   damage: number;
   ttlTicks: number;
 };
@@ -155,8 +230,10 @@ export type MissionSimulationState = {
   nextProjectileId: number;
   nextEventId: number;
   enemiesDestroyed: number;
+  scrapCollected: number;
   player: PlayerState;
   enemies: EnemyState[];
+  objectiveEntities: ObjectiveEntityState[];
   projectiles: ProjectileState[];
 };
 
@@ -301,6 +378,7 @@ export class MissionSimulation {
     this.updatePlayer(events);
     this.updateEnemies(events);
     this.updateProjectiles(events);
+    this.updateObjectives(events);
     this.updateOutcome(events);
     const stateHash = this.getStateHash();
 
@@ -338,6 +416,7 @@ export class MissionSimulation {
     const entities: SimulationEntitySnapshot[] = [
       snapshotPlayer(this.state.player),
       ...this.state.enemies.map(snapshotEnemy),
+      ...this.state.objectiveEntities.filter((entity) => !entity.collected).map(snapshotObjectiveEntity),
       ...this.state.projectiles.map(snapshotProjectile)
     ];
     return {
@@ -381,7 +460,8 @@ export class MissionSimulation {
         : this.state.status === "victory" ? "victory" : "defeat",
       reason: this.state.outcomeReason,
       finalTick: this.state.tick,
-      finalStateHash: stateHash
+      finalStateHash: stateHash,
+      moduleDamage: createAuthoritativeModuleDamage(this.config.player, this.state.player.systems)
     };
   }
 
@@ -404,71 +484,139 @@ export class MissionSimulation {
 
   private updatePlayer(events: SimulationEvent[]): void {
     const player = this.state.player;
-    const velocity = velocityFromInput(
-      this.activeInput.moveX,
-      this.activeInput.moveY,
-      this.config.player.speedUnitsPerSecond
-    );
+    const brownoutBefore = player.systems.brownout;
+    const systemsTransition = prepareRichShipTick(this.config.player, player.systems, true);
+    if (systemsTransition.overheatedStarted) {
+      events.push(this.createEvent("overheated", [player.id], { value: player.systems.heat }));
+    }
+    const moving = this.activeInput.moveX !== 0 || this.activeInput.moveY !== 0;
+    const enginePowered = consumeEnginePower(this.config.player, player.systems, moving);
+    const velocity = enginePowered
+      ? velocityFromInput(
+          this.activeInput.moveX,
+          this.activeInput.moveY,
+          this.config.player.speedUnitsPerSecond
+        )
+      : { x: 0, y: 0 };
     player.velocityXMilliPerTick = velocity.x;
     player.velocityYMilliPerTick = velocity.y;
     moveWithinArena(player, this.config);
-    player.weaponCooldownRemaining = Math.max(0, player.weaponCooldownRemaining - 1);
 
-    const firePrimary = (this.activeInput.actionFlags & 1) !== 0;
-    if (!firePrimary || player.weaponCooldownRemaining > 0) return;
     const aim = normalizedAxis(this.activeInput.aimX, this.activeInput.aimY, 0, -INPUT_AXIS_SCALE);
-    const projectileVelocity = velocityFromInput(
-      aim.x,
-      aim.y,
-      this.config.player.projectileSpeedUnitsPerSecond
-    );
-    const id = `projectile-${this.state.nextProjectileId}`;
-    this.state.nextProjectileId += 1;
-    this.state.projectiles.push({
-      id,
-      xMilli: player.xMilli,
-      yMilli: player.yMilli,
-      velocityXMilliPerTick: projectileVelocity.x,
-      velocityYMilliPerTick: projectileVelocity.y,
-      damage: this.config.player.weaponDamage,
-      ttlTicks: Math.max(
-        1,
-        Math.ceil(
-          (this.config.player.weaponRangeUnits / this.config.player.projectileSpeedUnitsPerSecond)
-          * SIMULATION_TICK_RATE
+    for (let index = 0; index < player.systems.weapons.length; index += 1) {
+      const wasOverheated = player.systems.overheated;
+      const weapon = tryFireRichWeapon(
+        this.config.player,
+        player.systems,
+        index,
+        this.activeInput.actionFlags
+      );
+      if (!weapon) continue;
+      if (!wasOverheated && player.systems.overheated) {
+        events.push(this.createEvent("overheated", [player.id], { value: player.systems.heat }));
+      }
+      const projectileVelocity = velocityFromInput(
+        aim.x,
+        aim.y,
+        weapon.projectileSpeedUnitsPerSecond
+      );
+      const id = `projectile-${this.state.nextProjectileId}`;
+      this.state.nextProjectileId += 1;
+      this.state.projectiles.push({
+        id,
+        weaponId: weapon.id,
+        xMilli: player.xMilli,
+        yMilli: player.yMilli,
+        velocityXMilliPerTick: projectileVelocity.x,
+        velocityYMilliPerTick: projectileVelocity.y,
+        damage: weapon.damage,
+        ttlTicks: Math.max(
+          1,
+          ceilPositiveRatio(
+            weapon.rangeUnits * SIMULATION_TICK_RATE,
+            weapon.projectileSpeedUnitsPerSecond
+          )
         )
-      )
-    });
-    player.weaponCooldownRemaining = this.config.player.weaponCooldownTicks;
-    events.push(this.createEvent("weapon_fired", [player.id, id]));
+      });
+      events.push(this.createEvent("weapon_fired", [player.id, id], { weaponId: weapon.id }));
+    }
+    if (brownoutBefore !== player.systems.brownout) {
+      events.push(this.createEvent("power_state_changed", [player.id], {
+        value: player.systems.brownout ? 1 : 0
+      }));
+    }
   }
 
   private updateEnemies(events: SimulationEvent[]): void {
     const player = this.state.player;
-    const attackRangeMilli = this.config.enemy.attackRangeUnits * 1_000;
+    const protectedTarget = this.state.objectiveEntities.find((entity) =>
+      entity.objectiveKind === "protected_target" && entity.hull > 0
+    );
     for (const enemy of this.state.enemies) {
       if (enemy.hull <= 0) continue;
+      const target = protectedTarget && protectedTarget.hull > 0 ? protectedTarget : player;
       const direction = normalizedAxis(
-        player.xMilli - enemy.xMilli,
-        player.yMilli - enemy.yMilli,
+        target.xMilli - enemy.xMilli,
+        target.yMilli - enemy.yMilli,
         0,
         0
       );
-      const velocity = velocityFromInput(direction.x, direction.y, this.config.enemy.speedUnitsPerSecond);
+      const velocity = velocityFromInput(direction.x, direction.y, enemy.stats.speedUnitsPerSecond);
       enemy.velocityXMilliPerTick = velocity.x;
       enemy.velocityYMilliPerTick = velocity.y;
       moveWithinArena(enemy, this.config);
       enemy.attackCooldownRemaining = Math.max(0, enemy.attackCooldownRemaining - 1);
 
-      if (enemy.attackCooldownRemaining > 0 || squaredDistance(enemy, player) > attackRangeMilli ** 2) continue;
-      player.hull = Math.max(0, player.hull - this.config.enemy.attackDamage);
-      enemy.attackCooldownRemaining = this.config.enemy.attackCooldownTicks;
-      events.push(this.createEvent("entity_damaged", [player.id, enemy.id]));
+      if (enemy.attackCooldownRemaining > 0
+        || !isWithinFixedRadius(
+          enemy.xMilli,
+          enemy.yMilli,
+          target.xMilli,
+          target.yMilli,
+          enemy.stats.attackRangeUnits * 1_000
+        )) {
+        continue;
+      }
+      if (target !== player) {
+        const damage = Math.min(target.hull, enemy.stats.attackDamage);
+        target.hull -= damage;
+        enemy.attackCooldownRemaining = enemy.stats.attackCooldownTicks;
+        events.push(this.createEvent("entity_damaged", [target.id, enemy.id], { value: damage }));
+        if (target.hull === 0) events.push(this.createEvent("entity_destroyed", [target.id]));
+        continue;
+      }
+      const damage = applyRichShipDamage(
+        this.config.player,
+        player.systems,
+        enemy.stats.attackDamage,
+        0,
+        0
+      );
+      player.hull = damage.coreDestroyed
+        ? 0
+        : Math.max(0, player.hull - damage.hullDamage);
+      enemy.attackCooldownRemaining = enemy.stats.attackCooldownTicks;
+      if (damage.shieldDamage > 0) {
+        events.push(this.createEvent("shield_hit", [player.id, enemy.id], { value: damage.shieldDamage }));
+      }
+      if (damage.moduleId) {
+        events.push(this.createEvent("part_damaged", [player.id, enemy.id], {
+          moduleIds: [damage.moduleId],
+          value: damage.moduleDamage
+        }));
+      }
+      if (damage.detachedModuleIds.length > 0) {
+        events.push(this.createEvent("module_detached", [player.id], {
+          moduleIds: damage.detachedModuleIds
+        }));
+      }
+      if (damage.hullDamage > 0) {
+        events.push(this.createEvent("entity_damaged", [player.id, enemy.id], { value: damage.hullDamage }));
+      }
     }
   }
 
   private updateProjectiles(events: SimulationEvent[]): void {
-    const collisionRadiusMilli = this.config.enemy.collisionRadiusUnits * 1_000;
     const survivingProjectiles: ProjectileState[] = [];
     for (const projectile of this.state.projectiles) {
       projectile.xMilli += projectile.velocityXMilliPerTick;
@@ -476,7 +624,16 @@ export class MissionSimulation {
       projectile.ttlTicks -= 1;
       let hit = false;
       for (const enemy of this.state.enemies) {
-        if (enemy.hull <= 0 || squaredDistance(projectile, enemy) > collisionRadiusMilli ** 2) continue;
+        if (enemy.hull <= 0
+          || !isWithinFixedRadius(
+            projectile.xMilli,
+            projectile.yMilli,
+            enemy.xMilli,
+            enemy.yMilli,
+            enemy.stats.collisionRadiusUnits * 1_000
+          )) {
+          continue;
+        }
         enemy.hull = Math.max(0, enemy.hull - projectile.damage);
         events.push(this.createEvent("entity_damaged", [enemy.id, projectile.id]));
         if (enemy.hull === 0) {
@@ -495,10 +652,34 @@ export class MissionSimulation {
     this.state.projectiles = survivingProjectiles;
   }
 
+  private updateObjectives(events: SimulationEvent[]): void {
+    if (this.config.objective.type !== "collect_scrap") return;
+    for (const objectiveEntity of this.state.objectiveEntities) {
+      if (objectiveEntity.objectiveKind !== "scrap" || objectiveEntity.collected) continue;
+      const collectionRadiusMilli = this.config.objective.collectionRadiusUnits * 1_000;
+      if (!isWithinFixedRadius(
+        this.state.player.xMilli,
+        this.state.player.yMilli,
+        objectiveEntity.xMilli,
+        objectiveEntity.yMilli,
+        collectionRadiusMilli
+      )) continue;
+      objectiveEntity.collected = true;
+      objectiveEntity.hull = 0;
+      this.state.scrapCollected += 1;
+      events.push(this.createEvent("objective_collected", [this.state.player.id, objectiveEntity.id], {
+        value: this.state.scrapCollected
+      }));
+    }
+  }
+
   private updateOutcome(events: SimulationEvent[]): void {
     if (this.state.player.hull <= 0) {
       this.state.status = "defeat";
       this.state.outcomeReason = "player_destroyed";
+    } else if (protectedTargetDestroyed(this.config, this.state)) {
+      this.state.status = "defeat";
+      this.state.outcomeReason = "objective_failed";
     } else if (objectiveComplete(this.config, this.state)) {
       this.state.status = "victory";
       this.state.outcomeReason = "objective_complete";
@@ -511,8 +692,12 @@ export class MissionSimulation {
     }
   }
 
-  private createEvent(type: SimulationEvent["type"], entityIds: string[]): SimulationEvent {
-    const event = { id: this.state.nextEventId, tick: this.state.tick, type, entityIds };
+  private createEvent(
+    type: SimulationEvent["type"],
+    entityIds: string[],
+    details: Pick<SimulationEvent, "moduleIds" | "weaponId" | "value"> = {}
+  ): SimulationEvent {
+    const event = { id: this.state.nextEventId, tick: this.state.tick, type, entityIds, ...details };
     this.state.nextEventId += 1;
     return event;
   }
@@ -531,19 +716,24 @@ function createInitialState(config: MissionSimulationConfig, rng: SeededRng): Mi
   const widthMilli = config.arenaWidthUnits * 1_000;
   const heightMilli = config.arenaHeightUnits * 1_000;
   const enemies: EnemyState[] = [];
-  for (let index = 0; index < config.enemyCount; index += 1) {
-    const margin = config.enemy.collisionRadiusUnits * 1_000;
-    enemies.push({
-      id: `enemy-${index + 1}`,
-      xMilli: rng.nextInt(margin, widthMilli - margin),
-      yMilli: rng.nextInt(margin, heightMilli - margin),
-      velocityXMilliPerTick: 0,
-      velocityYMilliPerTick: 0,
-      hull: config.enemy.hull,
-      hullMax: config.enemy.hull,
-      attackCooldownRemaining: config.enemy.attackCooldownTicks
-    });
+  for (const rosterEntry of resolveEnemyRoster(config)) {
+    for (let index = 0; index < rosterEntry.count; index += 1) {
+      const margin = rosterEntry.stats.collisionRadiusUnits * 1_000;
+      enemies.push({
+        id: `enemy-${enemies.length + 1}`,
+        definitionKey: rosterEntry.definitionKey,
+        stats: { ...rosterEntry.stats },
+        xMilli: rng.nextInt(margin, widthMilli - margin),
+        yMilli: rng.nextInt(margin, heightMilli - margin),
+        velocityXMilliPerTick: 0,
+        velocityYMilliPerTick: 0,
+        hull: rosterEntry.stats.hull,
+        hullMax: rosterEntry.stats.hull,
+        attackCooldownRemaining: rosterEntry.stats.attackCooldownTicks
+      });
+    }
   }
+  const objectiveEntities = createObjectiveEntities(config, rng, widthMilli, heightMilli);
   return {
     tick: 0,
     status: "active",
@@ -553,19 +743,63 @@ function createInitialState(config: MissionSimulationConfig, rng: SeededRng): Mi
     nextProjectileId: 1,
     nextEventId: 1,
     enemiesDestroyed: 0,
+    scrapCollected: 0,
     player: {
       id: "player",
       xMilli: Math.trunc(widthMilli / 2),
-      yMilli: Math.trunc(heightMilli / 2),
+      yMilli: config.objective.type === "protect_target"
+        ? Math.min(heightMilli, Math.trunc(heightMilli / 2) + 150_000)
+        : Math.trunc(heightMilli / 2),
       velocityXMilliPerTick: 0,
       velocityYMilliPerTick: 0,
       hull: config.player.hull,
       hullMax: config.player.hull,
-      weaponCooldownRemaining: 0
+      systems: createRichShipState(config.player)
     },
     enemies,
+    objectiveEntities,
     projectiles: []
   };
+}
+
+function createObjectiveEntities(
+  config: MissionSimulationConfig,
+  rng: SeededRng,
+  widthMilli: number,
+  heightMilli: number
+): ObjectiveEntityState[] {
+  if (config.objective.type === "protect_target") {
+    return [{
+      id: "objective-convoy",
+      objectiveKind: "protected_target",
+      xMilli: Math.trunc(widthMilli / 2),
+      yMilli: Math.trunc(heightMilli / 2),
+      velocityXMilliPerTick: 0,
+      velocityYMilliPerTick: 0,
+      hull: config.objective.targetHull,
+      hullMax: config.objective.targetHull,
+      collisionRadiusUnits: config.objective.collisionRadiusUnits,
+      collected: false
+    }];
+  }
+  if (config.objective.type !== "collect_scrap") return [];
+  const margin = config.objective.collectionRadiusUnits * 1_000;
+  const entities: ObjectiveEntityState[] = [];
+  for (let index = 0; index < config.objective.scrapCount; index += 1) {
+    entities.push({
+      id: `objective-scrap-${index + 1}`,
+      objectiveKind: "scrap",
+      xMilli: rng.nextInt(margin, widthMilli - margin),
+      yMilli: rng.nextInt(margin, heightMilli - margin),
+      velocityXMilliPerTick: 0,
+      velocityYMilliPerTick: 0,
+      hull: 1,
+      hullMax: 1,
+      collisionRadiusUnits: config.objective.collectionRadiusUnits,
+      collected: false
+    });
+  }
+  return entities;
 }
 
 function validateConfig(config: MissionSimulationConfig): void {
@@ -578,29 +812,89 @@ function validateConfig(config: MissionSimulationConfig): void {
       throw new Error("Simulation dimensions and duration must be bounded positive integers.");
     }
   }
-  if (!Number.isSafeInteger(config.enemyCount) || config.enemyCount < 0 || config.enemyCount > 512) {
-    throw new Error("Enemy count must be an integer between 0 and 512.");
-  }
+  const enemyRoster = resolveEnemyRoster(config);
+  const enemyCount = enemyRoster.reduce((sum, entry) => sum + entry.count, 0);
+  if (enemyCount > 512) throw new Error("Enemy count must be an integer between 0 and 512.");
   if (!Number.isSafeInteger(config.seed) || config.seed < 0 || config.seed > UINT32_MAX) {
     throw new Error("Simulation seed must be an unsigned 32-bit integer.");
   }
-  if (config.objective.type === "destroy_all") {
-    if (!Number.isSafeInteger(config.objective.targetKills)
-      || config.objective.targetKills <= 0
-      || config.objective.targetKills > config.enemyCount) {
-      throw new Error("Destroy objective must target the configured enemy population.");
-    }
-  } else if (!Number.isSafeInteger(config.objective.targetSeconds)
-    || config.objective.targetSeconds <= 0
-    || config.objective.targetSeconds > config.durationSeconds) {
-    throw new Error("Survival objective must fit inside the mission duration.");
+  switch (config.objective.type) {
+    case "destroy_all":
+      if (!Number.isSafeInteger(config.objective.targetKills)
+        || config.objective.targetKills <= 0
+        || config.objective.targetKills !== enemyCount) {
+        throw new Error("Destroy-all objective must target the complete configured enemy population.");
+      }
+      break;
+    case "survive_seconds":
+      validateObjectiveSeconds(config.objective.targetSeconds, config.durationSeconds, "Survival");
+      break;
+    case "protect_target":
+      validateObjectiveSeconds(config.objective.targetSeconds, config.durationSeconds, "Protect-target");
+      validateBoundedPositiveInteger(config.objective.targetHull, "Protect-target hull");
+      validateBoundedPositiveInteger(config.objective.collisionRadiusUnits, "Protect-target collision radius");
+      break;
+    case "collect_scrap":
+      validateBoundedPositiveInteger(config.objective.targetScrap, "Collect-scrap target");
+      validateBoundedPositiveInteger(config.objective.scrapCount, "Collect-scrap entity count");
+      validateBoundedPositiveInteger(config.objective.collectionRadiusUnits, "Collect-scrap radius");
+      if (config.objective.targetScrap > config.objective.scrapCount || config.objective.scrapCount > 512) {
+        throw new Error("Collect-scrap target must fit the configured scrap population.");
+      }
+      break;
   }
-  validateStats(config.player, "player");
-  validateStats(config.enemy, "enemy");
-  const minimumArenaDimension = config.enemy.collisionRadiusUnits * 2 + 1;
+  validatePlayerStats(config.player);
+  for (const [index, entry] of enemyRoster.entries()) {
+    if (!entry.definitionKey || entry.definitionKey.length > 128) {
+      throw new Error(`enemyRoster[${index}].definitionKey must be a bounded non-empty string.`);
+    }
+    if (!Number.isSafeInteger(entry.count) || entry.count <= 0 || entry.count > 512) {
+      throw new Error(`enemyRoster[${index}].count must be a bounded positive integer.`);
+    }
+    validateStats(entry.stats, `enemyRoster[${index}].stats`);
+  }
+  const maximumCollisionRadius = Math.max(
+    config.objective.type === "collect_scrap" ? config.objective.collectionRadiusUnits : 0,
+    config.objective.type === "protect_target" ? config.objective.collisionRadiusUnits : 0,
+    ...enemyRoster.map((entry) => entry.stats.collisionRadiusUnits),
+    1
+  );
+  const minimumArenaDimension = maximumCollisionRadius * 2 + 1;
   if (config.arenaWidthUnits < minimumArenaDimension || config.arenaHeightUnits < minimumArenaDimension) {
     throw new Error("Arena is too small for the configured collision radius.");
   }
+}
+
+function validateObjectiveSeconds(value: number, durationSeconds: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > durationSeconds) {
+    throw new Error(`${label} objective must fit inside the mission duration.`);
+  }
+}
+
+function validateBoundedPositiveInteger(value: number, label: string): void {
+  if (!Number.isSafeInteger(value) || value <= 0 || value > 1_000_000) {
+    throw new Error(`${label} must be a bounded positive integer.`);
+  }
+}
+
+function resolveEnemyRoster(config: MissionSimulationConfig): EnemySimulationRosterEntry[] {
+  if (Array.isArray(config.enemyRoster)) {
+    return config.enemyRoster.map((entry) => ({
+      definitionKey: entry.definitionKey,
+      count: entry.count,
+      stats: { ...entry.stats }
+    }));
+  }
+  const legacyEnemyCount = config.enemyCount;
+  if (config.enemy && typeof legacyEnemyCount === "number"
+    && Number.isSafeInteger(legacyEnemyCount) && legacyEnemyCount >= 0) {
+    return legacyEnemyCount === 0 ? [] : [{
+      definitionKey: "legacy-enemy",
+      count: legacyEnemyCount,
+      stats: { ...config.enemy }
+    }];
+  }
+  throw new Error("Simulation requires an explicit enemy roster.");
 }
 
 function validateStats(stats: Record<string, number>, label: string): void {
@@ -609,6 +903,18 @@ function validateStats(stats: Record<string, number>, label: string): void {
       throw new Error(`${label}.${key} must be a bounded positive integer.`);
     }
   }
+}
+
+function validatePlayerStats(stats: ShipSimulationStats): void {
+  validateStats({
+    hull: stats.hull,
+    speedUnitsPerSecond: stats.speedUnitsPerSecond,
+    weaponDamage: stats.weaponDamage,
+    weaponRangeUnits: stats.weaponRangeUnits,
+    weaponCooldownTicks: stats.weaponCooldownTicks,
+    projectileSpeedUnitsPerSecond: stats.projectileSpeedUnitsPerSecond
+  }, "player");
+  validateRichShipConfig(stats, "player");
 }
 
 function isValidInput(input: SimulationInputCommand): boolean {
@@ -644,13 +950,7 @@ function normalizedAxis(
   fallbackX: number,
   fallbackY: number
 ): { x: number; y: number } {
-  if (x === 0 && y === 0) return { x: fallbackX, y: fallbackY };
-  const length = Math.hypot(x, y);
-  if (length <= INPUT_AXIS_SCALE) return { x, y };
-  return {
-    x: Math.round((x / length) * INPUT_AXIS_SCALE),
-    y: Math.round((y / length) * INPUT_AXIS_SCALE)
-  };
+  return normalizeFixedAxis(x, y, INPUT_AXIS_SCALE, fallbackX, fallbackY);
 }
 
 function moveWithinArena(body: KinematicBody, config: MissionSimulationConfig): void {
@@ -665,41 +965,77 @@ function isInsideArena(body: KinematicBody, config: MissionSimulationConfig): bo
     && body.yMilli <= config.arenaHeightUnits * 1_000;
 }
 
-function squaredDistance(left: KinematicBody, right: KinematicBody): number {
-  const dx = left.xMilli - right.xMilli;
-  const dy = left.yMilli - right.yMilli;
-  return dx * dx + dy * dy;
+function objectiveComplete(config: MissionSimulationConfig, state: MissionSimulationState): boolean {
+  switch (config.objective.type) {
+    case "destroy_all":
+      return state.enemiesDestroyed >= config.objective.targetKills;
+    case "survive_seconds":
+    case "protect_target":
+      return state.tick >= config.objective.targetSeconds * SIMULATION_TICK_RATE;
+    case "collect_scrap":
+      return state.scrapCollected >= config.objective.targetScrap;
+  }
 }
 
-function objectiveComplete(config: MissionSimulationConfig, state: MissionSimulationState): boolean {
-  return config.objective.type === "destroy_all"
-    ? state.enemiesDestroyed >= config.objective.targetKills
-    : state.tick >= config.objective.targetSeconds * SIMULATION_TICK_RATE;
+function protectedTargetDestroyed(config: MissionSimulationConfig, state: MissionSimulationState): boolean {
+  return config.objective.type === "protect_target"
+    && state.objectiveEntities.some((entity) => entity.objectiveKind === "protected_target" && entity.hull <= 0);
 }
 
 function objectiveSnapshot(
   config: MissionSimulationConfig,
   state: MissionSimulationState
 ): SimulationSnapshot["objective"] {
-  return config.objective.type === "destroy_all"
-    ? { type: "destroy_all", progress: state.enemiesDestroyed, target: config.objective.targetKills }
-    : {
+  switch (config.objective.type) {
+    case "destroy_all":
+      return { type: "destroy_all", progress: state.enemiesDestroyed, target: config.objective.targetKills };
+    case "survive_seconds":
+      return {
         type: "survive_seconds",
         progress: Math.min(config.objective.targetSeconds, Math.floor(state.tick / SIMULATION_TICK_RATE)),
         target: config.objective.targetSeconds
       };
+    case "protect_target":
+      return {
+        type: "protect_target",
+        progress: Math.min(config.objective.targetSeconds, Math.floor(state.tick / SIMULATION_TICK_RATE)),
+        target: config.objective.targetSeconds
+      };
+    case "collect_scrap":
+      return {
+        type: "collect_scrap",
+        progress: state.scrapCollected,
+        target: config.objective.targetScrap
+      };
+  }
 }
 
 function snapshotPlayer(player: PlayerState): SimulationEntitySnapshot {
-  return snapshotBody(player, "player", player.hull, player.hullMax, player.hull <= 0 ? 1 : 0);
+  return {
+    ...snapshotBody(player, "player", player.hull, player.hullMax, player.hull <= 0 ? 1 : 0),
+    shipSystems: createShipSystemsSnapshot(player.systems)
+  };
 }
 
 function snapshotEnemy(enemy: EnemyState): SimulationEntitySnapshot {
   return snapshotBody(enemy, "enemy", enemy.hull, enemy.hullMax, enemy.hull <= 0 ? 1 : 0);
 }
 
+function snapshotObjectiveEntity(entity: ObjectiveEntityState): SimulationEntitySnapshot {
+  return snapshotBody(
+    entity,
+    "objective",
+    entity.hull,
+    entity.hullMax,
+    entity.objectiveKind === "scrap" ? 2 : entity.hull <= 0 ? 1 : 0
+  );
+}
+
 function snapshotProjectile(projectile: ProjectileState): SimulationEntitySnapshot {
-  return snapshotBody(projectile, "projectile", 1, 1, 0);
+  return {
+    ...snapshotBody(projectile, "projectile", 1, 1, 0),
+    weaponId: projectile.weaponId
+  };
 }
 
 function snapshotBody(
@@ -724,10 +1060,12 @@ function snapshotBody(
 }
 
 function rotationFromVelocity(x: number, y: number): number {
-  return x === 0 && y === 0 ? 0 : Math.round(Math.atan2(y, x) * 1_000);
+  return fixedRotationMilliRadians(x, y);
 }
 
 function computeStateHash(config: MissionSimulationConfig, state: MissionSimulationState): string {
+  const objectiveConfigTokens = simulationObjectiveConfigTokens(config.objective);
+  const enemyRoster = resolveEnemyRoster(config);
   const tokens: Array<string | number> = [
     SIMULATION_VERSION,
     config.contentVersion,
@@ -738,15 +1076,17 @@ function computeStateHash(config: MissionSimulationConfig, state: MissionSimulat
     config.mode,
     config.seed,
     config.durationSeconds,
-    config.objective.type,
-    config.objective.type === "destroy_all"
-      ? config.objective.targetKills
-      : config.objective.targetSeconds,
+    ...objectiveConfigTokens,
     config.arenaWidthUnits,
     config.arenaHeightUnits,
-    config.enemyCount,
-    ...Object.values(config.player),
-    ...Object.values(config.enemy),
+    enemyRoster.reduce((sum, entry) => sum + entry.count, 0),
+    config.player.hull,
+    config.player.speedUnitsPerSecond,
+    config.player.weaponDamage,
+    config.player.weaponRangeUnits,
+    config.player.weaponCooldownTicks,
+    config.player.projectileSpeedUnitsPerSecond,
+    ...richShipConfigTokens(config.player),
     state.tick,
     state.status,
     state.outcomeReason ?? "-",
@@ -755,17 +1095,61 @@ function computeStateHash(config: MissionSimulationConfig, state: MissionSimulat
     state.nextProjectileId,
     state.nextEventId,
     state.enemiesDestroyed,
+    state.scrapCollected,
     ...bodyTokens(state.player),
     state.player.hull,
-    state.player.weaponCooldownRemaining
+    ...richShipStateTokens(state.player.systems)
   ];
+  for (const rosterEntry of enemyRoster) {
+    tokens.push(rosterEntry.definitionKey, rosterEntry.count, ...enemyStatsTokens(rosterEntry.stats));
+  }
   for (const enemy of state.enemies) {
-    tokens.push(...bodyTokens(enemy), enemy.hull, enemy.attackCooldownRemaining);
+    tokens.push(
+      ...bodyTokens(enemy),
+      enemy.definitionKey,
+      ...enemyStatsTokens(enemy.stats),
+      enemy.hull,
+      enemy.attackCooldownRemaining
+    );
+  }
+  for (const objectiveEntity of state.objectiveEntities) {
+    tokens.push(
+      ...bodyTokens(objectiveEntity),
+      objectiveEntity.objectiveKind,
+      objectiveEntity.hull,
+      objectiveEntity.hullMax,
+      objectiveEntity.collisionRadiusUnits,
+      objectiveEntity.collected ? 1 : 0
+    );
   }
   for (const projectile of state.projectiles) {
-    tokens.push(...bodyTokens(projectile), projectile.damage, projectile.ttlTicks);
+    tokens.push(...bodyTokens(projectile), projectile.weaponId, projectile.damage, projectile.ttlTicks);
   }
   return fnv1a64(tokens.join("|"));
+}
+
+function simulationObjectiveConfigTokens(objective: SimulationObjectiveConfig): Array<string | number> {
+  switch (objective.type) {
+    case "destroy_all":
+      return [objective.type, objective.targetKills];
+    case "survive_seconds":
+      return [objective.type, objective.targetSeconds];
+    case "protect_target":
+      return [objective.type, objective.targetSeconds, objective.targetHull, objective.collisionRadiusUnits];
+    case "collect_scrap":
+      return [objective.type, objective.targetScrap, objective.scrapCount, objective.collectionRadiusUnits];
+  }
+}
+
+function enemyStatsTokens(stats: EnemySimulationStats): number[] {
+  return [
+    stats.hull,
+    stats.speedUnitsPerSecond,
+    stats.collisionRadiusUnits,
+    stats.attackDamage,
+    stats.attackRangeUnits,
+    stats.attackCooldownTicks
+  ];
 }
 
 function computeCheckpointHash(
@@ -818,16 +1202,21 @@ function cloneConfig(config: MissionSimulationConfig): MissionSimulationConfig {
   return {
     ...config,
     objective: { ...config.objective },
-    player: { ...config.player },
-    enemy: { ...config.enemy }
+    player: cloneRichShipStats(config.player),
+    enemyRoster: config.enemyRoster?.map((entry) => ({
+      ...entry,
+      stats: { ...entry.stats }
+    })),
+    enemy: config.enemy ? { ...config.enemy } : undefined
   };
 }
 
 function cloneState(state: MissionSimulationState): MissionSimulationState {
   return {
     ...state,
-    player: { ...state.player },
-    enemies: state.enemies.map((enemy) => ({ ...enemy })),
+    player: { ...state.player, systems: cloneRichShipState(state.player.systems) },
+    enemies: state.enemies.map((enemy) => ({ ...enemy, stats: { ...enemy.stats } })),
+    objectiveEntities: state.objectiveEntities.map((entity) => ({ ...entity })),
     projectiles: state.projectiles.map((projectile) => ({ ...projectile }))
   };
 }
@@ -844,4 +1233,5 @@ function fail(message: string): never {
   throw new Error(message);
 }
 
+export * from "./rich.js";
 export * from "./duel.js";

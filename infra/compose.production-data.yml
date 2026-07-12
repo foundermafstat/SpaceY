@@ -1,19 +1,140 @@
-name: spacey-data
+name: "${SPACEY_DATA_PROJECT:-spacey-data}"
 
 services:
+  postgres:
+    image: "${POSTGRES_IMAGE:?set immutable PostgreSQL image reference, name@sha256:digest}"
+    command:
+      - postgres
+      - -c
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-400}"
+      - -c
+      - "shared_buffers=${POSTGRES_SHARED_BUFFERS:?set explicit PostgreSQL shared buffers}"
+      - -c
+      - "effective_cache_size=${POSTGRES_EFFECTIVE_CACHE_SIZE:?set explicit PostgreSQL effective cache size}"
+      - -c
+      - "maintenance_work_mem=${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}"
+      - -c
+      - "work_mem=${POSTGRES_WORK_MEM:-8MB}"
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - wal_compression=on
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - idle_in_transaction_session_timeout=60s
+      - -c
+      - track_io_timing=on
+      - -c
+      - "log_min_duration_statement=${POSTGRES_LOG_MIN_DURATION_MS:-250}"
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_DB: "${POSTGRES_DATABASE:?set the isolated environment database name}"
+      POSTGRES_USER: "${POSTGRES_SUPERUSER:-spacey_bootstrap}"
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres-superuser-password
+      POSTGRES_INITDB_ARGS: "--data-checksums --encoding=UTF8 --auth-host=scram-sha-256"
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 2m
+    shm_size: "${POSTGRES_SHM_SIZE:?set PostgreSQL shared-memory size}"
+    mem_limit: "${POSTGRES_CONTAINER_MEMORY_LIMIT:?set PostgreSQL container memory ceiling}"
+    pids_limit: 512
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "5"
+    tmpfs:
+      - /tmp
+      - /run/postgresql
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - "${SPACEY_CONFIG_DIR:-/etc/spacey}/postgres/superuser-password:/run/secrets/postgres-superuser-password:ro"
+      - "${SPACEY_CONFIG_DIR:-/etc/spacey}/postgres/backup-password:/run/secrets/postgres-backup-password:ro"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          PGPASSWORD="$$(cat /run/secrets/postgres-superuser-password)"
+          psql -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+          -v ON_ERROR_STOP=1 -Atqc 'SELECT 1' | grep -qx 1
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      spacey-data:
+        aliases: [postgres]
+
+  access-bootstrap:
+    image: "${POSTGRES_IMAGE:?set immutable PostgreSQL image reference, name@sha256:digest}"
+    command: ["sh", "/spacey-postgres/bootstrap-access.sh"]
+    profiles: [bootstrap]
+    restart: "no"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: [/tmp]
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: "${POSTGRES_DATABASE:?set the isolated environment database name}"
+      POSTGRES_SUPERUSER: "${POSTGRES_SUPERUSER:-spacey_bootstrap}"
+      SPACEY_CONFIG_DIR: "${SPACEY_CONFIG_DIR:-/etc/spacey}"
+      SPACEY_POSTGRES_SECRET_DIR: /run/secrets/postgres
+    volumes:
+      - ../packages/db/sql:/spacey-db-roles:ro
+      - ./postgres/bootstrap-access.sh:/spacey-postgres/bootstrap-access.sh:ro
+      - "${SPACEY_CONFIG_DIR:-/etc/spacey}/postgres:/run/secrets/postgres:ro"
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [spacey-data]
+
   valkey:
     image: "${VALKEY_IMAGE:?set immutable image reference, preferably name@sha256:digest}"
-    command: ["valkey-server", "--appendonly", "yes", "--aclfile", "/run/secrets/users.acl"]
+    command:
+      - valkey-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - "${VALKEY_MAXMEMORY:?set an explicit staging or production memory ceiling}"
+      - --maxmemory-policy
+      - noeviction
+      - --maxclients
+      - "${VALKEY_MAXCLIENTS:-10000}"
+      - --tcp-keepalive
+      - "60"
+      - --latency-monitor-threshold
+      - "${VALKEY_LATENCY_MONITOR_MS:-100}"
+      - --aclfile
+      - /run/secrets/users.acl
     restart: unless-stopped
     init: true
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     tmpfs: [/tmp]
+    pids_limit: 256
+    mem_limit: "${VALKEY_CONTAINER_MEMORY_LIMIT:?set a container ceiling above VALKEY_MAXMEMORY}"
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "5"
     volumes:
       - valkey-data:/data
-      - /etc/spacey/valkey/users.acl:/run/secrets/users.acl:ro
-      - /etc/spacey/valkey/health-password:/run/secrets/health-password:ro
+      - "${SPACEY_CONFIG_DIR:-/etc/spacey}/valkey/users.acl:/run/secrets/users.acl:ro"
+      - "${SPACEY_CONFIG_DIR:-/etc/spacey}/valkey/health-password:/run/secrets/health-password:ro"
     healthcheck:
       test:
         - CMD-SHELL
@@ -21,13 +142,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+      start_period: 10s
     networks:
       spacey-data:
         aliases: [valkey]
 
 networks:
   spacey-data:
-    name: spacey-data
+    name: "${SPACEY_DATA_NETWORK:-spacey-data}"
 
 volumes:
+  postgres-data: {}
   valkey-data: {}

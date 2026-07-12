@@ -34,7 +34,8 @@ GRANT SELECT, INSERT, UPDATE ON
     user_achievements,
     season_participants,
     legacy_build_imports,
-    player_command_idempotency
+    player_command_idempotency,
+    repair_quotes
 TO spacey_runtime;
 GRANT SELECT ON pvp_matches, pvp_match_participants TO spacey_runtime;
 GRANT SELECT, INSERT ON privacy_requests TO spacey_runtime;
@@ -145,7 +146,17 @@ GRANT SELECT ON
     wallet_ledger_entries,
     mission_attempts,
     mission_results,
-    player_progression
+    player_progression,
+    research_definitions,
+    user_research,
+    achievement_definitions,
+    user_achievements,
+    seasons,
+    season_participants,
+    matchmaking_tickets,
+    pvp_matches,
+    pvp_match_participants,
+    api_keys
 TO spacey_jobs;
 GRANT UPDATE ON users, auth_sessions TO spacey_jobs;
 GRANT SELECT, UPDATE ON telegram_auth_replays TO spacey_jobs;
@@ -153,15 +164,22 @@ GRANT SELECT, DELETE ON telegram_identities, telegram_referrals, telegram_suppor
     telegram_support_tickets, telegram_notification_preferences
 TO spacey_jobs;
 GRANT SELECT ON webhook_subscriptions, api_clients, stars_payment_events TO spacey_jobs;
+GRANT UPDATE ON api_clients, api_keys, webhook_subscriptions TO spacey_jobs;
 GRANT SELECT, INSERT, UPDATE ON webhook_deliveries TO spacey_jobs;
 GRANT INSERT ON stars_payment_events TO spacey_jobs;
 
 GRANT EXECUTE ON FUNCTION spacey_current_user_id() TO spacey_runtime, spacey_battle_worker, spacey_jobs;
+GRANT EXECUTE ON FUNCTION spacey_authenticate_public_oauth_client(text, text) TO spacey_runtime;
+GRANT EXECUTE ON FUNCTION spacey_authenticate_public_api_key(text) TO spacey_runtime;
+GRANT EXECUTE ON FUNCTION spacey_get_active_public_client(text) TO spacey_runtime;
+GRANT EXECUTE ON FUNCTION spacey_jobs_apply_extended_retention(integer) TO spacey_jobs;
+GRANT EXECUTE ON FUNCTION spacey_anonymize_stars_payment_events(uuid) TO spacey_jobs;
 GRANT EXECUTE ON FUNCTION spacey_materialize_pvp_match(
     uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, uuid, bigint, text
 ) TO spacey_runtime;
 GRANT EXECUTE ON FUNCTION spacey_prepare_pvp_connection(uuid, text, timestamptz)
 TO spacey_runtime;
+GRANT EXECUTE ON FUNCTION spacey_load_pvp_simulation_source(uuid) TO spacey_runtime;
 GRANT EXECUTE ON FUNCTION spacey_assert_owned_build_launchable(uuid) TO spacey_runtime;
 GRANT EXECUTE ON FUNCTION spacey_validate_input_journal_owner() TO spacey_battle_worker;
 GRANT EXECUTE ON FUNCTION spacey_public_leaderboard(integer) TO spacey_runtime, spacey_readonly;
@@ -171,6 +189,7 @@ GRANT EXECUTE ON FUNCTION spacey_public_profile(uuid) TO spacey_runtime, spacey_
 GRANT EXECUTE ON FUNCTION spacey_public_aggregate_stats() TO spacey_runtime, spacey_readonly;
 GRANT EXECUTE ON FUNCTION spacey_jobs_purge_admin_audit_logs(integer) TO spacey_jobs;
 GRANT EXECUTE ON FUNCTION spacey_jobs_apply_eu_retention(integer) TO spacey_jobs;
+GRANT EXECUTE ON FUNCTION spacey_jobs_abandon_stale_connecting_attempts(integer) TO spacey_jobs;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE spacey_migrator IN SCHEMA public
     REVOKE ALL ON TABLES FROM PUBLIC;

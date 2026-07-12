@@ -4,6 +4,7 @@ import type { SimulationInputCommand } from "@spacey/simulation";
 import type {
   BattleCheckpointStore,
   BattleInputJournal,
+  PendingPvpSessionQueue,
   BattleRouteLease,
   BattleSessionDefinitionStore,
   BattleSessionRouter,
@@ -14,12 +15,45 @@ import type {
 } from "./ports.js";
 import {
   battleTicketKey,
+  battleTicketStateKeyPrefix,
+  battleTicketUserKeyPrefix,
   checkpointKey,
   definitionKey,
   inputJournalKey,
   parseBattleTicketClaims,
+  pendingPvpClaimLeasesKey,
+  pendingPvpClaimsKey,
+  pendingPvpSessionsKey,
   routeKey
 } from "./valkey-schema.js";
+
+const CONSUME_BATTLE_TICKET_SCRIPT = `
+local serialized = redis.call('GET', KEYS[1])
+if not serialized then return false end
+local decoded, payload = pcall(cjson.decode, serialized)
+if not decoded or type(payload) ~= 'table' then
+  redis.call('DEL', KEYS[1])
+  return false
+end
+local attemptId = payload['attemptId']
+local ticketVersion = tonumber(payload['ticketVersion'])
+if type(attemptId) ~= 'string' or type(payload['userId']) ~= 'string' or not ticketVersion or ticketVersion <= 0 or math.floor(ticketVersion) ~= ticketVersion then
+  redis.call('DEL', KEYS[1])
+  return false
+end
+local stateKey = ARGV[1] .. attemptId
+local currentVersion = tonumber(redis.call('HGET', stateKey, 'version') or '-1')
+local currentTicketKey = redis.call('HGET', stateKey, 'ticketKey')
+local currentUserId = redis.call('HGET', stateKey, 'userId')
+if currentVersion ~= ticketVersion or currentTicketKey ~= KEYS[1] or currentUserId ~= payload['userId'] then
+  redis.call('DEL', KEYS[1])
+  return false
+end
+redis.call('DEL', KEYS[1])
+redis.call('HDEL', stateKey, 'ticketKey')
+redis.call('SREM', ARGV[2] .. payload['userId'], stateKey)
+return serialized
+`;
 
 const ROUTE_REFRESH_SCRIPT = `
 local current = redis.call('GET', KEYS[1])
@@ -46,6 +80,53 @@ end
 return 0
 `;
 
+const MAX_INPUT_JOURNAL_ENTRIES = 16_384;
+const INPUT_JOURNAL_APPEND_SCRIPT = `
+if redis.call('HEXISTS', KEYS[1], ARGV[1]) == 1 then
+  redis.call('EXPIRE', KEYS[1], ARGV[3])
+  return 0
+end
+if redis.call('HLEN', KEYS[1]) >= tonumber(ARGV[4]) then
+  return -1
+end
+redis.call('HSET', KEYS[1], ARGV[1], ARGV[2])
+redis.call('EXPIRE', KEYS[1], ARGV[3])
+return 1
+`;
+
+const CLAIM_PENDING_PVP_SCRIPT = `
+local expired = redis.call('ZRANGEBYSCORE', KEYS[3], '-inf', ARGV[2], 'LIMIT', 0, ARGV[3])
+for _, sessionId in ipairs(expired) do
+  redis.call('HDEL', KEYS[2], sessionId)
+  redis.call('ZREM', KEYS[3], sessionId)
+end
+local candidates = redis.call('ZRANGEBYSCORE', KEYS[1], '-inf', ARGV[2], 'LIMIT', 0, ARGV[3])
+local claimed = {}
+for _, sessionId in ipairs(candidates) do
+  if redis.call('HSETNX', KEYS[2], sessionId, ARGV[1]) == 1 then
+    redis.call('ZADD', KEYS[3], tonumber(ARGV[2]) + tonumber(ARGV[4]), sessionId)
+    table.insert(claimed, sessionId)
+  end
+end
+return claimed
+`;
+
+const RELEASE_PENDING_PVP_SCRIPT = `
+if redis.call('HGET', KEYS[2], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('HDEL', KEYS[2], ARGV[1])
+redis.call('ZREM', KEYS[3], ARGV[1])
+redis.call('ZADD', KEYS[1], ARGV[3], ARGV[1])
+return 1
+`;
+
+const COMPLETE_PENDING_PVP_SCRIPT = `
+if redis.call('HGET', KEYS[2], ARGV[1]) ~= ARGV[2] then return 0 end
+redis.call('HDEL', KEYS[2], ARGV[1])
+redis.call('ZREM', KEYS[3], ARGV[1])
+redis.call('ZREM', KEYS[1], ARGV[1])
+return 1
+`;
+
 export function createValkeyClient(url: string): Redis {
   return new Redis(url, {
     lazyConnect: true,
@@ -61,8 +142,14 @@ export class ValkeyBattleTicketValidator implements BattleTicketValidator {
   constructor(private readonly redis: Redis) {}
 
   async validateAndConsume(rawTicket: string): Promise<BattleTicketClaims | null> {
-    const serialized = await this.redis.getdel(battleTicketKey(rawTicket));
-    if (!serialized) return null;
+    const serialized = await this.redis.eval(
+      CONSUME_BATTLE_TICKET_SCRIPT,
+      1,
+      battleTicketKey(rawTicket),
+      battleTicketStateKeyPrefix,
+      battleTicketUserKeyPrefix,
+    );
+    if (typeof serialized !== "string") return null;
     return parseBattleTicketClaims(serialized);
   }
 }
@@ -126,13 +213,16 @@ export class ValkeyBattleInputJournal implements BattleInputJournal {
 
   async append(sessionId: string, userId: string, input: SimulationInputCommand): Promise<void> {
     const key = inputJournalKey(sessionId);
-    const transaction = this.redis.multi();
-    transaction.hsetnx(key, `${userId}:${input.seq}`, JSON.stringify({ userId, input }));
-    transaction.expire(key, this.ttlSeconds);
-    const result = await transaction.exec();
-    if (!result) throw new Error("Valkey input journal transaction was aborted.");
-    const commandError = result.find(([error]: [Error | null, unknown]) => error !== null)?.[0];
-    if (commandError) throw commandError;
+    const result = await this.redis.eval(
+      INPUT_JOURNAL_APPEND_SCRIPT,
+      1,
+      key,
+      `${userId}:${input.seq}`,
+      JSON.stringify({ userId, input }),
+      String(this.ttlSeconds),
+      String(MAX_INPUT_JOURNAL_ENTRIES)
+    );
+    if (result === -1) throw new Error("Valkey input journal capacity exceeded.");
   }
 
   async readAfter(sessionId: string, userId: string, sequence: number): Promise<SimulationInputCommand[]> {
@@ -190,6 +280,50 @@ export class ValkeyBattleSessionRouter implements BattleSessionRouter {
   }
 }
 
+export class ValkeyPendingPvpSessionQueue implements PendingPvpSessionQueue {
+  constructor(private readonly redis: Redis) {}
+
+  async claimBatch(workerId: string, nowMs: number, limit: number, leaseMs: number): Promise<string[]> {
+    const value = await this.redis.eval(
+      CLAIM_PENDING_PVP_SCRIPT,
+      3,
+      pendingPvpSessionsKey,
+      pendingPvpClaimsKey,
+      pendingPvpClaimLeasesKey,
+      workerId,
+      String(nowMs),
+      String(limit),
+      String(leaseMs),
+    );
+    return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+  }
+
+  async release(sessionId: string, workerId: string, availableAtMs: number): Promise<void> {
+    await this.redis.eval(
+      RELEASE_PENDING_PVP_SCRIPT,
+      3,
+      pendingPvpSessionsKey,
+      pendingPvpClaimsKey,
+      pendingPvpClaimLeasesKey,
+      sessionId,
+      workerId,
+      String(availableAtMs),
+    );
+  }
+
+  async complete(sessionId: string, workerId: string): Promise<void> {
+    await this.redis.eval(
+      COMPLETE_PENDING_PVP_SCRIPT,
+      3,
+      pendingPvpSessionsKey,
+      pendingPvpClaimsKey,
+      pendingPvpClaimLeasesKey,
+      sessionId,
+      workerId,
+    );
+  }
+}
+
 export async function pingValkey(redis: Redis): Promise<void> {
   const result = await redis.ping();
   if (result !== "PONG") throw new Error("Valkey ping failed.");
@@ -219,12 +353,15 @@ function isStoredCheckpoint(value: unknown): value is StoredBattleSessionCheckpo
     return isNonEmptyString(value.attemptId)
       && isNonEmptyString(value.userId)
       && value.mode === "pve"
+      && (value.completedAtMs === undefined || value.completedAtMs === null || isNonNegativeInteger(value.completedAtMs))
       && (value.disconnectedAtMs === null || Number.isSafeInteger(value.disconnectedAtMs))
       && (value.disconnectDeadlineAtMs === null || Number.isSafeInteger(value.disconnectDeadlineAtMs));
   }
   return value.kind === "pvp"
     && isNonEmptyString(value.matchId)
     && typeof value.started === "boolean"
+    && (value.readyDeadlineAtMs === undefined || isNonNegativeInteger(value.readyDeadlineAtMs))
+    && (value.completedAtMs === undefined || value.completedAtMs === null || isNonNegativeInteger(value.completedAtMs))
     && Array.isArray(value.participants)
     && value.participants.length === 2
     && value.participants.every((participant) => isRecord(participant)
@@ -258,6 +395,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
+}
+
+function isNonNegativeInteger(value: unknown): value is number {
+  return Number.isSafeInteger(value) && Number(value) >= 0;
 }
 
 function serializeLease(lease: BattleRouteLease): string {

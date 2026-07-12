@@ -22,14 +22,10 @@ jobs:
       github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-24.04
     outputs:
-      api_url: ${{ steps.release.outputs.api_url }}
       image_prefix: ${{ steps.release.outputs.image_prefix }}
       sha: ${{ steps.release.outputs.sha }}
-      ws_url: ${{ steps.release.outputs.ws_url }}
     env:
       RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
-      NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
-      NEXT_PUBLIC_BATTLE_WS_URL: ${{ vars.NEXT_PUBLIC_BATTLE_WS_URL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -37,35 +33,17 @@ jobs:
           fetch-depth: 1
 
       - id: release
-        name: Fail closed on SHA and production public URLs
+        name: Fail closed on release SHA
         shell: bash
         run: |
           set -euo pipefail
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
 
-          node <<'NODE'
-          const required = [
-            ["NEXT_PUBLIC_API_URL", "https:"],
-            ["NEXT_PUBLIC_BATTLE_WS_URL", "wss:"]
-          ];
-
-          for (const [name, protocol] of required) {
-            const raw = process.env[name];
-            if (!raw) throw new Error(`${name} must be configured as a GitHub repository variable.`);
-            if (raw !== raw.trim() || /[\r\n]/.test(raw)) throw new Error(`${name} contains whitespace.`);
-            const url = new URL(raw);
-            if (url.protocol !== protocol) throw new Error(`${name} must use ${protocol}`);
-            if (url.username || url.password) throw new Error(`${name} must not contain credentials.`);
-          }
-          NODE
-
           repository="${GITHUB_REPOSITORY,,}"
           image_prefix="ghcr.io/${repository}"
-          printf 'api_url=%s\n' "$NEXT_PUBLIC_API_URL" >> "$GITHUB_OUTPUT"
           printf 'image_prefix=%s\n' "$image_prefix" >> "$GITHUB_OUTPUT"
           printf 'sha=%s\n' "$RELEASE_SHA" >> "$GITHUB_OUTPUT"
-          printf 'ws_url=%s\n' "$NEXT_PUBLIC_BATTLE_WS_URL" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build ${{ matrix.service }}
@@ -73,6 +51,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -159,8 +138,6 @@ jobs:
           build-args: |
             APP_FILTER=${{ matrix.filter }}
             VCS_REF=${{ needs.prepare.outputs.sha }}
-            NEXT_PUBLIC_API_URL=${{ needs.prepare.outputs.api_url }}
-            NEXT_PUBLIC_BATTLE_WS_URL=${{ needs.prepare.outputs.ws_url }}
             NEXT_PUBLIC_ALLOW_BROWSER_AUTH=false
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
@@ -248,6 +225,7 @@ jobs:
     needs: [prepare, build]
     runs-on: ubuntu-24.04
     permissions:
+      artifact-metadata: write
       attestations: write
       contents: read
       id-token: write
@@ -261,12 +239,10 @@ jobs:
       - name: Validate records and assemble release manifest
         shell: bash
         env:
-          API_URL: ${{ needs.prepare.outputs.api_url }}
           CI_RUN_ID: ${{ github.event.workflow_run.id }}
           IMAGE_PREFIX: ${{ needs.prepare.outputs.image_prefix }}
           RELEASE_RUN_ID: ${{ github.run_id }}
           RELEASE_SHA: ${{ needs.prepare.outputs.sha }}
-          WS_URL: ${{ needs.prepare.outputs.ws_url }}
         run: |
           set -euo pipefail
           generated_at="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -276,8 +252,6 @@ jobs:
           jq -s \
             --arg sha "$RELEASE_SHA" \
             --arg prefix "$IMAGE_PREFIX" \
-            --arg apiUrl "$API_URL" \
-            --arg wsUrl "$WS_URL" \
             --arg generatedAt "$generated_at" \
             --arg ciRunId "$CI_RUN_ID" \
             --arg releaseRunId "$RELEASE_RUN_ID" \
@@ -293,7 +267,6 @@ jobs:
                   schemaVersion: 1,
                   gitSha: $sha,
                   imagePrefix: $prefix,
-                  publicBuildUrls: {api: $apiUrl, battleWebSocket: $wsUrl},
                   sourceCiRunId: $ciRunId,
                   releaseWorkflowRunId: $releaseRunId,
                   generatedAt: $generatedAt,

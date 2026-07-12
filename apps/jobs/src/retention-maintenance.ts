@@ -10,6 +10,11 @@ export const RETENTION_POLICY = Object.freeze({
   deadWebhookDays: 90,
   publishedOutboxDays: 30,
   adminAuditYears: 1,
+  credentialOverlapExpiresAt: true,
+  retiredApiKeyDays: 30,
+  terminalInputJournalDays: 30,
+  replayMetadataUsesExpiresAt: true,
+  battleCheckpointsUseExpiresAt: true,
 });
 
 export type RetentionMaintenanceResult = Readonly<{
@@ -21,6 +26,12 @@ export type RetentionMaintenanceResult = Readonly<{
   webhookDeliveriesDeleted: number;
   outboxEventsDeleted: number;
   adminAuditLogsDeleted: number;
+  oauthOverlapSecretsCleared: number;
+  webhookOverlapSecretsCleared: number;
+  apiKeysDeleted: number;
+  inputJournalDeleted: number;
+  replayMetadataDeleted: number;
+  battleCheckpointsDeleted: number;
 }>;
 
 type RetentionRow = QueryResultRow & {
@@ -32,6 +43,15 @@ type RetentionRow = QueryResultRow & {
   webhookDeliveriesDeleted: string;
   outboxEventsDeleted: string;
   adminAuditLogsDeleted: string;
+};
+
+type ExtendedRetentionRow = QueryResultRow & {
+  oauthOverlapSecretsCleared: string;
+  webhookOverlapSecretsCleared: string;
+  apiKeysDeleted: string;
+  inputJournalDeleted: string;
+  replayMetadataDeleted: string;
+  battleCheckpointsDeleted: string;
 };
 
 export class PostgresRetentionMaintenance {
@@ -66,6 +86,18 @@ export class PostgresRetentionMaintenance {
       );
       const row = result.rows[0];
       if (!row) throw new Error("EU retention function returned no result");
+      const extended = await client.query<ExtendedRetentionRow>(`
+        SELECT
+          oauth_overlap_secrets_cleared::text AS "oauthOverlapSecretsCleared",
+          webhook_overlap_secrets_cleared::text AS "webhookOverlapSecretsCleared",
+          api_keys_deleted::text AS "apiKeysDeleted",
+          input_journal_deleted::text AS "inputJournalDeleted",
+          replay_metadata_deleted::text AS "replayMetadataDeleted",
+          battle_checkpoints_deleted::text AS "battleCheckpointsDeleted"
+        FROM spacey_jobs_apply_extended_retention($1::int)
+      `, [this.batchSize]);
+      const extendedRow = extended.rows[0];
+      if (!extendedRow) throw new Error("Extended retention function returned no result");
 
       await client.query("COMMIT");
       inTransaction = false;
@@ -78,6 +110,12 @@ export class PostgresRetentionMaintenance {
         webhookDeliveriesDeleted: Number(row.webhookDeliveriesDeleted),
         outboxEventsDeleted: Number(row.outboxEventsDeleted),
         adminAuditLogsDeleted: Number(row.adminAuditLogsDeleted),
+        oauthOverlapSecretsCleared: Number(extendedRow.oauthOverlapSecretsCleared),
+        webhookOverlapSecretsCleared: Number(extendedRow.webhookOverlapSecretsCleared),
+        apiKeysDeleted: Number(extendedRow.apiKeysDeleted),
+        inputJournalDeleted: Number(extendedRow.inputJournalDeleted),
+        replayMetadataDeleted: Number(extendedRow.replayMetadataDeleted),
+        battleCheckpointsDeleted: Number(extendedRow.battleCheckpointsDeleted),
       };
     } catch (error) {
       if (inTransaction) await client.query("ROLLBACK").catch(() => undefined);
@@ -92,12 +130,15 @@ export class PostgresRetentionMaintenance {
       WITH retention_functions AS (
         SELECT
           to_regprocedure('public.spacey_jobs_apply_eu_retention(integer)') AS apply_oid,
-          to_regprocedure('public.spacey_jobs_purge_admin_audit_logs(integer)') AS audit_oid
+          to_regprocedure('public.spacey_jobs_purge_admin_audit_logs(integer)') AS audit_oid,
+          to_regprocedure('public.spacey_jobs_apply_extended_retention(integer)') AS extended_oid
       )
       SELECT apply_oid IS NOT NULL
          AND audit_oid IS NOT NULL
+         AND extended_oid IS NOT NULL
          AND has_function_privilege(current_user, apply_oid, 'EXECUTE')
-         AND has_function_privilege(current_user, audit_oid, 'EXECUTE') AS ready
+         AND has_function_privilege(current_user, audit_oid, 'EXECUTE')
+         AND has_function_privilege(current_user, extended_oid, 'EXECUTE') AS ready
         FROM retention_functions
     `);
     if (!result.rows[0]?.ready) throw new Error("EU retention migration or jobs grant is missing");

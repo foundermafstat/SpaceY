@@ -3,9 +3,12 @@
 import type {
   BattleClientMessage,
   BattleEntitySnapshot,
+  BattleModuleSnapshot,
   BattleObjectiveSnapshot,
   BattleServerMessage,
+  BattleShipSystemsSnapshot,
   BattleSnapshot,
+  BattleWeaponSnapshot,
   PvpParticipantContext,
   ReconnectMetadata
 } from "@spacey/protocol";
@@ -91,6 +94,8 @@ function decodeSnapshot(reader: Reader): BattleSnapshot {
   let lastProcessedInputSequence = 0;
   let status: BattleSnapshot["status"] = "active";
   let objective: BattleObjectiveSnapshot = { type: "destroy_all", progress: 0, target: 0 };
+  let arenaWidthMilli = 0;
+  let arenaHeightMilli = 0;
   const entities: BattleEntitySnapshot[] = [];
   readFields(reader, (field, wire) => {
     if (field === 1 && wire === 2) sessionId = reader.string();
@@ -99,13 +104,28 @@ function decodeSnapshot(reader: Reader): BattleSnapshot {
     else if (field === 4 && wire === 0) lastProcessedInputSequence = reader.uint();
     else if (field === 5 && wire === 0) {
       const value = reader.uint();
-      status = value === 2 ? "victory" : value === 3 ? "defeat" : "active";
+      status = value === 2 ? "victory" : value === 3 ? "defeat" : value === 4 ? "draw" : "active";
     } else if (field === 6 && wire === 2) objective = decodeObjective(reader.message());
     else if (field === 7 && wire === 2) entities.push(decodeEntity(reader.message()));
+    else if (field === 8 && wire === 0) arenaWidthMilli = reader.uint();
+    else if (field === 9 && wire === 0) arenaHeightMilli = reader.uint();
     else reader.skip(wire);
   });
   if (!sessionId) throw new Error("Battle snapshot has no session id.");
-  return { sessionId, tick, stateHash, lastProcessedInputSequence, status, objective, entities };
+  if (arenaWidthMilli <= 0 || arenaHeightMilli <= 0) {
+    throw new Error("Battle snapshot has invalid arena dimensions.");
+  }
+  return {
+    sessionId,
+    tick,
+    stateHash,
+    lastProcessedInputSequence,
+    status,
+    objective,
+    entities,
+    arenaWidthMilli,
+    arenaHeightMilli,
+  };
 }
 
 function decodeObjective(reader: Reader): BattleObjectiveSnapshot {
@@ -119,7 +139,13 @@ function decodeObjective(reader: Reader): BattleObjectiveSnapshot {
     else reader.skip(wire);
   });
   return {
-    type: type === "survive_seconds" ? "survive_seconds" : type === "destroy_opponent" ? "destroy_opponent" : "destroy_all",
+    type: type === "survive_seconds"
+      ? "survive_seconds"
+      : type === "protect_target"
+        ? "protect_target"
+        : type === "collect_scrap"
+          ? "collect_scrap"
+          : type === "destroy_opponent" ? "destroy_opponent" : "destroy_all",
     progress,
     target
   };
@@ -150,6 +176,8 @@ function decodeEntity(reader: Reader): BattleEntitySnapshot {
   let hull = 0;
   let hullMax = 0;
   let flags = 0;
+  let weaponId: string | undefined;
+  let shipSystems: BattleShipSystemsSnapshot | undefined;
   readFields(reader, (field, wire) => {
     if (field === 1 && wire === 2) id = reader.string();
     else if (field === 2 && wire === 0) {
@@ -163,6 +191,8 @@ function decodeEntity(reader: Reader): BattleEntitySnapshot {
     else if (field === 8 && wire === 0) hull = reader.uint();
     else if (field === 9 && wire === 0) hullMax = reader.uint();
     else if (field === 10 && wire === 0) flags = reader.uint();
+    else if (field === 11 && wire === 2) weaponId = nullableString(reader.string()) ?? undefined;
+    else if (field === 12 && wire === 2) shipSystems = decodeShipSystems(reader.message());
     else reader.skip(wire);
   });
   return {
@@ -175,8 +205,107 @@ function decodeEntity(reader: Reader): BattleEntitySnapshot {
     rotationMilliRadians,
     hull,
     hullMax,
-    flags
+    flags,
+    ...(weaponId ? { weaponId } : {}),
+    ...(shipSystems ? { shipSystems } : {})
   };
+}
+
+function decodeShipSystems(reader: Reader): BattleShipSystemsSnapshot {
+  let energy = 0;
+  let energyMax = 0;
+  let heat = 0;
+  let heatMax = 0;
+  let shield = 0;
+  let shieldMax = 0;
+  let shieldRegenDelayRemaining = 0;
+  let overheated = false;
+  let brownout = false;
+  const modules: BattleModuleSnapshot[] = [];
+  const weapons: BattleWeaponSnapshot[] = [];
+  readFields(reader, (field, wire) => {
+    if (field === 1 && wire === 0) energy = reader.uint();
+    else if (field === 2 && wire === 0) energyMax = reader.uint();
+    else if (field === 3 && wire === 0) heat = reader.uint();
+    else if (field === 4 && wire === 0) heatMax = reader.uint();
+    else if (field === 5 && wire === 0) shield = reader.uint();
+    else if (field === 6 && wire === 0) shieldMax = reader.uint();
+    else if (field === 7 && wire === 0) shieldRegenDelayRemaining = reader.uint();
+    else if (field === 8 && wire === 0) overheated = reader.uint() !== 0;
+    else if (field === 9 && wire === 0) brownout = reader.uint() !== 0;
+    else if (field === 10 && wire === 2) modules.push(decodeShipModule(reader.message()));
+    else if (field === 11 && wire === 2) weapons.push(decodeShipWeapon(reader.message()));
+    else reader.skip(wire);
+  });
+  return {
+    energy,
+    energyMax,
+    heat,
+    heatMax,
+    shield,
+    shieldMax,
+    shieldRegenDelayRemaining,
+    overheated,
+    brownout,
+    modules,
+    weapons
+  };
+}
+
+function decodeShipModule(reader: Reader): BattleModuleSnapshot {
+  let id = "";
+  let visualKey = "";
+  let category: BattleModuleSnapshot["category"] = "utility";
+  let hp = 0;
+  let hpMax = 0;
+  let gridX = 0;
+  let gridY = 0;
+  let parentModuleId: string | null = null;
+  let powered = false;
+  let detached = false;
+  let enabled = false;
+  readFields(reader, (field, wire) => {
+    if (field === 1 && wire === 2) id = reader.string();
+    else if (field === 2 && wire === 2) category = moduleCategory(reader.string());
+    else if (field === 3 && wire === 0) hp = reader.uint();
+    else if (field === 4 && wire === 0) hpMax = reader.uint();
+    else if (field === 5 && wire === 0) gridX = reader.sint32();
+    else if (field === 6 && wire === 0) gridY = reader.sint32();
+    else if (field === 7 && wire === 2) parentModuleId = nullableString(reader.string());
+    else if (field === 8 && wire === 0) powered = reader.uint() !== 0;
+    else if (field === 9 && wire === 0) detached = reader.uint() !== 0;
+    else if (field === 10 && wire === 0) enabled = reader.uint() !== 0;
+    else if (field === 11 && wire === 2) visualKey = reader.string();
+    else reader.skip(wire);
+  });
+  return {
+    id,
+    visualKey: visualKey || category,
+    category,
+    hp,
+    hpMax,
+    gridX,
+    gridY,
+    parentModuleId,
+    powered,
+    detached,
+    enabled,
+  };
+}
+
+function decodeShipWeapon(reader: Reader): BattleWeaponSnapshot {
+  let id = "";
+  let moduleId: string | null = null;
+  let cooldownRemaining = 0;
+  let ready = false;
+  readFields(reader, (field, wire) => {
+    if (field === 1 && wire === 2) id = reader.string();
+    else if (field === 2 && wire === 2) moduleId = nullableString(reader.string());
+    else if (field === 3 && wire === 0) cooldownRemaining = reader.uint();
+    else if (field === 4 && wire === 0) ready = reader.uint() !== 0;
+    else reader.skip(wire);
+  });
+  return { id, moduleId, cooldownRemaining, ready };
 }
 
 function decodeReconnect(reader: Reader): ReconnectMetadata {
@@ -201,19 +330,37 @@ function decodeEvent(reader: Reader): BattleServerMessage {
   let tick = 0;
   let eventType = "";
   const entityIds: string[] = [];
+  const moduleIds: string[] = [];
+  const userIds: string[] = [];
+  let weaponId: string | undefined;
+  let value: number | undefined;
   readFields(reader, (field, wire) => {
     if (field === 1 && wire === 0) eventId = reader.uint();
     else if (field === 2 && wire === 0) tick = reader.uint();
     else if (field === 3 && wire === 2) eventType = reader.string();
     else if (field === 4 && wire === 2) entityIds.push(reader.string());
+    else if (field === 5 && wire === 2) moduleIds.push(reader.string());
+    else if (field === 6 && wire === 2) weaponId = nullableString(reader.string()) ?? undefined;
+    else if (field === 7 && wire === 0) value = reader.sint32();
+    else if (field === 8 && wire === 2) userIds.push(reader.string());
     else reader.skip(wire);
   });
-  return { type: "battle.event", eventId, tick, eventType, entityIds };
+  return {
+    type: "battle.event",
+    eventId,
+    tick,
+    eventType,
+    entityIds,
+    ...(moduleIds.length > 0 ? { moduleIds } : {}),
+    ...(userIds.length > 0 ? { userIds } : {}),
+    ...(weaponId ? { weaponId } : {}),
+    ...(value !== undefined ? { value } : {})
+  };
 }
 
 function decodeEnded(reader: Reader): BattleServerMessage {
   let resultId = "";
-  let outcome: "victory" | "defeat" | "forfeit" = "defeat";
+  let outcome: "victory" | "defeat" | "forfeit" | "draw" = "defeat";
   let reason = "";
   let finalTick = 0;
   let finalStateHash = "";
@@ -221,7 +368,13 @@ function decodeEnded(reader: Reader): BattleServerMessage {
     if (field === 1 && wire === 2) resultId = reader.string();
     else if (field === 2 && wire === 2) {
       const value = reader.string();
-      outcome = value === "victory" ? "victory" : value === "forfeit" ? "forfeit" : "defeat";
+      outcome = value === "victory"
+        ? "victory"
+        : value === "forfeit"
+          ? "forfeit"
+          : value === "draw"
+            ? "draw"
+            : "defeat";
     } else if (field === 3 && wire === 2) reason = reader.string();
     else if (field === 4 && wire === 0) finalTick = reader.uint();
     else if (field === 5 && wire === 2) finalStateHash = reader.string();
@@ -263,6 +416,16 @@ function readFields(reader: Reader, read: (field: number, wire: number) => void)
 
 function nullableString(value: string): string | null {
   return value.length > 0 ? value : null;
+}
+
+function moduleCategory(value: string): BattleModuleSnapshot["category"] {
+  return value === "core"
+    || value === "reactor"
+    || value === "engine"
+    || value === "weapon"
+    || value === "shield"
+    ? value
+    : "utility";
 }
 
 class Writer {

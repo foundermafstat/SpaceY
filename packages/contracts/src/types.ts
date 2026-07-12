@@ -1,6 +1,7 @@
 export type EntityId = string;
 export type IsoTimestamp = string;
 export type Cursor = string;
+export type JsonValueDto = string | number | boolean | null | JsonValueDto[] | { [key: string]: JsonValueDto };
 
 export type ApiErrorDto = {
   error: {
@@ -119,6 +120,10 @@ export type InventoryItemDto = {
   rarity: "common" | "uncommon" | "superRare";
   state: "available" | "installed" | "damaged" | "destroyed";
   durability: number;
+  category: string;
+  shape: { cells: Array<[number, number]> };
+  stats: Record<string, JsonValueDto>;
+  visualKey: string;
   installedBuildRevisionId: EntityId | null;
   createdAt: IsoTimestamp;
 };
@@ -192,6 +197,11 @@ export type BootstrapResponseDto = {
   inventory: InventoryItemDto[];
   contentRelease: ContentReleaseRefDto;
   missions: MissionCatalogItemDto[];
+  activeGameplay: ActiveGameplayDto[];
+  capabilities: {
+    pvpMatchmaking: boolean;
+    repair: boolean;
+  };
 };
 
 export type CreateMissionAttemptRequestDto = {
@@ -255,15 +265,91 @@ export type MissionAttemptStatusDto = {
   };
 };
 
+export type ActiveGameplayDto =
+  | {
+      mode: "pve";
+      attempt: MissionAttemptStatusDto;
+    }
+  | {
+      mode: "pvp";
+      matchmakingTicket: MatchmakingTicketDto;
+      attempt: MissionAttemptStatusDto | null;
+    };
+
 export type BattleResultDto = {
   id: EntityId;
   attemptId: EntityId;
-  outcome: "victory" | "defeat" | "forfeit";
+  mode: "pve" | "pvp";
+  outcome: "victory" | "defeat" | "forfeit" | "draw";
   reason: string;
+  mission: {
+    id: string;
+    name: string;
+  };
   durationTicks: number;
   finalStateHash: string;
+  rewards: Partial<WalletDto>;
+  grantedItems: Array<{
+    inventoryItemId: EntityId;
+    definitionId: string;
+    rarity: "common" | "uncommon" | "superRare";
+  }>;
+  experience: number;
   walletAfter: WalletDto;
+  progressionAfter: ProgressionDto;
+  moduleDamage: Array<{
+    inventoryItemId: EntityId;
+    definitionId: string;
+    simulationModuleId?: string;
+    hpBefore?: number;
+    hpAfter?: number;
+    hpLoss?: number;
+    detached?: boolean;
+    durabilityBefore: number;
+    durabilityAfter: number;
+    damage: number;
+    state: "available" | "installed" | "damaged" | "destroyed";
+  }>;
+  mmr: null | {
+    before: number;
+    after: number;
+  };
+  replayStatus: "pending" | "available" | "failed";
   finalizedAt: IsoTimestamp;
+};
+
+export type BattleResultPageDto = {
+  items: BattleResultDto[];
+  nextCursor: string | null;
+};
+
+export type CreateRepairQuoteRequestDto = {
+  inventoryItemId: EntityId;
+  idempotencyKey: string;
+};
+
+export type RepairQuoteDto = {
+  id: EntityId;
+  inventoryItemId: EntityId;
+  definitionId: string;
+  durabilityBefore: number;
+  durabilityAfter: 10000;
+  currency: "credits";
+  cost: number;
+  expiresAt: IsoTimestamp;
+};
+
+export type CommitRepairRequestDto = {
+  quoteId: EntityId;
+  idempotencyKey: string;
+};
+
+export type RepairResultDto = {
+  quoteId: EntityId;
+  inventoryItem: InventoryItemDto;
+  walletAfter: WalletDto;
+  ledgerEntryId: EntityId;
+  repairedAt: IsoTimestamp;
 };
 
 export type WalletLedgerEntryDto = {

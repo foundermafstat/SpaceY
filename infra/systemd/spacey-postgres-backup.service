@@ -1,0 +1,24 @@
+[Unit]
+Description=SpaceY encrypted off-host PostgreSQL backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+ExecStart=/usr/local/libexec/spacey/postgres-backup backup /etc/spacey/backup/postgres.env
+ExecStartPost=/usr/local/libexec/spacey/postgres-backup health /etc/spacey/backup/postgres.env
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/run/lock /var/cache/spacey/restic /var/lib/spacey/backup-evidence
+NoNewPrivileges=true
+TimeoutStartSec=6h
+
+[Install]
+WantedBy=multi-user.target

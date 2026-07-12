@@ -6,11 +6,12 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
-import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { Redis } from "ioredis";
 import "reflect-metadata";
 import { AppModule } from "./app.module.js";
 import { ApiExceptionFilter } from "./common/api-exception.filter.js";
 import { env } from "./config/env.js";
+import { loadCanonicalOpenApi } from "./openapi/canonical-openapi.js";
 
 async function bootstrap() {
   const adapter = new FastifyAdapter({
@@ -27,10 +28,21 @@ async function bootstrap() {
   await app.register(cookie);
   await app.register(formbody);
   await app.register(helmet, { contentSecurityPolicy: false });
+  const rateLimitRedis = env.USE_IN_MEMORY_REPOSITORY
+    ? undefined
+    : new Redis(env.VALKEY_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+  if (rateLimitRedis) {
+    const pong = await rateLimitRedis.ping();
+    if (pong !== "PONG") throw new Error("Distributed rate-limit Valkey is unavailable.");
+    adapter.getInstance().addHook("onClose", async () => {
+      if (rateLimitRedis.status === "ready") await rateLimitRedis.quit();
+    });
+  }
   await app.register(rateLimit, {
     max: 300,
     timeWindow: "1 minute",
-    keyGenerator: (request) => request.ip
+    keyGenerator: (request) => request.ip,
+    redis: rateLimitRedis,
   });
   app.enableCors({
     origin: env.corsOrigins,
@@ -41,17 +53,16 @@ async function bootstrap() {
   app.useGlobalFilters(new ApiExceptionFilter());
   app.enableShutdownHooks();
 
-  const document = SwaggerModule.createDocument(
-    app,
-    new DocumentBuilder()
-      .setTitle("SpaceY Player and Public API")
-      .setVersion("1.0.0")
-      .addBearerAuth(undefined, "playerAccess")
-      .addApiKey({ type: "apiKey", in: "header", name: "X-API-Key" }, "publicApiKey")
-      .build()
-  );
-  document.openapi = "3.1.1";
-  adapter.getInstance().get("/openapi.json", async (_request, reply) => reply.send(document));
+  const canonicalOpenApi = loadCanonicalOpenApi();
+  adapter.getInstance().get("/openapi.json", async (request, reply) => {
+    reply
+      .header("Cache-Control", "public, max-age=300")
+      .header("ETag", canonicalOpenApi.etag)
+      .header("X-Content-Type-Options", "nosniff")
+      .header("X-SpaceY-OpenAPI-Source-SHA256", canonicalOpenApi.sourceSha256);
+    if (request.headers["if-none-match"] === canonicalOpenApi.etag) return reply.code(304).send();
+    return reply.type("application/json; charset=utf-8").send(canonicalOpenApi.document);
+  });
 
   await app.listen({ host: env.API_HOST, port: env.API_PORT });
 }

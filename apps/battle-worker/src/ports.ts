@@ -33,8 +33,9 @@ export type PvpBattleTicketClaims = {
 export type BattleTicketClaims = PveBattleTicketClaims | PvpBattleTicketClaims;
 
 /**
- * Production implementation hashes the opaque ticket with SHA-256 and atomically
- * GETDELs `spacey:ws-ticket:<hash>` from Valkey. The Valkey TTL is authoritative.
+ * Production implementation hashes the opaque ticket with SHA-256, verifies its
+ * version/current key against the attempt state, and consumes it atomically.
+ * The Valkey TTL is authoritative.
  */
 export interface BattleTicketValidator {
   validateAndConsume(rawTicket: string): Promise<BattleTicketClaims | null>;
@@ -57,6 +58,8 @@ export type StoredPveBattleSessionCheckpoint = {
   simulation: SimulationCheckpoint;
   disconnectedAtMs: number | null;
   disconnectDeadlineAtMs: number | null;
+  hasConnectedBefore?: boolean;
+  completedAtMs?: number | null;
   savedAtMs: number;
 };
 
@@ -67,6 +70,7 @@ export type StoredPvpParticipantConnection = {
   side: 0 | 1;
   disconnectedAtMs: number | null;
   disconnectDeadlineAtMs: number | null;
+  hasConnectedBefore?: boolean;
 };
 
 export type StoredPvpBattleSessionCheckpoint = {
@@ -74,6 +78,8 @@ export type StoredPvpBattleSessionCheckpoint = {
   sessionId: EntityId;
   matchId: EntityId;
   started: boolean;
+  readyDeadlineAtMs?: number;
+  completedAtMs?: number | null;
   simulation: DuelSimulationCheckpoint;
   participants: [StoredPvpParticipantConnection, StoredPvpParticipantConnection];
   savedAtMs: number;
@@ -118,6 +124,24 @@ export interface BattleSessionRouter {
   release(sessionId: EntityId, lease: BattleRouteLease): Promise<void>;
 }
 
+export type PendingPvpSessionCursor = {
+  createdAtMs: number;
+  sessionId: EntityId;
+};
+
+export interface PendingPvpSessionQueue {
+  claimBatch(workerId: string, nowMs: number, limit: number, leaseMs: number): Promise<EntityId[]>;
+  release(sessionId: EntityId, workerId: string, availableAtMs: number): Promise<void>;
+  complete(sessionId: EntityId, workerId: string): Promise<void>;
+}
+
+export interface PendingPvpSessionSource {
+  listPendingPvpSessions(
+    after: PendingPvpSessionCursor | null,
+    limit: number,
+  ): Promise<{ sessions: CreatePvpBattleSessionRequest[]; nextCursor: PendingPvpSessionCursor | null }>;
+}
+
 export type ReplayArtifactMetadata = {
   storageKey: string;
   checksumSha256: string;
@@ -160,7 +184,7 @@ export type FinalizeBattleRequest = {
   mode: BattleMode;
   simulationConfig: MissionSimulationConfig;
   finalCheckpoint: SimulationCheckpoint;
-  replay: ReplayArtifactMetadata;
+  replay: ReplayArtifactMetadata | null;
   outcome: MissionOutcome;
 };
 
@@ -168,7 +192,7 @@ export type FinalizeBattleResult = {
   resultId: EntityId;
 };
 
-export type FinalizeDuelRequest = {
+type FinalizeDuelRequestBase = {
   idempotencyKey: string;
   sessionId: EntityId;
   matchId: EntityId;
@@ -178,18 +202,31 @@ export type FinalizeDuelRequest = {
   ];
   simulationConfig: DuelSimulationConfig;
   finalCheckpoint: DuelSimulationCheckpoint;
-  replay: ReplayArtifactMetadata;
   outcome: DuelOutcome;
 };
+
+export type FinalizeDuelRequest = FinalizeDuelRequestBase & (
+  | { cancellation: null; replay: ReplayArtifactMetadata | null }
+  | { cancellation: "no_show_forfeit" | "no_contest"; replay: null }
+);
 
 export type FinalizeDuelResult = {
   resultIds: Record<string, EntityId>;
 };
 
-/** Implementations must commit result, rewards, damage, progression and outbox once. */
+export type AttachReplayRequest = {
+  idempotencyKey: string;
+  replay: ReplayArtifactMetadata;
+} & (
+  | { kind: "pve"; attemptId: EntityId }
+  | { kind: "pvp"; matchId: EntityId }
+);
+
+/** Result finalization commits gameplay state first; replay attachment is a separate idempotent transaction. */
 export interface BattleFinalizer {
   finalizeOnce(request: FinalizeBattleRequest): Promise<FinalizeBattleResult>;
   finalizeDuelOnce(request: FinalizeDuelRequest): Promise<FinalizeDuelResult>;
+  attachReplayOnce(request: AttachReplayRequest): Promise<void>;
   ping(): Promise<void>;
   close(): Promise<void>;
 }
@@ -232,6 +269,10 @@ export type CreatePvpBattleSessionRequest = {
     { userId: EntityId; attemptId: EntityId; participantId: EntityId; side: 0 | 1 }
   ];
   simulationConfig: DuelSimulationConfig;
+  /** Anchored to match materialization, not to whichever worker happens to claim it. */
+  readyDeadlineAtMs?: number;
+  /** PostgreSQL already committed results; recovery must only finish replay attachment/cleanup. */
+  databaseFinalized?: boolean;
 };
 
 export type CreateBattleSessionRequest = CreatePveBattleSessionRequest | CreatePvpBattleSessionRequest;

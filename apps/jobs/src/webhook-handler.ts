@@ -10,6 +10,7 @@ export type WebhookDelivery = Readonly<{
   id: string;
   url: string;
   secretHash: string;
+  previousSecretHash?: string | null;
   attemptCount: number;
 }>;
 
@@ -36,12 +37,14 @@ type SubscriptionRow = QueryResultRow & {
   subscriptionId: string;
   url: string;
   secretHash: string;
+  previousSecretHash: string | null;
 };
 
 type DeliveryRow = QueryResultRow & {
   id: string;
   url: string;
   secretHash: string;
+  previousSecretHash: string | null;
   attemptCount: number;
 };
 
@@ -51,7 +54,9 @@ export class PostgresWebhookRepository implements WebhookRepository {
   async claim(job: DomainEventJob): Promise<readonly WebhookDelivery[]> {
     if (!isPublicWebhookEventType(job.eventType)) return [];
     const subscriptions = await this.pool.query<SubscriptionRow>(`
-      SELECT id AS "subscriptionId", url, secret_hash AS "secretHash"
+      SELECT id AS "subscriptionId", url, secret_hash AS "secretHash",
+             CASE WHEN previous_secret_expires_at > NOW()
+                  THEN previous_secret_hash ELSE NULL END AS "previousSecretHash"
       FROM webhook_subscriptions
       WHERE status = 'ACTIVE'::webhook_status
         AND event_types @> ARRAY[$1]::text[]
@@ -72,8 +77,12 @@ export class PostgresWebhookRepository implements WebhookRepository {
         WHERE webhook_deliveries.status IN ('PENDING'::webhook_delivery_status, 'FAILED'::webhook_delivery_status)
            OR (webhook_deliveries.status = 'DELIVERING'::webhook_delivery_status
              AND webhook_deliveries.updated_at < NOW() - INTERVAL '2 minutes')
-        RETURNING id, $4::text AS url, $5::text AS "secretHash", attempt_count AS "attemptCount"
-      `, [uuidv7(), subscription.subscriptionId, job.outboxEventId, subscription.url, subscription.secretHash]);
+        RETURNING id, $4::text AS url, $5::text AS "secretHash",
+                  $6::text AS "previousSecretHash", attempt_count AS "attemptCount"
+      `, [
+        uuidv7(), subscription.subscriptionId, job.outboxEventId, subscription.url,
+        subscription.secretHash, subscription.previousSecretHash,
+      ]);
       const row = result.rows[0];
       if (row) claimed.push(row);
     }
@@ -148,7 +157,10 @@ export class WebhookFanoutHandler implements DomainEventHandler {
     let dead = 0;
 
     for (const delivery of deliveries) {
-      const signature = signWebhook(delivery.secretHash, timestamp, job.outboxEventId, body);
+      const signatures = [delivery.secretHash, delivery.previousSecretHash]
+        .filter((secretHash): secretHash is string => !!secretHash)
+        .map((secretHash) => `v1=${signWebhook(secretHash, timestamp, job.outboxEventId, body)}`)
+        .join(",");
       let responseStatus: number | null = null;
       let error = "Webhook delivery failed";
       try {
@@ -161,7 +173,7 @@ export class WebhookFanoutHandler implements DomainEventHandler {
             "x-spacey-event-id": job.outboxEventId,
             "x-spacey-event-type": job.eventType,
             "x-spacey-timestamp": timestamp,
-            "x-spacey-signature": `v1=${signature}`,
+            "x-spacey-signature": signatures,
           },
         });
         if (responseStatus >= 200 && responseStatus < 300) {

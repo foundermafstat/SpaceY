@@ -131,7 +131,6 @@ services:
         APP_FILTER: "@spacey/game-web"
         VCS_REF: local
         NEXT_PUBLIC_API_URL: http://localhost:7800
-        NEXT_PUBLIC_BATTLE_WS_URL: ws://localhost:7801/battle
         NEXT_PUBLIC_ALLOW_BROWSER_AUTH: "true"
     environment:
       SERVICE_FILTER: "@spacey/game-web"

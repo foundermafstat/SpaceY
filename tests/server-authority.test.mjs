@@ -5,10 +5,18 @@ import { extname, join, relative, resolve } from "node:path";
 import test from "node:test";
 
 const root = resolve(import.meta.dirname, "..");
-const routeRoots = ["app/layout.tsx", "app/hangar/page.tsx", "app/battle/page.tsx"];
+const routeRoots = [
+  "app/layout.tsx",
+  "app/page.tsx",
+  "app/hangar/page.tsx",
+  "app/battle/page.tsx",
+  "app/results/[resultId]/page.tsx"
+];
 const forbiddenModules = [
   "components/battle/BattleCanvas",
   "game/data/enemies",
+  "game/battle",
+  "game/ship",
   "game/mission/rewards",
   "game/mission/runtime",
   "game/store/shipStore"

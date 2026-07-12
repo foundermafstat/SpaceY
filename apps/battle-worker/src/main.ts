@@ -7,6 +7,7 @@ import { DuelSessionManager } from "./duel-session-manager.js";
 import { FixedTickLoop } from "./fixed-tick-loop.js";
 import { JsonBattleWorkerLogger, systemClock } from "./logger.js";
 import { PostgresBattleFinalizer } from "./postgres-finalizer.js";
+import { PendingPvpSessionBroker } from "./pending-pvp-session-broker.js";
 import { ProtobufBattleCodec } from "./protobuf-codec.js";
 import { BattleWorkerReadiness } from "./readiness.js";
 import { S3ReplayStorage } from "./s3-replay-storage.js";
@@ -18,6 +19,7 @@ import {
   ValkeyBattleInputJournal,
   ValkeyBattleSessionDefinitionStore,
   ValkeyBattleSessionRouter,
+  ValkeyPendingPvpSessionQueue,
   ValkeyBattleTicketValidator
 } from "./valkey.js";
 import { BattleWorkerServer } from "./websocket-server.js";
@@ -43,6 +45,7 @@ export async function runBattleWorker(): Promise<void> {
   const definitions = new ValkeyBattleSessionDefinitionStore(redis);
   const inputJournal = new ValkeyBattleInputJournal(redis, env.BATTLE_STATE_TTL_SECONDS);
   const router = new ValkeyBattleSessionRouter(redis);
+  const pendingPvpSessions = new ValkeyPendingPvpSessionQueue(redis);
   const infrastructure = {
     lifecycle: finalizer,
     definitions,
@@ -63,6 +66,23 @@ export async function runBattleWorker(): Promise<void> {
     infrastructure
   );
   const duelSessions = new DuelSessionManager(checkpoints, finalizer, systemClock, logger, infrastructure);
+  const pendingPvpBroker = new PendingPvpSessionBroker(
+    pendingPvpSessions,
+    definitions,
+    finalizer,
+    duelSessions,
+    systemClock,
+    logger,
+    {
+      workerId: env.workerId,
+      pollIntervalMs: 250,
+      claimLeaseMs: 5_000,
+      retryDelayMs: 1_000,
+      activeRecheckMs: Math.max(1_000, Math.floor(env.BATTLE_ROUTE_TTL_SECONDS * 1_000 / 3)),
+      reconciliationIntervalMs: 2_000,
+      batchSize: 64,
+    },
+  );
   const sessions = new AuthoritativeSessionManager(pveSessions, duelSessions);
   const gateway = new BattleGateway(new ValkeyBattleTicketValidator(redis), sessions, logger);
   const codec = await ProtobufBattleCodec.create();
@@ -84,6 +104,7 @@ export async function runBattleWorker(): Promise<void> {
 
   if (redis.status === "wait") await redis.connect();
   await server.listen();
+  pendingPvpBroker.start();
   loop.start();
   logger.info("Battle worker listening", {
     host: env.BATTLE_WORKER_HOST,
@@ -97,6 +118,7 @@ export async function runBattleWorker(): Promise<void> {
     shuttingDown = (async () => {
       logger.info("Battle worker draining", { reason });
       server.beginDrain();
+      await pendingPvpBroker.stop();
       await server.drain(env.BATTLE_DRAIN_TIMEOUT_MS);
       loop.stop();
       await sessions.flushCheckpoints();

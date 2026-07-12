@@ -7,7 +7,8 @@ import { CookieOriginGuard } from "./cookie-origin.guard.js";
 import { PlayerAccessGuard, type PlayerRequest } from "./player-access.guard.js";
 
 const telegramAuthSchema = z.object({ initData: z.string().min(1).max(16_384) });
-const refreshCookieName = env.productionLike ? "__Host-spacey_refresh" : "spacey_refresh";
+const refreshCookieName = env.productionLike ? "__Secure-spacey_refresh" : "spacey_refresh";
+const refreshCookiePath = "/api/v1/auth";
 
 @Controller("api/v1/auth")
 export class AuthController {
@@ -45,7 +46,7 @@ export class AuthController {
   @UseGuards(CookieOriginGuard)
   async logout(@Req() request: FastifyRequest, @Res({ passthrough: true }) reply: FastifyReply) {
     await this.auth.logout(request.cookies[refreshCookieName]);
-    reply.clearCookie(refreshCookieName, { path: "/" });
+    reply.clearCookie(refreshCookieName, { path: refreshCookiePath });
     return { ok: true };
   }
 
@@ -54,7 +55,7 @@ export class AuthController {
   @UseGuards(CookieOriginGuard, PlayerAccessGuard)
   async logoutAll(@Req() request: PlayerRequest, @Res({ passthrough: true }) reply: FastifyReply) {
     await this.auth.logoutAll(request.player.userId);
-    reply.clearCookie(refreshCookieName, { path: "/" });
+    reply.clearCookie(refreshCookieName, { path: refreshCookiePath });
     return { ok: true };
   }
 
@@ -63,7 +64,7 @@ export class AuthController {
       httpOnly: true,
       secure: env.productionLike,
       sameSite: "strict",
-      path: "/",
+      path: refreshCookiePath,
       maxAge: env.PLAYER_REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60
     });
   }

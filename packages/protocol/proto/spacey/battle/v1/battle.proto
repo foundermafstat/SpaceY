@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+// The source path mirrors the protobuf package for Buf STANDARD linting.
 package spacey.battle.v1;
 
 message ClientEnvelope {
@@ -55,6 +56,7 @@ enum BattleStatus {
   BATTLE_STATUS_ACTIVE = 1;
   BATTLE_STATUS_VICTORY = 2;
   BATTLE_STATUS_DEFEAT = 3;
+  BATTLE_STATUS_DRAW = 4;
 }
 
 enum EntityKind {
@@ -76,6 +78,43 @@ message BattleEntity {
   uint32 hull = 8;
   uint32 hull_max = 9;
   uint32 flags = 10;
+  string weapon_id = 11;
+  ShipSystems ship_systems = 12;
+}
+
+message ShipModuleState {
+  string id = 1;
+  string category = 2;
+  uint32 hp = 3;
+  uint32 hp_max = 4;
+  sint32 grid_x = 5;
+  sint32 grid_y = 6;
+  string parent_module_id = 7;
+  bool powered = 8;
+  bool detached = 9;
+  bool enabled = 10;
+  string visual_key = 11;
+}
+
+message ShipWeaponState {
+  string id = 1;
+  string module_id = 2;
+  uint32 cooldown_remaining = 3;
+  bool ready = 4;
+}
+
+message ShipSystems {
+  uint32 energy = 1;
+  uint32 energy_max = 2;
+  uint32 heat = 3;
+  uint32 heat_max = 4;
+  uint32 shield = 5;
+  uint32 shield_max = 6;
+  uint32 shield_regen_delay_remaining = 7;
+  bool overheated = 8;
+  bool brownout = 9;
+  repeated ShipModuleState modules = 10;
+  repeated ShipWeaponState weapons = 11;
 }
 
 message BattleObjective {
@@ -92,6 +131,8 @@ message BattleSnapshot {
   BattleStatus status = 5;
   BattleObjective objective = 6;
   repeated BattleEntity entities = 7;
+  uint32 arena_width_milli = 8;
+  uint32 arena_height_milli = 9;
 }
 
 message ReconnectMetadata {
@@ -121,6 +162,10 @@ message BattleEvent {
   uint64 tick = 2;
   string event_type = 3;
   repeated string entity_ids = 4;
+  repeated string module_ids = 5;
+  string weapon_id = 6;
+  sint32 value = 7;
+  repeated string user_ids = 8;
 }
 
 message BattleEnded {

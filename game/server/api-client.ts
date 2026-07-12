@@ -4,19 +4,26 @@ import type {
   AuthSessionDto,
   ApplyShipBuildCommandsRequestDto,
   BattleConnectionDto,
+  BattleResultDto,
   BootstrapResponseDto,
+  CommitRepairRequestDto,
   CreateMatchmakingTicketRequestDto,
   CreateMissionAttemptRequestDto,
+  CreateRepairQuoteRequestDto,
   LegacyBuildImportProposalDto,
   LegacyBuildImportResultDto,
   MissionAttemptStatusDto,
   MatchmakingTicketDto,
   PvpBattleParticipantConnectionDto,
   RefreshSessionResponseDto,
+  RepairQuoteDto,
+  RepairResultDto,
   ShipBuildDto
 } from "@spacey/contracts";
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+
+export const ACTIVE_MISSION_ATTEMPT_STORAGE_KEY = "spacey.activeMissionAttemptId";
 
 let accessToken: string | null = null;
 let refreshPromise: Promise<void> | null = null;
@@ -70,8 +77,8 @@ export function getBootstrap(signal?: AbortSignal): Promise<BootstrapResponseDto
 export function createMissionAttempt(
   input: CreateMissionAttemptRequestDto,
   signal?: AbortSignal
-): Promise<BattleConnectionDto> {
-  return authorizedJson<BattleConnectionDto>("/api/v1/mission-attempts", {
+): Promise<MissionAttemptStatusDto> {
+  return authorizedJson<MissionAttemptStatusDto>("/api/v1/mission-attempts", {
     method: "POST",
     body: JSON.stringify(input),
     signal
@@ -89,7 +96,13 @@ export function applyShipBuildCommands(
 }
 
 export function reconnectMissionAttempt(attemptId: string): Promise<BattleConnectionDto> {
-  return authorizedJson<BattleConnectionDto>(`/api/v1/mission-attempts/${encodeURIComponent(attemptId)}/reconnect`, {
+  return authorizedJson<BattleConnectionDto>(`/api/v1/mission-attempts/${encodeURIComponent(attemptId)}/connection`, {
+    method: "POST"
+  });
+}
+
+export function abandonMissionAttempt(attemptId: string): Promise<MissionAttemptStatusDto> {
+  return authorizedJson<MissionAttemptStatusDto>(`/api/v1/mission-attempts/${encodeURIComponent(attemptId)}/abandon`, {
     method: "POST"
   });
 }
@@ -125,6 +138,24 @@ export function cancelMatchmakingTicket(ticketId: string): Promise<MatchmakingTi
 
 export function getMissionAttemptStatus(attemptId: string): Promise<MissionAttemptStatusDto> {
   return authorizedJson<MissionAttemptStatusDto>(`/api/v1/mission-attempts/${encodeURIComponent(attemptId)}`);
+}
+
+export function getBattleResult(resultId: string): Promise<BattleResultDto> {
+  return authorizedJson<BattleResultDto>(`/api/v1/battle-results/${encodeURIComponent(resultId)}`);
+}
+
+export function createRepairQuote(input: CreateRepairQuoteRequestDto): Promise<RepairQuoteDto> {
+  return authorizedJson<RepairQuoteDto>("/api/v1/repairs/quotes", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function commitRepair(input: CommitRepairRequestDto): Promise<RepairResultDto> {
+  return authorizedJson<RepairResultDto>("/api/v1/repairs", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
 }
 
 export function submitLegacyBuildV3Proposal(

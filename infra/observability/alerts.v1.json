@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "2026-07-11.2",
+  "evaluationIntervalSeconds": 60,
+  "resourceGroupBy": ["deployment.environment.name"],
+  "declaredSlos": {
+    "availabilityFraction": 0.995,
+    "apiP95Ms": 250,
+    "wsConnectP95Ms": 2000,
+    "snapshotDeliveryP95Ms": 250,
+    "rewardFinalizationP95Ms": 1000,
+    "checkpointTargetSeconds": 2
+  },
+  "alerts": [
+    {
+      "id": "battle_tick_lag_p95_warning",
+      "alertGroup": "battle_tick_lag_p95",
+      "severity": "warning",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.battle.tick.lag"],
+        "quantile": 0.95,
+        "windowSeconds": 300,
+        "groupBy": []
+      },
+      "condition": { "operator": ">", "threshold": 100, "forSeconds": 300 },
+      "runbook": "battle-tick-lag"
+    },
+    {
+      "id": "battle_tick_lag_p95_critical",
+      "alertGroup": "battle_tick_lag_p95",
+      "severity": "critical",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.battle.tick.lag"],
+        "quantile": 0.95,
+        "windowSeconds": 300,
+        "groupBy": []
+      },
+      "condition": { "operator": ">", "threshold": 250, "forSeconds": 300 },
+      "runbook": "battle-tick-lag"
+    },
+    {
+      "id": "battle_checkpoint_age_warning",
+      "alertGroup": "battle_checkpoint_age",
+      "severity": "warning",
+      "query": {
+        "operation": "gauge_max",
+        "instruments": ["spacey.battle.checkpoint.age"],
+        "windowSeconds": 300,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 10, "forSeconds": 300 },
+      "runbook": "checkpoint-age"
+    },
+    {
+      "id": "battle_checkpoint_age_critical",
+      "alertGroup": "battle_checkpoint_age",
+      "severity": "critical",
+      "query": {
+        "operation": "gauge_max",
+        "instruments": ["spacey.battle.checkpoint.age"],
+        "windowSeconds": 300,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 30, "forSeconds": 300 },
+      "runbook": "checkpoint-age"
+    },
+    {
+      "id": "battle_input_reject_ratio_warning",
+      "alertGroup": "battle_input_reject_ratio",
+      "severity": "warning",
+      "query": {
+        "operation": "counter_ratio",
+        "instruments": ["spacey.battle.input.rejected", "spacey.battle.input.commands"],
+        "windowSeconds": 300,
+        "minimumDenominatorCount": 100,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 0.02, "forSeconds": 300 },
+      "runbook": "input-rejections"
+    },
+    {
+      "id": "battle_input_reject_ratio_critical",
+      "alertGroup": "battle_input_reject_ratio",
+      "severity": "critical",
+      "query": {
+        "operation": "counter_ratio",
+        "instruments": ["spacey.battle.input.rejected", "spacey.battle.input.commands"],
+        "windowSeconds": 300,
+        "minimumDenominatorCount": 100,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 0.05, "forSeconds": 300 },
+      "runbook": "input-rejections"
+    },
+    {
+      "id": "battle_snapshot_drop_rate_warning",
+      "alertGroup": "battle_snapshot_drop_rate",
+      "severity": "warning",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.battle.ws.snapshots.dropped"],
+        "windowSeconds": 300,
+        "groupBy": ["reason"]
+      },
+      "condition": { "operator": ">", "threshold": 1, "forSeconds": 300 },
+      "runbook": "snapshot-backpressure"
+    },
+    {
+      "id": "battle_snapshot_drop_rate_critical",
+      "alertGroup": "battle_snapshot_drop_rate",
+      "severity": "critical",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.battle.ws.snapshots.dropped"],
+        "windowSeconds": 300,
+        "groupBy": ["reason"]
+      },
+      "condition": { "operator": ">", "threshold": 10, "forSeconds": 300 },
+      "runbook": "snapshot-backpressure"
+    },
+    {
+      "id": "battle_finalization_p95_warning",
+      "alertGroup": "battle_finalization_p95",
+      "severity": "warning",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.battle.finalization.duration"],
+        "quantile": 0.95,
+        "windowSeconds": 300,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 800, "forSeconds": 300 },
+      "runbook": "battle-finalization"
+    },
+    {
+      "id": "battle_finalization_p95_critical",
+      "alertGroup": "battle_finalization_p95",
+      "severity": "critical",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.battle.finalization.duration"],
+        "quantile": 0.95,
+        "windowSeconds": 300,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 1000, "forSeconds": 300 },
+      "runbook": "battle-finalization"
+    },
+    {
+      "id": "battle_finalization_retry_rate_warning",
+      "alertGroup": "battle_finalization_retry_rate",
+      "severity": "warning",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.battle.finalization.retries"],
+        "windowSeconds": 300,
+        "groupBy": ["mode", "stage"]
+      },
+      "condition": { "operator": ">", "threshold": 0.033333, "forSeconds": 600 },
+      "runbook": "battle-finalization"
+    },
+    {
+      "id": "battle_finalization_retry_rate_critical",
+      "alertGroup": "battle_finalization_retry_rate",
+      "severity": "critical",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.battle.finalization.retries"],
+        "windowSeconds": 300,
+        "groupBy": ["mode", "stage"]
+      },
+      "condition": { "operator": ">", "threshold": 0.166667, "forSeconds": 300 },
+      "runbook": "battle-finalization"
+    },
+    {
+      "id": "battle_replay_pending_sustained",
+      "alertGroup": "battle_replay_pending",
+      "severity": "warning",
+      "query": {
+        "operation": "current_sum",
+        "instruments": ["spacey.battle.replay.pending"],
+        "windowSeconds": 60,
+        "groupBy": ["mode"]
+      },
+      "condition": { "operator": ">", "threshold": 0, "forSeconds": 1800 },
+      "runbook": "replay-pending"
+    },
+    {
+      "id": "economy_ledger_conflict_rate_warning",
+      "alertGroup": "economy_ledger_conflict_rate",
+      "severity": "warning",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.economy.ledger.conflicts"],
+        "windowSeconds": 300,
+        "groupBy": ["operation", "code"]
+      },
+      "condition": { "operator": ">", "threshold": 0.016667, "forSeconds": 300 },
+      "runbook": "ledger-conflicts"
+    },
+    {
+      "id": "economy_ledger_conflict_rate_critical",
+      "alertGroup": "economy_ledger_conflict_rate",
+      "severity": "critical",
+      "query": {
+        "operation": "counter_rate",
+        "instruments": ["spacey.economy.ledger.conflicts"],
+        "windowSeconds": 300,
+        "groupBy": ["operation", "code"]
+      },
+      "condition": { "operator": ">", "threshold": 0.083333, "forSeconds": 300 },
+      "runbook": "ledger-conflicts"
+    },
+    {
+      "id": "jobs_claimed_outbox_age_p95_warning",
+      "alertGroup": "jobs_claimed_outbox_age_p95",
+      "severity": "warning",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.jobs.outbox.event.age"],
+        "quantile": 0.95,
+        "windowSeconds": 900,
+        "groupBy": []
+      },
+      "condition": { "operator": ">", "threshold": 300, "forSeconds": 900 },
+      "runbook": "outbox-claim-age"
+    },
+    {
+      "id": "jobs_claimed_outbox_age_p95_critical",
+      "alertGroup": "jobs_claimed_outbox_age_p95",
+      "severity": "critical",
+      "query": {
+        "operation": "histogram_quantile",
+        "instruments": ["spacey.jobs.outbox.event.age"],
+        "quantile": 0.95,
+        "windowSeconds": 900,
+        "groupBy": []
+      },
+      "condition": { "operator": ">", "threshold": 1800, "forSeconds": 300 },
+      "runbook": "outbox-claim-age"
+    }
+  ]
+}

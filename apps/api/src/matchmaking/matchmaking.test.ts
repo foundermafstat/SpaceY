@@ -10,10 +10,18 @@ import { MatchmakingService } from "./matchmaking.service.js";
 class TestBattleTicketStore {
   readonly claims: Array<{ rawTicket: string; claims: unknown }> = [];
   readonly definitions: Array<{ sessionId: string; definition: unknown }> = [];
+  readonly pendingSessions: Array<{ simulationConfig: { sessionId: string }; readyDeadlineAtMs: number }> = [];
   readonly revoked: string[] = [];
+  readonly rotations: Array<{ rawTicket: string; ticketVersion: number; previousTicketHash: string | null }> = [];
 
   async issue(rawTicket: string, claims: unknown) { this.claims.push({ rawTicket, claims }); }
   async issueDefinition(sessionId: string, definition: unknown) { this.definitions.push({ sessionId, definition }); }
+  async publishPendingPvpSession(definition: { simulationConfig: { sessionId: string }; readyDeadlineAtMs: number }) {
+    this.pendingSessions.push(definition);
+  }
+  async rotatePvpTicket(input: { rawTicket: string; ticketVersion: number; previousTicketHash: string | null }) {
+    this.rotations.push(input);
+  }
   async revokeHash(ticketHash: string) { this.revoked.push(ticketHash); }
 }
 
@@ -109,9 +117,20 @@ test("matchmaking creates one match and issues isolated participant connections"
   assert.ok(resumedFirst);
   assert.notEqual(resumedFirst.ticket, firstConnection.ticket);
   assert.equal(resumedFirst.participantId, firstConnection.participantId);
-  assert.equal(tickets.revoked.length, 1);
-  assert.equal(tickets.claims.length, 3);
+  assert.equal(tickets.revoked.length, 0);
+  assert.equal(tickets.claims.length, 0);
+  assert.deepEqual(tickets.rotations.map(({ ticketVersion }) => ticketVersion), [1, 1, 2]);
+  assert.deepEqual(tickets.rotations.map(({ rawTicket }) => rawTicket), [
+    firstConnection.ticket,
+    secondConnection.ticket,
+    resumedFirst.ticket,
+  ]);
   assert.equal(tickets.definitions.length, 3);
+  assert.equal(tickets.pendingSessions.length, 1);
+  const pendingSession = tickets.pendingSessions[0];
+  assert.ok(pendingSession);
+  assert.equal(pendingSession.simulationConfig.sessionId, firstConnection.sessionId);
+  assert.ok(pendingSession.readyDeadlineAtMs > 0);
 });
 
 test("PvP connection issuance fails closed when runtime capability is disabled", async () => {
@@ -150,7 +169,7 @@ test("ticket creation is idempotent, owner-scoped and cancellable while queued",
   const queue = new MatchmakingQueueStore({ useMemory: true, valkeyUrl: "redis://unused", claimLeaseMs: 15_000 });
   const service = new MatchmakingService(repository, queue, { enabled: true, duelRuntimeReady: true }, new TestBattleTicketStore() as never);
   const request = {
-    queue: "ranked-eu", shipBuildRevisionId: build.activeRevision.id, idempotencyKey: "owner-idempotency-0001",
+    queue: "ranked-eu", shipBuildRevisionId: build.activeRevision.id, idempotencyKey: "fixture-000000000",
   };
   const first = await service.create(owner.id, request);
   const replay = await service.create(owner.id, request);

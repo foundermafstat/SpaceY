@@ -1,15 +1,21 @@
 import { notFound, redirect } from "next/navigation";
 import { AdminShell } from "../components/admin-shell";
 import { ContentRevisionForm, EconomyAdjustmentForm } from "../components/admin-mutation-forms";
+import { ContentReleaseConsole } from "../components/content-release-console";
 import { navigationForPermissions } from "../../lib/navigation";
-import { getCurrentAdminSession } from "../../lib/private-admin-client";
+import { getContentReleaseHistory, getContentReleases, getCurrentAdminSession } from "../../lib/private-admin-client";
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function PermissionNotice({ permission }: Readonly<{ permission: string }>) {
   return <p className="notice">This session is read-only for this module. Required permission: <code>{permission}</code>.</p>;
 }
 
-export default async function AdminSection({ params }: Readonly<{ params: Promise<{ section: string }> }>) {
-  const [session, route] = await Promise.all([getCurrentAdminSession(), params]);
+export default async function AdminSection({ params, searchParams }: Readonly<{
+  params: Promise<{ section: string }>;
+  searchParams: Promise<{ history?: string }>;
+}>) {
+  const [session, route, query] = await Promise.all([getCurrentAdminSession(), params, searchParams]);
   if (!session) redirect("/");
 
   const item = navigationForPermissions(session.permissions).find((candidate) => candidate.href === `/${route.section}`);
@@ -18,15 +24,26 @@ export default async function AdminSection({ params }: Readonly<{ params: Promis
   const granted = new Set(session.permissions);
   let content;
   if (route.section === "content") {
-    content = granted.has("content:write") ? (
+    const historyId = query.history && UUID_PATTERN.test(query.history) ? query.history : null;
+    const [releases, history] = await Promise.all([
+      getContentReleases(),
+      historyId ? getContentReleaseHistory(historyId) : Promise.resolve(null),
+    ]);
+    content = (
       <>
-        <ContentRevisionForm />
-        <aside className="gap-note">
-          <strong>Rollback is not exposed yet.</strong>
-          <span>The current private API has no rollback or revision-read endpoint, so the UI does not emulate it with an unsafe mutation.</span>
-        </aside>
+        <ContentReleaseConsole
+          releases={releases}
+          canWrite={granted.has("content:write")}
+          selectedHistory={historyId && history ? { releaseId: historyId, entries: history } : null}
+        />
+        {granted.has("content:write") ? (
+          <details className="definition-editor">
+            <summary>Advanced definition editor</summary>
+            <ContentRevisionForm />
+          </details>
+        ) : <PermissionNotice permission="content:write" />}
       </>
-    ) : <PermissionNotice permission="content:write" />;
+    );
   } else if (route.section === "economy") {
     content = granted.has("economy:adjust")
       ? <EconomyAdjustmentForm />

@@ -2,6 +2,12 @@ export type JsonSchema = Readonly<Record<string, unknown>>;
 
 const entityId = { type: "string", minLength: 1 } as const;
 const isoTimestamp = { type: "string", format: "date-time" } as const;
+const walletProperties = {
+  credits: { type: "integer", minimum: 0 },
+  scrap: { type: "integer", minimum: 0 },
+  alloy: { type: "integer", minimum: 0 },
+  dataShards: { type: "integer", minimum: 0 }
+} as const;
 
 export const contractSchemas = {
   ApiError: {
@@ -222,6 +228,209 @@ export const contractSchemas = {
       matchId: entityId,
       participantId: entityId,
       side: { enum: [0, 1] }
+    }
+  },
+  Wallet: {
+    $id: "spacey.contracts.Wallet",
+    type: "object",
+    additionalProperties: false,
+    required: ["credits", "scrap", "alloy", "dataShards"],
+    properties: walletProperties
+  },
+  InventoryItem: {
+    $id: "spacey.contracts.InventoryItem",
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "id", "definitionId", "contentVersion", "rarity", "state", "durability",
+      "category", "shape", "stats", "visualKey", "installedBuildRevisionId", "createdAt"
+    ],
+    properties: {
+      id: entityId,
+      definitionId: { type: "string", minLength: 1 },
+      contentVersion: { type: "string", minLength: 1 },
+      rarity: { enum: ["common", "uncommon", "superRare"] },
+      state: { enum: ["available", "installed", "damaged", "destroyed"] },
+      durability: { type: "integer", minimum: 0, maximum: 10000 },
+      category: { type: "string", minLength: 1 },
+      shape: {
+        type: "object",
+        additionalProperties: false,
+        required: ["cells"],
+        properties: {
+          cells: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "array",
+              minItems: 2,
+              maxItems: 2,
+              items: { type: "integer" }
+            }
+          }
+        }
+      },
+      stats: { type: "object", additionalProperties: true },
+      visualKey: { type: "string", minLength: 1 },
+      installedBuildRevisionId: { oneOf: [entityId, { type: "null" }] },
+      createdAt: isoTimestamp
+    }
+  },
+  Progression: {
+    $id: "spacey.contracts.Progression",
+    type: "object",
+    additionalProperties: false,
+    required: ["level", "experience", "researchNodeIds", "seasonId", "seasonRating"],
+    properties: {
+      level: { type: "integer", minimum: 1 },
+      experience: { type: "integer", minimum: 0 },
+      researchNodeIds: { type: "array", items: { type: "string", minLength: 1 }, uniqueItems: true },
+      seasonId: { oneOf: [entityId, { type: "null" }] },
+      seasonRating: { oneOf: [{ type: "integer", minimum: 0 }, { type: "null" }] }
+    }
+  },
+  CreateRepairQuoteRequest: {
+    $id: "spacey.contracts.CreateRepairQuoteRequest",
+    type: "object",
+    additionalProperties: false,
+    required: ["inventoryItemId", "idempotencyKey"],
+    properties: {
+      inventoryItemId: entityId,
+      idempotencyKey: { type: "string", minLength: 16, maxLength: 128 }
+    }
+  },
+  CommitRepairRequest: {
+    $id: "spacey.contracts.CommitRepairRequest",
+    type: "object",
+    additionalProperties: false,
+    required: ["quoteId", "idempotencyKey"],
+    properties: {
+      quoteId: entityId,
+      idempotencyKey: { type: "string", minLength: 16, maxLength: 128 }
+    }
+  },
+  RepairQuote: {
+    $id: "spacey.contracts.RepairQuote",
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "id", "inventoryItemId", "definitionId", "durabilityBefore", "durabilityAfter",
+      "currency", "cost", "expiresAt"
+    ],
+    properties: {
+      id: entityId,
+      inventoryItemId: entityId,
+      definitionId: { type: "string", minLength: 1 },
+      durabilityBefore: { type: "integer", minimum: 1, maximum: 9999 },
+      durabilityAfter: { const: 10000 },
+      currency: { const: "credits" },
+      cost: { type: "integer", minimum: 1 },
+      expiresAt: isoTimestamp
+    }
+  },
+  BattleResult: {
+    $id: "spacey.contracts.BattleResult",
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "id", "attemptId", "mode", "outcome", "reason", "mission", "durationTicks",
+      "finalStateHash", "rewards", "grantedItems", "experience", "walletAfter",
+      "progressionAfter", "moduleDamage", "mmr", "replayStatus", "finalizedAt"
+    ],
+    properties: {
+      id: entityId,
+      attemptId: entityId,
+      mode: { enum: ["pve", "pvp"] },
+      outcome: { enum: ["victory", "defeat", "forfeit", "draw"] },
+      reason: { type: "string", minLength: 1 },
+      mission: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "name"],
+        properties: { id: { type: "string", minLength: 1 }, name: { type: "string", minLength: 1 } }
+      },
+      durationTicks: { type: "integer", minimum: 0 },
+      finalStateHash: { type: "string", pattern: "^[a-f0-9]{64}$" },
+      rewards: { type: "object", additionalProperties: false, properties: walletProperties },
+      grantedItems: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["inventoryItemId", "definitionId", "rarity"],
+          properties: {
+            inventoryItemId: entityId,
+            definitionId: { type: "string", minLength: 1 },
+            rarity: { enum: ["common", "uncommon", "superRare"] }
+          }
+        }
+      },
+      experience: { type: "integer", minimum: 0 },
+      walletAfter: { $ref: "spacey.contracts.Wallet" },
+      progressionAfter: { $ref: "spacey.contracts.Progression" },
+      moduleDamage: {
+        type: "array",
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: [
+            "inventoryItemId", "definitionId", "durabilityBefore", "durabilityAfter",
+            "damage", "state"
+          ],
+          properties: {
+            inventoryItemId: entityId,
+            definitionId: { type: "string", minLength: 1 },
+            simulationModuleId: { type: "string", minLength: 1, maxLength: 128 },
+            hpBefore: { type: "integer", minimum: 1, maximum: 1000000 },
+            hpAfter: { type: "integer", minimum: 0, maximum: 1000000 },
+            hpLoss: { type: "integer", minimum: 1, maximum: 1000000 },
+            detached: { type: "boolean" },
+            durabilityBefore: { type: "integer", minimum: 1, maximum: 10000 },
+            durabilityAfter: { type: "integer", minimum: 0, maximum: 9999 },
+            damage: { type: "integer", minimum: 1, maximum: 10000 },
+            state: { enum: ["available", "installed", "damaged", "destroyed"] }
+          }
+        }
+      },
+      mmr: {
+        oneOf: [
+          { type: "null" },
+          {
+            type: "object",
+            additionalProperties: false,
+            required: ["before", "after"],
+            properties: {
+              before: { type: "integer", minimum: 0 },
+              after: { type: "integer", minimum: 0 }
+            }
+          }
+        ]
+      },
+      replayStatus: { enum: ["pending", "available", "failed"] },
+      finalizedAt: isoTimestamp
+    }
+  },
+  BattleResultPage: {
+    $id: "spacey.contracts.BattleResultPage",
+    type: "object",
+    additionalProperties: false,
+    required: ["items", "nextCursor"],
+    properties: {
+      items: { type: "array", items: { $ref: "spacey.contracts.BattleResult" } },
+      nextCursor: { oneOf: [entityId, { type: "null" }] }
+    }
+  },
+  RepairResult: {
+    $id: "spacey.contracts.RepairResult",
+    type: "object",
+    additionalProperties: false,
+    required: ["quoteId", "inventoryItem", "walletAfter", "ledgerEntryId", "repairedAt"],
+    properties: {
+      quoteId: entityId,
+      inventoryItem: { $ref: "spacey.contracts.InventoryItem" },
+      walletAfter: { $ref: "spacey.contracts.Wallet" },
+      ledgerEntryId: entityId,
+      repairedAt: isoTimestamp
     }
   },
   ApplyShipBuildCommandsRequest: {

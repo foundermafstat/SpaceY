@@ -109,7 +109,11 @@ function toServerEnvelope(message: BattleServerMessage): Record<string, unknown>
           eventId: message.eventId,
           tick: message.tick,
           eventType: message.eventType,
-          entityIds: message.entityIds
+          entityIds: message.entityIds,
+          ...(message.moduleIds ? { moduleIds: message.moduleIds } : {}),
+          ...(message.userIds ? { userIds: message.userIds } : {}),
+          ...(message.weaponId ? { weaponId: message.weaponId } : {}),
+          ...(message.value !== undefined ? { value: message.value } : {})
         }
       };
     case "battle.ended":
@@ -141,9 +145,17 @@ function toWireSnapshot(snapshot: BattleSnapshot): Record<string, unknown> {
     tick: snapshot.tick,
     stateHash: snapshot.stateHash,
     lastProcessedInputSequence: snapshot.lastProcessedInputSequence,
-    status: snapshot.status === "active" ? 1 : snapshot.status === "victory" ? 2 : 3,
+    status: snapshot.status === "active"
+      ? 1
+      : snapshot.status === "victory"
+        ? 2
+        : snapshot.status === "defeat"
+          ? 3
+          : 4,
     objective: snapshot.objective,
-    entities: snapshot.entities.map(toWireEntity)
+    entities: snapshot.entities.map(toWireEntity),
+    arenaWidthMilli: snapshot.arenaWidthMilli,
+    arenaHeightMilli: snapshot.arenaHeightMilli,
   };
 }
 
@@ -155,7 +167,23 @@ function toWireEntity(entity: BattleEntitySnapshot): Record<string, unknown> {
       : entity.kind === "projectile"
         ? 3
         : 4;
-  return { ...entity, kind };
+  return {
+    ...entity,
+    kind,
+    ...(entity.shipSystems ? {
+      shipSystems: {
+        ...entity.shipSystems,
+        modules: entity.shipSystems.modules.map((module) => ({
+          ...module,
+          parentModuleId: module.parentModuleId ?? ""
+        })),
+        weapons: entity.shipSystems.weapons.map((weapon) => ({
+          ...weapon,
+          moduleId: weapon.moduleId ?? ""
+        }))
+      }
+    } : {})
+  };
 }
 
 function parseSafeUint64(value: unknown): number {
@@ -176,5 +204,5 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function defaultProtoPath(): string {
-  return fileURLToPath(import.meta.resolve("@spacey/protocol/battle.proto"));
+  return fileURLToPath(import.meta.resolve("@spacey/protocol/spacey/battle/v1/battle.proto"));
 }

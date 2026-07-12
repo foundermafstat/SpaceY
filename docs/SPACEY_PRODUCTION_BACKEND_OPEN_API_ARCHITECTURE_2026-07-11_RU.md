@@ -8,7 +8,7 @@
 
 SpaceY строится как Telegram Mini App с server-authoritative игровым контуром.
 
-- React/Pixi-клиент отвечает за DOM UI, WebGL-отрисовку, камеру, звук, ввод, интерполяцию и косметический instant feedback.
+- React/Three.js-клиент через существующий `three2d` adapter отвечает за DOM UI, WebGL-отрисовку, камеру, звук, ввод, интерполяцию и косметический instant feedback.
 - Сервер отвечает за правила сборки, миссии, симуляцию, AI, физику, damage, economy, inventory, progression и итог боя.
 - Production-клиент не имеет offline gameplay и не может создать награду, snapshot или результат миссии.
 - Первый релиз включает PvE и realtime PvP; архитектурный нагрузочный ориентир — 10k WebSocket-соединений и до 5k активных PvP-боёв.
@@ -21,7 +21,7 @@ flowchart LR
     admin["Private Admin + WebAuthn"] --> adminApi["Admin API"]
     gateway --> api["Player / Public API"]
     gateway <--> battle["Battle Worker\n30 Hz"]
-    api --> db["Neon PostgreSQL"]
+    api --> db["Docker PostgreSQL\nSingle environment container"]
     adminApi --> db
     battle --> db
     api <--> valkey["Valkey + BullMQ"]
@@ -48,7 +48,7 @@ flowchart LR
 - доверие к client-provided `userId`, `profileId`, `sessionId`, reward или snapshot;
 - JWT/refresh token в `localStorage`;
 - импорт локального wallet, результата или прогресса;
-- `Math.random`, wall clock, Pixi/DOM/browser API внутри server simulation package;
+- `Math.random`, wall clock, Three/DOM/browser API внутри server simulation package;
 - optional auth на player/gameplay routes в production.
 
 ## 3. Monorepo и deployable-сервисы
@@ -56,7 +56,7 @@ flowchart LR
 Целевая структура pnpm/Turborepo:
 
 ```text
-game-web                         React / Next / Pixi client
+game-web                         React / Next / Three.js presentation client
 apps/api                         NestJS + Fastify player/public HTTP API
 apps/battle-worker               authoritative realtime battle runtime
 apps/admin-web                   private admin UI
@@ -69,7 +69,9 @@ packages/simulation              deterministic server-only simulation
 packages/db                      Prisma schema, client and migrations
 ```
 
-`packages/simulation` не является зависимостью `game-web`. Клиент получает только generated DTO/Protobuf types. Pixi остаётся battle renderer и не владеет saveable state.
+`packages/simulation` не является зависимостью `game-web`. Клиент получает только generated
+DTO/Protobuf types. Существующий Three.js/`three2d` adapter является render-only renderer и не
+владеет saveable state.
 
 ## 4. Identity и Telegram auth
 
@@ -153,7 +155,7 @@ Public `/public/v1` ограничен catalog, leaderboards, consented profiles
 - Новый worker восстанавливает deterministic state из checkpoint + input log.
 - Полный replay хранится 30 дней в S3-compatible storage; result и агрегаты — постоянно.
 
-Финализация одной короткой DB-транзакцией пишет result, persistent damage, inventory transitions, wallet ledger, progression и outbox event. Persistent damage v1 блокирует physical items pinned immutable build revision в стабильном UUID-порядке, выводит одинаковый для каждой installed детали durability loss только из authoritative hull damage и server config (`PvE max 2500`, `PvP max 1000` basis points), переводит item в `DAMAGED` ниже 7000 и в `DESTROYED` при 0. Append-only transition хранит before/loss/after и уникальный idempotency key, поэтому retry не списывает durability повторно. Launch guard разрешает только текущую build revision, отклоняет destroyed/несогласованные items и параллельный battle; `QUEUED/MATCHED` ticket резервирует revision от PvE launch/build edit, а PvP materialization получает bypass только для собственного проверенного ticket. Распределение урона по конкретным hit-parts остаётся следующим simulation/content этапом.
+Финализация одной короткой DB-транзакцией пишет immutable result, persistent damage, inventory transitions, wallet ledger, progression и outbox event. Persistent damage v2 сопоставляет simulation module с physical inventory item UUID, проверяет итоговый module HP/detach evidence и блокирует pinned build items в стабильном UUID-порядке. Durability уменьшается только у реально повреждённых деталей с caps `PvE 2500` и `PvP 1000` basis points на item; любой ненулевой loss создаёт repairable `DAMAGED`, ноль durability — `DESTROYED`. Append-only transition хранит before/loss/after, module HP evidence и уникальный idempotency key, поэтому retry не списывает durability повторно. Launch guard разрешает только текущую build revision, отклоняет destroyed/несогласованные items и параллельный battle; `QUEUED/MATCHED` ticket резервирует revision от PvE launch/build edit, а PvP materialization получает bypass только для собственного проверенного ticket.
 
 ## 7. PostgreSQL и данные
 
@@ -176,10 +178,11 @@ Public `/public/v1` ограничен catalog, leaderboards, consented profiles
 - UUIDv7 и UTC timestamps;
 - FK indexes, constraints и explicit unique idempotency keys;
 - player-owned строки защищены RLS; service role не подменяет object-level authorization;
-- pooled Neon URL используется runtime-сервисами;
-- direct URL используется только migrator/backup tooling;
-- runtime, admin и migrator — разные least-privilege DB roles;
-- production Neon project отделён от staging/preview branches;
+- PostgreSQL работает в одном закрытом Docker-контейнере на environment и не публикует host port;
+- runtime-сервисы подключаются по внутреннему `postgres:5432`, direct credential используется только migrator/backup tooling;
+- runtime, battle, bot, jobs, admin, readonly и migrator используют разные credential logins и least-privilege NOLOGIN group roles;
+- production и staging имеют разные Compose projects, networks, volumes, credentials и backup prefixes;
+- off-host encrypted backup и успешный restore rehearsal обязательны до production cutover;
 - ledger/locks/batch hot paths используют parameterized SQL и короткие транзакции;
 - migration flow — expand/contract, без destructive migration в том же deploy.
 
@@ -282,6 +285,7 @@ Rollout:
 ## 15. Текущий статус реализации
 
 Статус ниже нужно обновлять вместе с кодом. `Implemented` означает наличие проверенного source-level фундамента, но не production-readiness.
+Подробный текущий checkpoint: `SPACEY_STAGING_VERTICAL_SLICE_IMPLEMENTATION_STATUS_2026-07-11_RU.md`.
 
 | Контур | Статус на 2026-07-11 | Что ещё обязательно |
 | --- | --- | --- |
@@ -289,13 +293,13 @@ Rollout:
 | HTTP contracts | Implemented + generated TS SDK | CI compatibility history, SDK registry publication и release proof |
 | DB schema/migrations/RLS | Implemented + fresh local migration/RLS proof | Rotated credentials, staging migration и backup/restore proof |
 | Telegram auth/sessions | Implemented foundation | Real Telegram integration/security proof |
-| Simulation/protocol/worker | Implemented source-level, включая persistent damage | Recovery rehearsal, object-storage и load proof |
-| Render-only production client | Implemented boundary | End-to-end Telegram/WS staging proof |
-| PvP | Implemented source-level, включая module damage | Membership-change/recovery rehearsal, packet-chaos/load и staging proof |
-| Admin | Implemented source-level: DB sessions, WebAuthn, encrypted recovery, RBAC/audit и UI | Logout/revoke, revision history/rollback UI, private ingress и real-FIDO staging proof |
-| Bot/jobs/privacy | Implemented source-level | Real Telegram/S3 integration, retention metrics и staging proof |
-| Public API/developer portal | API + SDK/OAuth/API-key/quotas/webhooks foundation | Developer portal, client onboarding, SDK registry publication и staging proof |
-| Production hardening | Implemented source-level: exact-SHA images, SBOM/provenance, digest Compose, runbook и guarded k6 harness | Container workflow execution, blue/green rehearsal, alerts и реальный 10k/5k staging gate |
+| Simulation/protocol/worker | Implemented source-level: v2 systems, three PvE objectives, PvP, zero-attach/recovery, per-module damage | PostgreSQL/Valkey/S3 multi-worker recovery и load proof |
+| Render-only production client | Server-authoritative boundary, Three.js WebGL presentation, split lifecycle/input/buffer/renderer/HUD, dual-stick | Telegram/WS browser staging proof |
+| PvP | Implemented source-level: no-show, sudden death/draw, reconnect/result recovery | Packet-chaos/load и staging proof |
+| Admin | Implemented source-level: WebAuthn/RBAC/audit, logout/revoke, release clone/history/publish/rollback | Private ingress и real-FIDO staging proof |
+| Bot/jobs/privacy | Implemented source-level, включая narrow Stars anonymization | Real Telegram/S3 integration и staging proof |
+| Public API/developer portal | OAuth/API keys/quotas/webhooks/onboarding foundation | Generated SDK, canonical runtime OpenAPI, portal publication и staging proof |
+| Production hardening | Exact-SHA/attestation workflow, isolated Compose, metrics/alerts, runbook и guarded k6 contract | Green CI/images, blue/green rehearsal и реальный 10k/5k staging gate |
 | Stars | Disabled | Economy audit, reconciliation/refund tests |
 
-Локальные typecheck/tests/build и fresh PostgreSQL migration/RLS/integration tests подтверждают source-level интеграцию, но не эксплуатационную готовность. До staging/prod proof ни один контур не считается production-ready. Admin readiness остаётся false без private ingress и реальной WebAuthn-проверки. Один VPS остаётся single point of failure; провал load gate требует multi-node deployment.
+Целевые typecheck/tests и статические infra/contract checks подтверждают текущую source-level интеграцию, но новые migrations/codegen и полный workspace build в этом checkpoint не выполнялись. До staging/prod proof ни один контур не считается production-ready. Admin readiness остаётся false без private ingress и реальной WebAuthn-проверки. Один VPS остаётся single point of failure; провал load gate требует multi-node deployment.

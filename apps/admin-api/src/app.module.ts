@@ -10,6 +10,9 @@ import { PostgresAdminSessionAuthenticator } from "./auth/postgres-admin-session
 import { PostgresAdminStrongAuthentication } from "./auth/postgres-admin-strong-authentication.js";
 import { ADMIN_WEBAUTHN_SERVER, SimpleWebAuthnServer } from "./auth/webauthn-server.js";
 import { loadAdminApiConfig } from "./config.js";
+import { AdminContentReleaseController } from "./content/content-release.controller.js";
+import { AdminContentReleaseRepository } from "./content/content-release.repository.js";
+import { AdminContentReleaseService } from "./content/content-release.service.js";
 import { AdminMutationsController } from "./mutations/admin-mutations.controller.js";
 import { AdminMutationService } from "./mutations/admin-mutations.js";
 import {
@@ -32,7 +35,7 @@ const secretCipher = createAdminSecretCipher(process.env);
 const authRateLimiter = createAdminAuthRateLimiter(config, process.env);
 
 @Module({
-  controllers: [SystemController, AdminAuthController, AdminRecoveryAuthController, SessionController, AdminMutationsController],
+  controllers: [SystemController, AdminAuthController, AdminRecoveryAuthController, SessionController, AdminMutationsController, AdminContentReleaseController],
   providers: [
     { provide: ADMIN_API_CONFIG, useValue: config },
     PostgresAdminDatabase,
@@ -43,6 +46,8 @@ const authRateLimiter = createAdminAuthRateLimiter(config, process.env);
     SimpleWebAuthnServer,
     PostgresAdminMutationUnitOfWork,
     AdminMutationService,
+    AdminContentReleaseRepository,
+    AdminContentReleaseService,
     { provide: ADMIN_ALLOWED_ORIGINS, useValue: config.allowedOrigins },
     { provide: ADMIN_SESSION_AUTHENTICATOR, useExisting: PostgresAdminSessionAuthenticator },
     { provide: ADMIN_STRONG_AUTHENTICATION, useExisting: PostgresAdminStrongAuthentication },

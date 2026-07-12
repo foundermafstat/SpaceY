@@ -13,7 +13,7 @@ const request = {
     mode: "pve",
     seed: 42,
     contentVersion: "content-1",
-    simulationVersion: "1.0.0",
+    simulationVersion: "2.0.0",
     shipBuildRevisionId: "build-1",
     durationSeconds: 60,
     objective: { type: "survive_seconds", targetSeconds: 30 },

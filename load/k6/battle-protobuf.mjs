@@ -1,5 +1,5 @@
 // Minimal protobuf encoder/inspector for the fields used by the load harness.
-// The authoritative schema remains packages/protocol/proto/battle.proto.
+// The authoritative schema remains packages/protocol/proto/spacey/battle/v1/battle.proto.
 
 export const ServerEnvelopeField = Object.freeze({
   initial: 1,

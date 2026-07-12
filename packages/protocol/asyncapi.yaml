@@ -1,8 +1,8 @@
 asyncapi: 3.0.0
 info:
   title: SpaceY Battle Realtime API
-  version: 1.0.0
-  description: Server-authoritative binary battle stream. A single-use 30-second ticket is supplied through the WebSocket subprotocol.
+  version: 1.1.0
+  description: Server-authoritative binary battle stream with additive simulation v2 ship-system telemetry, typed combat event details and draw outcomes. A single-use 30-second ticket is supplied through the WebSocket subprotocol.
 defaultContentType: application/x-protobuf
 servers:
   production:
@@ -10,6 +10,11 @@ servers:
     pathname: /realtime/v1/battle
     protocol: wss
     description: Production battle gateway
+  staging:
+    host: staging.spacey.aima.space
+    pathname: /realtime/v1/battle
+    protocol: wss
+    description: Staging battle gateway
 channels:
   battle:
     address: /realtime/v1/battle
@@ -49,8 +54,8 @@ components:
       contentType: application/x-protobuf
       payload:
         type: object
-        description: Binary protobuf message; its canonical schema is packages/protocol/proto/battle.proto.
-      x-protobuf-schema: ./proto/battle.proto
+        description: Binary protobuf message; its canonical schema is packages/protocol/proto/spacey/battle/v1/battle.proto.
+      x-protobuf-schema: ./proto/spacey/battle/v1/battle.proto
       x-protobuf-message: spacey.battle.v1.ClientEnvelope
     ServerEnvelope:
       name: ServerEnvelope
@@ -58,6 +63,6 @@ components:
       contentType: application/x-protobuf
       payload:
         type: object
-        description: Binary protobuf message; its canonical schema is packages/protocol/proto/battle.proto.
-      x-protobuf-schema: ./proto/battle.proto
+        description: Binary protobuf message; its canonical schema is packages/protocol/proto/spacey/battle/v1/battle.proto.
+      x-protobuf-schema: ./proto/spacey/battle/v1/battle.proto
       x-protobuf-message: spacey.battle.v1.ServerEnvelope

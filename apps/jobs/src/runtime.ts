@@ -18,6 +18,7 @@ export class JobsRuntime {
     private readonly pollIntervalMs: number,
     private readonly readinessDependencies: readonly Readonly<{ ping(): Promise<void> }>[] = [],
     private readonly maintenanceScheduler?: Readonly<{ start(): void; stop(): Promise<void> }>,
+    private readonly shutdownDependencies: readonly Readonly<{ close(): Promise<void> }>[] = [],
   ) {}
 
   async startHealthServer(port: number, host: string): Promise<void> {
@@ -71,6 +72,7 @@ export class JobsRuntime {
     if (this.healthServer) await new Promise<void>((resolve, reject) => this.healthServer?.close((error) => error ? reject(error) : resolve()));
     await this.maintenanceScheduler?.stop();
     await this.worker.close();
+    await Promise.all(this.shutdownDependencies.map((dependency) => dependency.close()));
     await this.dispatcher.close();
     await this.repository.close();
   }

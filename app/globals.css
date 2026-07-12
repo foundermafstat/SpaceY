@@ -5109,6 +5109,15 @@ button {
   touch-action: none;
 }
 
+.authoritative-battle__webgl {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 .authoritative-battle__hud {
   position: absolute;
   z-index: 2;
@@ -5193,6 +5202,38 @@ button {
   transition: width 100ms linear;
 }
 
+.authoritative-battle__telemetry {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.authoritative-battle__telemetry span {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 5px;
+  border: 1px solid rgba(73, 215, 255, 0.1);
+  background: rgba(2, 8, 17, 0.44);
+}
+
+.authoritative-battle__telemetry strong {
+  margin: 0;
+  color: var(--cyan);
+  font-size: inherit;
+}
+
+.authoritative-battle__telemetry span[data-alert="true"],
+.authoritative-battle__telemetry span[data-alert="true"] strong {
+  color: var(--orange);
+  border-color: rgba(255, 155, 66, 0.35);
+}
+
 .authoritative-battle__controls {
   position: absolute;
   z-index: 3;
@@ -5220,6 +5261,73 @@ button {
   pointer-events: auto;
   touch-action: none;
   user-select: none;
+}
+
+.battle-dual-stick {
+  position: absolute;
+  z-index: 4;
+  right: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 16px;
+  display: none;
+  align-items: end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.battle-stick {
+  position: relative;
+  display: grid;
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(73, 215, 255, 0.38);
+  border-radius: 50%;
+  color: var(--cyan);
+  background: radial-gradient(circle, rgba(13, 43, 60, 0.58), rgba(2, 8, 17, 0.3));
+  box-shadow: inset 0 0 22px rgba(73, 215, 255, 0.08);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+}
+
+.battle-stick--fire {
+  border-color: rgba(255, 85, 126, 0.42);
+  color: var(--red);
+  background: radial-gradient(circle, rgba(70, 20, 40, 0.56), rgba(14, 4, 12, 0.3));
+}
+
+.battle-stick__label {
+  position: absolute;
+  bottom: -2px;
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.battle-stick__knob {
+  width: 36px;
+  height: 36px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 18%, rgba(2, 8, 17, 0.88));
+  box-shadow: 0 0 18px color-mix(in srgb, currentColor 28%, transparent);
+  will-change: transform;
+}
+
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+  .battle-dual-stick {
+    display: flex;
+  }
+
+  .authoritative-battle__controls {
+    display: none;
+  }
+
+  .authoritative-battle__hud {
+    width: min(330px, calc(100% - 24px));
+  }
 }
 
 .server-result-facts {
@@ -5250,6 +5358,31 @@ button {
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.server-result-damage-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.server-result-damage-item,
+.server-repair-quote {
+  align-items: center;
+  border: 1px solid rgba(77, 220, 255, 0.2);
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+}
+
+.server-result-damage-item > span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.server-repair-quote {
+  background: rgba(7, 26, 38, 0.96);
+  margin-top: 1rem;
 }
 
 .server-hangar-screen {

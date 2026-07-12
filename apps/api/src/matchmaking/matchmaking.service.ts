@@ -6,7 +6,12 @@ import { ApiError } from "../common/api-error.js";
 import { BattleTicketStore } from "../battle/battle-ticket.store.js";
 import { routedBattleWebsocketUrl } from "../battle/battle-routing.js";
 import { env } from "../config/env.js";
-import { PLATFORM_REPOSITORY, type MatchmakingTicketRecord, type PlatformRepository } from "../platform/platform.repository.js";
+import {
+  PLATFORM_REPOSITORY,
+  type MatchmakingTicketRecord,
+  type MaterializedPvpMatch,
+  type PlatformRepository,
+} from "../platform/platform.repository.js";
 import { MatchmakingQueueStore } from "./matchmaking-queue.store.js";
 
 export const MATCHMAKING_RUNTIME_CONFIG = Symbol("MATCHMAKING_RUNTIME_CONFIG");
@@ -41,8 +46,9 @@ export class MatchmakingService {
     await this.queue.enqueue(ticket);
     const claim = await this.queue.tryMatch(ticket);
     if (claim) {
+      let match: MaterializedPvpMatch;
       try {
-        await this.repository.materializePvpMatch({
+        match = await this.repository.materializePvpMatch({
           callerUserId: userId,
           leftTicketId: claim.leftTicketId,
           rightTicketId: claim.rightTicketId,
@@ -51,12 +57,13 @@ export class MatchmakingService {
         await this.queue.release(claim);
         throw error;
       }
+      await this.publishPendingSession(match);
       // PostgreSQL is authoritative after materialization. A failed cache cleanup
       // must not roll back or requeue an already committed match.
       try {
         await this.queue.complete(claim);
       } catch {
-        // The transactional outbox event is the durable reconciliation signal.
+        // The worker reconciles committed battle_sessions directly from PostgreSQL.
       }
       ticket = await this.repository.getMatchmakingTicket(userId, ticket.ticketId) ?? ticket;
     }
@@ -70,18 +77,20 @@ export class MatchmakingService {
       await this.queue.enqueue(ticket);
       const claim = await this.queue.tryMatch(ticket);
       if (claim) {
+        let match: MaterializedPvpMatch;
         try {
-          await this.repository.materializePvpMatch({
+          match = await this.repository.materializePvpMatch({
             callerUserId: userId,
             leftTicketId: claim.leftTicketId,
             rightTicketId: claim.rightTicketId,
           });
-          try { await this.queue.complete(claim); } catch { /* outbox reconciliation */ }
-          return this.dto(await this.repository.getMatchmakingTicket(userId, ticketId) ?? ticket);
         } catch (error) {
           await this.queue.release(claim);
           throw error;
         }
+        await this.publishPendingSession(match);
+        try { await this.queue.complete(claim); } catch { /* PostgreSQL reconciliation remains authoritative. */ }
+        return this.dto(await this.repository.getMatchmakingTicket(userId, ticketId) ?? ticket);
       }
     }
     return this.dto(ticket);
@@ -125,20 +134,24 @@ export class MatchmakingService {
     if (!connection) {
       throw new ApiError("pvp_match_not_resumable", 409, "PvP duel can no longer issue a participant ticket.");
     }
-    if (connection.previousTicketHash) await this.battleTickets.revokeHash(connection.previousTicketHash);
     await this.battleTickets.issueDefinition(connection.sessionId, {
       kind: "pvp",
       participants: connection.participants,
       simulationConfig: connection.simulationConfig,
     });
-    await this.battleTickets.issue(rawTicket, {
-      mode: "pvp",
-      sessionId: connection.sessionId,
-      attemptId: connection.attemptId,
-      userId,
-      matchId: connection.matchId,
-      participantId: connection.participantId,
-      side: connection.side,
+    await this.battleTickets.rotatePvpTicket({
+      rawTicket,
+      previousTicketHash: connection.previousTicketHash,
+      ticketVersion: connection.ticketVersion,
+      claims: {
+        mode: "pvp",
+        sessionId: connection.sessionId,
+        attemptId: connection.attemptId,
+        userId,
+        matchId: connection.matchId,
+        participantId: connection.participantId,
+        side: connection.side,
+      },
     });
     return {
       sessionId: connection.sessionId,
@@ -167,6 +180,15 @@ export class MatchmakingService {
     if (!this.runtime.enabled) {
       throw new ApiError("pvp_matchmaking_disabled", 503, "PvP matchmaking is not enabled.");
     }
+  }
+
+  private publishPendingSession(match: MaterializedPvpMatch) {
+    return this.battleTickets.publishPendingPvpSession({
+      kind: "pvp",
+      participants: match.participants,
+      simulationConfig: match.simulationConfig,
+      readyDeadlineAtMs: match.readyDeadlineAtMs,
+    });
   }
 
   private dto(ticket: MatchmakingTicketRecord): MatchmakingTicketDto {

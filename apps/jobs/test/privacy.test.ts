@@ -46,6 +46,17 @@ function source(): PrivacyExportSource {
     missionHistory: [],
     missionResults: [],
     progression: null,
+    research: [],
+    achievements: [],
+    seasons: [],
+    matchmaking: [],
+    pvpMatches: [],
+    payments: [],
+    apiClients: [{ id: "client-1", clientId: "spc_public", apiKeys: [{ keyPrefix: "spk_public" }] }],
+    referrals: [],
+    supportTickets: [],
+    supportMessages: [],
+    notificationPreference: null,
     privacyRequests: [{ id: requestId, status: "PROCESSING" }],
   };
 }
@@ -68,6 +79,8 @@ test("canonical privacy export has stable ordering and contains no credential ha
   const right = canonicalJson(buildCanonicalPrivacyExport({ ...source(), profile: { id: userId, displayName: "Pilot" } }));
   assert.equal(left, right);
   assert.equal(left.includes("refreshTokenHash"), false);
+  assert.equal(left.includes("clientSecretHash"), false);
+  assert.equal(left.includes("secretHash"), false);
   assert.equal(left.includes("objectKey"), false);
 });
 

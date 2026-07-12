@@ -33,11 +33,7 @@ export const options = {
       executor: "ramping-vus",
       exec: "pvpParticipant",
       startVUs: 0,
-      stages: [
-        { duration: CONFIG.rampDuration, target: CONFIG.connections },
-        { duration: CONFIG.plateauDuration, target: CONFIG.connections },
-        { duration: CONFIG.rampDownDuration, target: 0 },
-      ],
+      stages: CONFIG.stages,
       gracefulRampDown: CONFIG.gracefulRampDown,
     },
   },
@@ -49,7 +45,8 @@ export const options = {
     spacey_ws_connect_success: ["rate>0.995"],
     spacey_snapshot_success: ["rate>0.99"],
     spacey_reconnect_success: ["rate>0.99"],
-    spacey_reward_exactly_once: ["rate>0.999"],
+    spacey_reward_exactly_once: ["rate==1"],
+    spacey_battle_ended: ["rate==1"],
     spacey_protocol_errors: ["count==0"],
     checks: ["rate>0.99"],
   },
@@ -68,6 +65,34 @@ export function pvpParticipant() {
 
   battleEnded.add(result.ended);
   if (result.ended) verifyFinalization(lease);
+}
+
+export function teardown() {
+  const response = http.post(
+    `${CONFIG.brokerUrl}/v1/load/pvp/runs/${encodeURIComponent(CONFIG.runId)}:close`,
+    JSON.stringify({ environment: CONFIG.environment, profile: CONFIG.profile }),
+    { ...brokerParams(), timeout: `${CONFIG.runCloseTimeoutSeconds}s` },
+  );
+  if (response.status !== 200) fail(`Broker run close failed with HTTP ${response.status}.`);
+  const summary = parseJson(response);
+  const exactPairs = summary.environment === CONFIG.environment
+    && summary.runId === CONFIG.runId
+    && summary.profile === CONFIG.profile
+    && summary.state === "closed"
+    && summary.peakConcurrentLoadParticipants >= CONFIG.connections
+    && summary.peakConcurrentPairedDuels >= CONFIG.connections / 2
+    && Number.isInteger(summary.participantLeaseCount)
+    && summary.participantLeaseCount > 0
+    && summary.participantLeaseCount % 2 === 0
+    && summary.uniqueParticipantLeaseCount === summary.participantLeaseCount
+    && summary.pairCount * 2 === summary.participantLeaseCount
+    && summary.side0LeaseCount === summary.pairCount
+    && summary.side1LeaseCount === summary.pairCount
+    && summary.battleEndedParticipantCount === summary.participantLeaseCount
+    && summary.finalizedDuelCount === summary.pairCount
+    && summary.unpairedParticipantCount === 0
+    && summary.duplicateRewardCount === 0;
+  if (!exactPairs) fail("Broker run summary did not prove complete two-sided pairing and finalization.");
 }
 
 function acquireLease() {
@@ -196,11 +221,29 @@ function verifyFinalization(lease) {
     if (response.status === 200) {
       const result = parseJson(response);
       if (result.state === "finalized") {
-        const exact = result.resultCount === 1
+        const participants = Array.isArray(result.participants) ? result.participants : [];
+        const participantIds = new Set(participants.map((participant) => participant.participantId));
+        const sides = participants.map((participant) => participant.side).sort();
+        const pairProven = result.environment === CONFIG.environment
+          && result.runId === CONFIG.runId
+          && result.pairId === lease.pairId
+          && result.duelId === lease.duelId
+          && participants.length === 2
+          && participantIds.size === 2
+          && participantIds.has(lease.participantId)
+          && participantIds.has(lease.opponentParticipantId)
+          && sides[0] === 0
+          && sides[1] === 1
+          && participants.every((participant) => participant.finalized === true);
+        const exact = pairProven
+          && result.resultCount === 1
           && result.participantsFinalized === 2
           && result.duplicateRewardCount === 0;
         rewardExactlyOnce.add(exact);
-        if (!exact) protocolErrors.add(1);
+        if (!exact) {
+          protocolErrors.add(1);
+          fail("Authoritative observer did not prove one paired, two-sided, exactly-once finalization.");
+        }
         if (!Number.isFinite(result.finalizationDurationMs) || result.finalizationDurationMs < 0) {
           fail("Broker returned an invalid authoritative finalization duration.");
         }
@@ -211,6 +254,8 @@ function verifyFinalization(lease) {
     sleep(0.2);
   }
   rewardExactlyOnce.add(false);
+  protocolErrors.add(1);
+  fail("Authoritative finalization was not observed before the deadline.");
 }
 
 function validateLease(value, previous) {
@@ -220,19 +265,32 @@ function validateLease(value, previous) {
   if (value.brokerMode !== CONFIG.brokerMode || value.participantCount !== 2 || value.pairReady !== true) {
     fail("Broker did not prove a two-participant duel lease.");
   }
-  for (const key of ["leaseId", "duelId", "participantId", "ticket", "ticketExpiresAt", "websocketUrl"]) {
+  for (const key of ["leaseId", "opponentLeaseId", "pairId", "duelId", "participantId", "opponentParticipantId", "ticket", "ticketExpiresAt", "websocketUrl"]) {
     if (typeof value[key] !== "string" || value[key].length === 0) fail(`Invalid lease field: ${key}.`);
   }
+  if (value.opponentLeaseId === value.leaseId) fail("Broker returned the same lease on both sides.");
   if ((value.side !== 0 && value.side !== 1) || !/^[A-Za-z0-9_-]{16,4096}$/.test(value.ticket)) {
     fail("Invalid participant side or ticket format.");
   }
+  if ((value.opponentSide !== 0 && value.opponentSide !== 1) || value.opponentSide === value.side) {
+    fail("Broker did not prove opposite sides for the paired duel.");
+  }
+  if (value.opponentParticipantId === value.participantId) fail("Broker returned the same participant on both sides.");
   const expiresAt = Date.parse(value.ticketExpiresAt);
   if (!Number.isFinite(expiresAt) || expiresAt <= Date.now() || expiresAt > Date.now() + 45_000) {
     fail("Ticket is expired or is not a short-lived ticket.");
   }
   const wsUrl = checkedUrl(value.websocketUrl, "wss:");
   assertAllowedHost(wsUrl.hostname);
-  if (previous && (value.duelId !== previous.duelId || value.participantId !== previous.participantId || value.side !== previous.side)) {
+  if (previous && (
+    value.pairId !== previous.pairId
+    || value.duelId !== previous.duelId
+    || value.opponentLeaseId !== previous.opponentLeaseId
+    || value.participantId !== previous.participantId
+    || value.opponentParticipantId !== previous.opponentParticipantId
+    || value.side !== previous.side
+    || value.opponentSide !== previous.opponentSide
+  )) {
     fail("Reconnect lease changed participant identity.");
   }
   if (!Number.isFinite(value.apiIssueDurationMs) || value.apiIssueDurationMs < 0) {
@@ -277,11 +335,17 @@ function loadConfig(env) {
   const environment = required(env, "SPACEY_LOAD_ENVIRONMENT");
   if (!/^(staging|preprod|loadtest)$/.test(environment)) throw new Error("Production environment is forbidden.");
   const profile = required(env, "SPACEY_LOAD_PROFILE");
-  if (profile !== "acceptance" && profile !== "smoke") throw new Error("SPACEY_LOAD_PROFILE must be acceptance or smoke.");
-  const connections = integer(env, "SPACEY_LOAD_CONNECTIONS", profile === "acceptance" ? 10_000 : 2, 2, 10_000);
-  if (connections % 2 !== 0 || (profile === "acceptance" && connections !== 10_000)) {
-    throw new Error("Acceptance requires exactly 10,000 connections / 5,000 duels.");
-  }
+  const profileConnections = new Map([
+    ["smoke", 2],
+    ["step100", 100],
+    ["step500", 500],
+    ["step1000", 1000],
+    ["acceptance", 10_000],
+  ]);
+  const expectedConnections = profileConnections.get(profile);
+  if (!expectedConnections) throw new Error("Invalid SPACEY_LOAD_PROFILE.");
+  const connections = integer(env, "SPACEY_LOAD_CONNECTIONS", expectedConnections, 2, 10_000);
+  if (connections !== expectedConnections) throw new Error(`${profile} requires exactly ${expectedConnections} connections.`);
   const allowedHosts = csv(required(env, "SPACEY_LOAD_ALLOWED_HOSTS"));
   const deniedHosts = new Set(["spacey.aima.space", ...csv(required(env, "SPACEY_LOAD_DENY_HOSTS"))]);
   for (const host of allowedHosts) if (deniedHosts.has(host)) throw new Error(`Production-denied host: ${host}.`);
@@ -296,13 +360,41 @@ function loadConfig(env) {
   if (brokerMode !== "matchmaking" && brokerMode !== "preissued") throw new Error("Invalid broker mode.");
   const chaosProfile = env.SPACEY_LOAD_CHAOS ?? "mixed";
   if (chaosProfile !== "mixed" && chaosProfile !== "none") throw new Error("Invalid chaos profile.");
+  const rampDuration = duration(env.SPACEY_LOAD_RAMP_DURATION ?? "10m");
+  const plateauDuration = duration(env.SPACEY_LOAD_PLATEAU_DURATION ?? "15m");
+  const rampDownDuration = duration(env.SPACEY_LOAD_RAMP_DOWN_DURATION ?? "5m");
+  const smokeStepDuration = duration(env.SPACEY_LOAD_SMOKE_STEP_DURATION ?? "2m");
+  const tierStepDuration = duration(env.SPACEY_LOAD_TIER_STEP_DURATION ?? "3m");
+  const gracefulRampDown = duration(env.SPACEY_LOAD_GRACEFUL_RAMP_DOWN ?? "3m");
+  if (profile === "acceptance") {
+    durationAtLeast(smokeStepDuration, 120_000, "SPACEY_LOAD_SMOKE_STEP_DURATION");
+    durationAtLeast(tierStepDuration, 180_000, "SPACEY_LOAD_TIER_STEP_DURATION");
+    durationAtLeast(rampDuration, 600_000, "SPACEY_LOAD_RAMP_DURATION");
+    durationAtLeast(plateauDuration, 900_000, "SPACEY_LOAD_PLATEAU_DURATION");
+    durationAtLeast(rampDownDuration, 300_000, "SPACEY_LOAD_RAMP_DOWN_DURATION");
+    durationAtLeast(gracefulRampDown, 180_000, "SPACEY_LOAD_GRACEFUL_RAMP_DOWN");
+  }
+  const stages = profile === "acceptance"
+    ? [
+      { duration: smokeStepDuration, target: 2 },
+      { duration: tierStepDuration, target: 100 },
+      { duration: tierStepDuration, target: 500 },
+      { duration: tierStepDuration, target: 1000 },
+      { duration: rampDuration, target: 10000 },
+      { duration: plateauDuration, target: 10000 },
+      { duration: rampDownDuration, target: 0 },
+    ]
+    : [
+      { duration: smokeStepDuration, target: connections },
+      { duration: plateauDuration, target: connections },
+      { duration: rampDownDuration, target: 0 },
+    ];
   const config = {
     environment, profile, connections, allowedHosts, deniedHosts,
     brokerUrl: brokerUrl.href.replace(/\/$/, ""), origin: origin.origin, brokerToken, runId, brokerMode, chaosProfile,
-    rampDuration: duration(env.SPACEY_LOAD_RAMP_DURATION ?? "10m"),
-    plateauDuration: duration(env.SPACEY_LOAD_PLATEAU_DURATION ?? "15m"),
-    rampDownDuration: duration(env.SPACEY_LOAD_RAMP_DOWN_DURATION ?? "5m"),
-    gracefulRampDown: duration(env.SPACEY_LOAD_GRACEFUL_RAMP_DOWN ?? "2m"),
+    stages,
+    gracefulRampDown,
+    runCloseTimeoutSeconds: integer(env, "SPACEY_LOAD_RUN_CLOSE_TIMEOUT_SECONDS", 180, 30, 600),
     disconnectAfterSeconds: integer(env, "SPACEY_LOAD_DISCONNECT_AFTER_SECONDS", 10, 2, 120),
     sessionDeadlineSeconds: integer(env, "SPACEY_LOAD_SESSION_DEADLINE_SECONDS", 180, 30, 900),
     resultWaitSeconds: integer(env, "SPACEY_LOAD_RESULT_WAIT_SECONDS", 5, 1, 30),
@@ -333,6 +425,13 @@ function integer(env, name, fallback, minimum, maximum) {
 function duration(value) {
   if (!/^\d+(ms|s|m|h)$/.test(value)) throw new Error(`Invalid k6 duration: ${value}.`);
   return value;
+}
+
+function durationAtLeast(value, minimumMs, name) {
+  const match = /^(\d+)(ms|s|m|h)$/.exec(value);
+  if (!match) throw new Error(`Invalid ${name}.`);
+  const multipliers = { ms: 1, s: 1000, m: 60_000, h: 3_600_000 };
+  if (Number(match[1]) * multipliers[match[2]] < minimumMs) throw new Error(`${name} is too short for acceptance.`);
 }
 
 function csv(value) {

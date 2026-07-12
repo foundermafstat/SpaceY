@@ -169,6 +169,12 @@ test("PostgreSQL retention is bounded, role-scoped and advisory-lock protected",
       webhookDeliveriesDeleted: 2,
       outboxEventsDeleted: 2,
       adminAuditLogsDeleted: 1,
+      oauthOverlapSecretsCleared: 0,
+      webhookOverlapSecretsCleared: 0,
+      apiKeysDeleted: 0,
+      inputJournalDeleted: 0,
+      replayMetadataDeleted: 0,
+      battleCheckpointsDeleted: 0,
     });
     assert.deepEqual((await client.query<{ ip_hash: string | null; user_agent_hash: string | null }>(
       "SELECT ip_hash, user_agent_hash FROM auth_sessions WHERE id = $1",

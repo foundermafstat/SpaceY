@@ -1,12 +1,22 @@
 import type { NextRequest } from "next/server";
 
 const MAX_BODY_BYTES = 1_048_576;
-const ALLOWED_ROUTES = new Set([
+const STATIC_ALLOWED_ROUTES = new Set([
   "POST auth/webauthn/authentication/options",
   "POST auth/webauthn/authentication/verify",
   "POST mutations/content",
   "POST mutations/economy/adjustments",
+  "POST session/logout",
 ]);
+const RELEASE_ROUTE = /^content\/releases\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/(clone|validate|publish|rollback|revisions)$/i;
+
+export function isAllowedAdminProxyRoute(method: string, route: string): boolean {
+  if (STATIC_ALLOWED_ROUTES.has(`${method} ${route}`)) return true;
+  if (method === "GET" && route === "content/releases") return true;
+  const match = RELEASE_ROUTE.exec(route);
+  if (!match) return false;
+  return match[1] === "revisions" ? method === "GET" : method === "POST";
+}
 
 type RouteContext = Readonly<{ params: Promise<{ path: string[] }> }>;
 
@@ -32,7 +42,7 @@ function proxyConfiguration() {
 async function proxy(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const route = path.join("/");
-  if (!ALLOWED_ROUTES.has(`${request.method} ${route}`)) {
+  if (!isAllowedAdminProxyRoute(request.method, route)) {
     return Response.json({ error: "Not found" }, { status: 404, headers: { "cache-control": "no-store" } });
   }
 
@@ -41,7 +51,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
     return Response.json({ error: "Private API unavailable" }, { status: 503, headers: { "cache-control": "no-store" } });
   }
 
-  const origin = request.headers.get("origin");
+  const origin = request.headers.get("origin") ?? request.nextUrl.origin;
   if (origin !== config.expectedOrigin) {
     return Response.json({ error: "Forbidden" }, { status: 403, headers: { "cache-control": "no-store" } });
   }
@@ -82,3 +92,4 @@ async function proxy(request: NextRequest, context: RouteContext) {
 }
 
 export const POST = proxy;
+export const GET = proxy;

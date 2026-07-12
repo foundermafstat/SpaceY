@@ -20,6 +20,17 @@ export type PrivacyExportSource = Readonly<{
   missionHistory: readonly Readonly<Record<string, unknown>>[];
   missionResults: readonly Readonly<Record<string, unknown>>[];
   progression: Readonly<Record<string, unknown>> | null;
+  research: readonly Readonly<Record<string, unknown>>[];
+  achievements: readonly Readonly<Record<string, unknown>>[];
+  seasons: readonly Readonly<Record<string, unknown>>[];
+  matchmaking: readonly Readonly<Record<string, unknown>>[];
+  pvpMatches: readonly Readonly<Record<string, unknown>>[];
+  payments: readonly Readonly<Record<string, unknown>>[];
+  apiClients: readonly Readonly<Record<string, unknown>>[];
+  referrals: readonly Readonly<Record<string, unknown>>[];
+  supportTickets: readonly Readonly<Record<string, unknown>>[];
+  supportMessages: readonly Readonly<Record<string, unknown>>[];
+  notificationPreference: Readonly<Record<string, unknown>> | null;
   privacyRequests: readonly Readonly<Record<string, unknown>>[];
 }>;
 
@@ -140,7 +151,9 @@ export function buildCanonicalPrivacyExport(source: PrivacyExportSource): Readon
     },
     scope: [
       "profile", "telegramIdentity", "authSessions", "shipBuilds", "shipBuildRevisions", "buildItems",
-      "inventory", "walletBalances", "walletLedger", "missionHistory", "missionResults", "progression", "privacyRequests",
+      "inventory", "walletBalances", "walletLedger", "missionHistory", "missionResults", "progression",
+      "research", "achievements", "seasons", "matchmaking", "pvpMatches", "payments", "apiClients",
+      "referrals", "supportTickets", "supportMessages", "notificationPreference", "privacyRequests",
     ],
     data: {
       profile: source.profile,
@@ -155,6 +168,17 @@ export function buildCanonicalPrivacyExport(source: PrivacyExportSource): Readon
       missionHistory: source.missionHistory,
       missionResults: source.missionResults,
       progression: source.progression,
+      research: source.research,
+      achievements: source.achievements,
+      seasons: source.seasons,
+      matchmaking: source.matchmaking,
+      pvpMatches: source.pvpMatches,
+      payments: source.payments,
+      apiClients: source.apiClients,
+      referrals: source.referrals,
+      supportTickets: source.supportTickets,
+      supportMessages: source.supportMessages,
+      notificationPreference: source.notificationPreference,
       privacyRequests: source.privacyRequests,
     },
   };
@@ -283,6 +307,110 @@ export class PostgresPrivacyWorkflowRepository implements PrivacyWorkflowReposit
                created_at AS "createdAt", updated_at AS "updatedAt"
           FROM player_progression WHERE user_id = $1::uuid
       `, [userId]);
+      const research = await many(client, `
+        SELECT user_research.id::text, definition.key AS "definitionKey", user_research.status::text,
+               user_research.progress, user_research.started_at AS "startedAt",
+               user_research.completed_at AS "completedAt", user_research.created_at AS "createdAt",
+               user_research.updated_at AS "updatedAt"
+          FROM user_research
+          JOIN research_definitions definition ON definition.id = user_research.research_definition_id
+         WHERE user_research.user_id = $1::uuid
+         ORDER BY user_research.created_at, user_research.id
+      `, [userId]);
+      const achievements = await many(client, `
+        SELECT achievement.id::text, definition.key AS "definitionKey", achievement.progress::text,
+               achievement.completed_at AS "completedAt", achievement.claimed_at AS "claimedAt",
+               achievement.created_at AS "createdAt", achievement.updated_at AS "updatedAt"
+          FROM user_achievements achievement
+          JOIN achievement_definitions definition ON definition.id = achievement.achievement_definition_id
+         WHERE achievement.user_id = $1::uuid
+         ORDER BY achievement.created_at, achievement.id
+      `, [userId]);
+      const seasons = await many(client, `
+        SELECT participant.id::text, season.key AS "seasonKey", season.status::text AS "seasonStatus",
+               participant.rating, participant.tier, participant.wins, participant.losses, participant.draws,
+               participant.created_at AS "createdAt", participant.updated_at AS "updatedAt"
+          FROM season_participants participant
+          JOIN seasons season ON season.id = participant.season_id
+         WHERE participant.user_id = $1::uuid
+         ORDER BY participant.created_at, participant.id
+      `, [userId]);
+      const matchmaking = await many(client, `
+        SELECT id::text, queue, region, status::text, mmr, pvp_match_id::text AS "pvpMatchId",
+               expires_at AS "expiresAt", matched_at AS "matchedAt", cancelled_at AS "cancelledAt",
+               created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM matchmaking_tickets WHERE user_id = $1::uuid ORDER BY created_at, id
+      `, [userId]);
+      const pvpMatches = await many(client, `
+        SELECT match.id::text, match.status::text, match.region,
+               participant.side, participant.mmr_before AS "mmrBefore", participant.mmr_after AS "mmrAfter",
+               participant.outcome::text, participant.disconnected_at AS "disconnectedAt",
+               match.started_at AS "startedAt", match.ended_at AS "endedAt", match.created_at AS "createdAt"
+          FROM pvp_match_participants participant
+          JOIN pvp_matches match ON match.id = participant.pvp_match_id
+         WHERE participant.user_id = $1::uuid ORDER BY match.created_at, match.id
+      `, [userId]);
+      const payments = await many(client, `
+        SELECT id::text, telegram_update_id::text AS "telegramUpdateId",
+               telegram_payment_charge_id AS "telegramPaymentChargeId",
+               provider_payment_charge_id AS "providerPaymentChargeId", invoice_payload AS "invoicePayload",
+               event_type::text AS "eventType", total_amount::text AS "totalAmount", currency,
+               raw_event AS "rawEvent", processed_at AS "processedAt", created_at AS "createdAt"
+          FROM stars_payment_events WHERE user_id = $1::uuid ORDER BY created_at, id
+      `, [userId]);
+      const apiClientRows = await many(client, `
+        SELECT id::text, client_id AS "clientId", name, status::text, scopes,
+               rate_limit_per_minute AS "rateLimitPerMinute", revoked_at AS "revokedAt",
+               created_at AS "createdAt", updated_at AS "updatedAt"
+          FROM api_clients WHERE owner_user_id = $1::uuid ORDER BY created_at, id
+      `, [userId]);
+      const apiKeyRows = await many(client, `
+        SELECT key.id::text, key.api_client_id::text AS "apiClientId", key.key_prefix AS "keyPrefix",
+               key.name, key.scopes, key.last_used_at AS "lastUsedAt", key.expires_at AS "expiresAt",
+               key.revoked_at AS "revokedAt", key.created_at AS "createdAt"
+          FROM api_keys key
+          JOIN api_clients api_client ON api_client.id = key.api_client_id
+         WHERE api_client.owner_user_id = $1::uuid ORDER BY key.created_at, key.id
+      `, [userId]);
+      const webhookRows = await many(client, `
+        SELECT subscription.id::text, subscription.api_client_id::text AS "apiClientId", subscription.url,
+               subscription.event_types AS "eventTypes", subscription.status::text,
+               subscription.created_at AS "createdAt", subscription.updated_at AS "updatedAt"
+          FROM webhook_subscriptions subscription
+          JOIN api_clients api_client ON api_client.id = subscription.api_client_id
+         WHERE api_client.owner_user_id = $1::uuid ORDER BY subscription.created_at, subscription.id
+      `, [userId]);
+      const apiClients = apiClientRows.map((apiClient) => ({
+        ...apiClient,
+        apiKeys: apiKeyRows.filter((key) => key.apiClientId === apiClient.id).map(({ apiClientId: _apiClientId, ...key }) => key),
+        webhooks: webhookRows.filter((webhook) => webhook.apiClientId === apiClient.id).map(({ apiClientId: _apiClientId, ...webhook }) => webhook),
+      }));
+      const referrals = await many(client, `
+        SELECT referral.id::text, referral.referral_code AS "referralCode", referral.created_at AS "createdAt"
+          FROM telegram_referrals referral
+          JOIN telegram_identities identity ON identity.telegram_user_id = referral.telegram_user_id
+         WHERE identity.user_id = $1::uuid ORDER BY referral.created_at, referral.id
+      `, [userId]);
+      const supportTickets = await many(client, `
+        SELECT ticket.id::text, ticket.status::text, ticket.opened_at AS "openedAt",
+               ticket.closed_at AS "closedAt", ticket.created_at AS "createdAt", ticket.updated_at AS "updatedAt"
+          FROM telegram_support_tickets ticket
+          JOIN telegram_identities identity ON identity.telegram_user_id = ticket.telegram_user_id
+         WHERE identity.user_id = $1::uuid ORDER BY ticket.created_at, ticket.id
+      `, [userId]);
+      const supportMessages = await many(client, `
+        SELECT message.id::text, message.ticket_id::text AS "ticketId", message.kind::text,
+               message.text, message.created_at AS "createdAt"
+          FROM telegram_support_messages message
+          JOIN telegram_identities identity ON identity.telegram_user_id = message.telegram_user_id
+         WHERE identity.user_id = $1::uuid ORDER BY message.created_at, message.id
+      `, [userId]);
+      const notificationPreference = await optionalOne(client, `
+        SELECT preference.enabled, preference.created_at AS "createdAt", preference.updated_at AS "updatedAt"
+          FROM telegram_notification_preferences preference
+          JOIN telegram_identities identity ON identity.telegram_user_id = preference.telegram_user_id
+         WHERE identity.user_id = $1::uuid
+      `, [userId]);
       const privacyRequests = await many(client, `
         SELECT id::text, type::text, status::text, requested_at AS "requestedAt",
                completed_at AS "completedAt", failed_at AS "failedAt", failure_code AS "failureCode",
@@ -308,6 +436,17 @@ export class PostgresPrivacyWorkflowRepository implements PrivacyWorkflowReposit
         missionHistory,
         missionResults,
         progression,
+        research,
+        achievements,
+        seasons,
+        matchmaking,
+        pvpMatches,
+        payments,
+        apiClients,
+        referrals,
+        supportTickets,
+        supportMessages,
+        notificationPreference,
         privacyRequests,
       };
     });
@@ -367,6 +506,30 @@ export class PostgresPrivacyWorkflowRepository implements PrivacyWorkflowReposit
       await client.query(`
         UPDATE telegram_auth_replays SET user_id = NULL, telegram_user_id = NULL WHERE user_id = $1::uuid
       `, [userId]);
+      await client.query(`
+        UPDATE api_keys key
+           SET revoked_at = COALESCE(key.revoked_at, NOW()), name = 'Revoked key', scopes = ARRAY[]::text[]
+          FROM api_clients client
+         WHERE key.api_client_id = client.id AND client.owner_user_id = $1::uuid
+      `, [userId]);
+      await client.query(`
+        UPDATE webhook_subscriptions subscription
+           SET status = 'REVOKED'::webhook_status,
+               url = 'https://revoked.invalid/' || subscription.id::text,
+               event_types = ARRAY[]::text[], previous_secret_hash = NULL,
+               previous_secret_expires_at = NULL, updated_at = NOW()
+          FROM api_clients client
+         WHERE subscription.api_client_id = client.id AND client.owner_user_id = $1::uuid
+      `, [userId]);
+      await client.query(`
+        UPDATE api_clients
+           SET owner_user_id = NULL, name = 'Revoked client', status = 'REVOKED'::api_client_status,
+               client_secret_hash = NULL, previous_client_secret_hash = NULL,
+               previous_client_secret_expires_at = NULL,
+               revoked_at = COALESCE(revoked_at, NOW()), updated_at = NOW()
+         WHERE owner_user_id = $1::uuid
+      `, [userId]);
+      await client.query("SELECT public.spacey_anonymize_stars_payment_events($1::uuid)", [userId]);
       if (telegramUserId) {
         await client.query("DELETE FROM telegram_support_messages WHERE telegram_user_id = $1::bigint", [telegramUserId]);
         await client.query("DELETE FROM telegram_support_tickets WHERE telegram_user_id = $1::bigint", [telegramUserId]);

@@ -4,10 +4,34 @@ import type {
   SIMULATION_VERSION,
   SimulationInputCommand
 } from "./index.js";
+import {
+  applyRichShipDamage,
+  cloneRichShipState,
+  cloneRichShipStats,
+  consumeEnginePower,
+  createAuthoritativeModuleDamage,
+  createRichShipState,
+  createShipSystemsSnapshot,
+  prepareRichShipTick,
+  richShipConfigTokens,
+  richShipStateTokens,
+  tryFireRichWeapon,
+  validateRichShipConfig,
+  type RichShipRuntimeState,
+  type AuthoritativeModuleDamage,
+  type ShipSystemsSnapshot
+} from "./rich.js";
+import {
+  ceilPositiveRatio,
+  fixedRotationMilliRadians,
+  normalizeFixedAxis,
+  segmentIntersectsFixedCircle
+} from "./fixed.js";
 
-const DUEL_SIMULATION_VERSION: typeof SIMULATION_VERSION = "1.0.0";
+const DUEL_SIMULATION_VERSION: typeof SIMULATION_VERSION = "2.0.0";
 const DUEL_TICK_RATE = 30;
 const DUEL_SNAPSHOT_INTERVAL_TICKS = 3;
+const DUEL_SUDDEN_DEATH_TICKS = DUEL_TICK_RATE * 30;
 const DUEL_INPUT_AXIS_SCALE = 1_000;
 const MAX_PENDING_INPUTS_PER_USER = 512;
 const MAX_INPUT_LEAD_TICKS = 120;
@@ -15,7 +39,7 @@ const UINT32_MAX = 0xffff_ffff;
 
 export type DuelSide = "alpha" | "beta";
 export type DuelSimulationStatus = "active" | "ended";
-export type DuelOutcomeReason = "ship_destroyed" | "time_expired" | "disconnect_forfeit";
+export type DuelOutcomeReason = "ship_destroyed" | "time_expired" | "draw" | "disconnect_forfeit" | "no_contest";
 
 export type DuelShipBuildStats = ShipSimulationStats & {
   collisionRadiusUnits: number;
@@ -55,13 +79,14 @@ export type DuelShipState = DuelKinematicBody & {
   side: DuelSide;
   hull: number;
   hullMax: number;
-  weaponCooldownRemaining: number;
+  systems: RichShipRuntimeState;
 };
 
 export type DuelProjectileState = DuelKinematicBody & {
   id: string;
   ownerUserId: string;
   ownerSide: DuelSide;
+  weaponId: string;
   damage: number;
   ttlTicks: number;
 };
@@ -72,6 +97,7 @@ export type DuelSimulationState = {
   outcomeReason: DuelOutcomeReason | null;
   winnerUserId: string | null;
   loserUserId: string | null;
+  suddenDeath: boolean;
   nextProjectileId: number;
   nextEventId: number;
   ships: [DuelShipState, DuelShipState];
@@ -98,15 +124,16 @@ export type DuelSimulationCheckpoint = {
 
 export type DuelParticipantOutcome = {
   userId: string;
-  outcome: "victory" | "defeat" | "forfeit";
+  outcome: "victory" | "defeat" | "forfeit" | "draw";
   reason: DuelOutcomeReason;
+  moduleDamage: AuthoritativeModuleDamage[];
 };
 
 export type DuelOutcome = {
   matchId: string;
   sessionId: string;
-  winnerUserId: string;
-  loserUserId: string;
+  winnerUserId: string | null;
+  loserUserId: string | null;
   reason: DuelOutcomeReason;
   finalTick: number;
   finalStateHash: string;
@@ -127,6 +154,8 @@ export type DuelSimulationEntitySnapshot = {
   hull: number;
   hullMax: number;
   flags: number;
+  weaponId?: string;
+  shipSystems?: ShipSystemsSnapshot;
 };
 
 export type DuelSimulationSnapshot = {
@@ -135,6 +164,7 @@ export type DuelSimulationSnapshot = {
   tick: number;
   stateHash: string;
   status: DuelSimulationStatus;
+  suddenDeath: boolean;
   lastProcessedInputSequences: Record<string, number>;
   entities: DuelSimulationEntitySnapshot[];
   outcome: DuelOutcome | null;
@@ -143,9 +173,22 @@ export type DuelSimulationSnapshot = {
 export type DuelSimulationEvent = {
   id: number;
   tick: number;
-  type: "weapon_fired" | "entity_damaged" | "entity_destroyed" | "battle_ended";
+  type:
+    | "weapon_fired"
+    | "entity_damaged"
+    | "entity_destroyed"
+    | "battle_ended"
+    | "shield_hit"
+    | "part_damaged"
+    | "module_detached"
+    | "power_state_changed"
+    | "overheated"
+    | "sudden_death_started";
   entityIds: string[];
   userIds: string[];
+  moduleIds?: string[];
+  weaponId?: string;
+  value?: number;
 };
 
 export type DuelSimulationTickResult = {
@@ -302,6 +345,11 @@ export class DuelSimulation {
     return this.getOutcome() ?? duelFail("Unable to create duel forfeit outcome.");
   }
 
+  forceNoContest(): DuelOutcome {
+    if (this.state.status === "active") this.endDraw("no_contest");
+    return this.getOutcome() ?? duelFail("Unable to create duel no-contest outcome.");
+  }
+
   createSnapshot(stateHash = this.getStateHash()): DuelSimulationSnapshot {
     return {
       matchId: this.config.matchId,
@@ -309,6 +357,7 @@ export class DuelSimulation {
       tick: this.state.tick,
       stateHash,
       status: this.state.status,
+      suddenDeath: this.state.suddenDeath,
       lastProcessedInputSequences: Object.fromEntries(
         this.config.participants.map((participant) => [
           participant.userId,
@@ -352,13 +401,11 @@ export class DuelSimulation {
   }
 
   getOutcome(stateHash = this.getStateHash()): DuelOutcome | null {
-    if (this.state.status === "active"
-      || this.state.outcomeReason === null
-      || this.state.winnerUserId === null
-      || this.state.loserUserId === null) {
+    if (this.state.status === "active" || this.state.outcomeReason === null) {
       return null;
     }
     const reason = this.state.outcomeReason;
+    const isDraw = reason === "draw" || reason === "no_contest";
     return {
       matchId: this.config.matchId,
       sessionId: this.config.sessionId,
@@ -369,10 +416,17 @@ export class DuelSimulation {
       finalStateHash: stateHash,
       results: this.config.participants.map((participant) => ({
         userId: participant.userId,
-        outcome: participant.userId === this.state.winnerUserId
+        outcome: isDraw
+          ? "draw" as const
+          : participant.userId === this.state.winnerUserId
           ? "victory" as const
           : reason === "disconnect_forfeit" ? "forfeit" as const : "defeat" as const,
-        reason
+        reason,
+        moduleDamage: createAuthoritativeModuleDamage(
+          participant.buildStats,
+          this.state.ships.find((ship) => ship.userId === participant.userId)?.systems
+            ?? duelFail(`Duel ship state is missing for ${participant.userId}.`)
+        )
       })) as [DuelParticipantOutcome, DuelParticipantOutcome]
     };
   }
@@ -428,45 +482,74 @@ export class DuelSimulation {
       if (ship.hull <= 0) continue;
       const participant = this.requireParticipant(ship.userId);
       const input = this.requireInputStream(ship.userId).activeInput;
-      const velocity = duelVelocityFromInput(
-        input.moveX,
-        input.moveY,
-        participant.buildStats.speedUnitsPerSecond
+      const brownoutBefore = ship.systems.brownout;
+      const transition = prepareRichShipTick(
+        participant.buildStats,
+        ship.systems,
+        !this.state.suddenDeath
       );
+      if (transition.overheatedStarted) {
+        events.push(this.createEvent("overheated", [ship.id], [ship.userId], {
+          value: ship.systems.heat
+        }));
+      }
+      const moving = input.moveX !== 0 || input.moveY !== 0;
+      const enginePowered = consumeEnginePower(participant.buildStats, ship.systems, moving);
+      const velocity = enginePowered
+        ? duelVelocityFromInput(
+            input.moveX,
+            input.moveY,
+            participant.buildStats.speedUnitsPerSecond
+          )
+        : { x: 0, y: 0 };
       ship.velocityXMilliPerTick = velocity.x;
       ship.velocityYMilliPerTick = velocity.y;
       moveDuelBodyWithinArena(ship, this.config);
-      ship.weaponCooldownRemaining = Math.max(0, ship.weaponCooldownRemaining - 1);
-
-      if ((input.actionFlags & 1) === 0 || ship.weaponCooldownRemaining > 0) continue;
       const fallbackAimX = ship.side === "alpha" ? DUEL_INPUT_AXIS_SCALE : -DUEL_INPUT_AXIS_SCALE;
       const aim = normalizedDuelAxis(input.aimX, input.aimY, fallbackAimX, 0);
-      const projectileVelocity = duelVelocityFromInput(
-        aim.x,
-        aim.y,
-        participant.buildStats.projectileSpeedUnitsPerSecond
-      );
-      const projectileId = `duel-projectile-${this.state.nextProjectileId}`;
-      this.state.nextProjectileId += 1;
-      this.state.projectiles.push({
-        id: projectileId,
-        ownerUserId: ship.userId,
-        ownerSide: ship.side,
-        xMilli: ship.xMilli,
-        yMilli: ship.yMilli,
-        velocityXMilliPerTick: projectileVelocity.x,
-        velocityYMilliPerTick: projectileVelocity.y,
-        damage: participant.buildStats.weaponDamage,
-        ttlTicks: Math.max(
-          1,
-          Math.ceil(
-            (participant.buildStats.weaponRangeUnits / participant.buildStats.projectileSpeedUnitsPerSecond)
-            * DUEL_TICK_RATE
+      for (let index = 0; index < ship.systems.weapons.length; index += 1) {
+        const wasOverheated = ship.systems.overheated;
+        const weapon = tryFireRichWeapon(participant.buildStats, ship.systems, index, input.actionFlags);
+        if (!weapon) continue;
+        if (!wasOverheated && ship.systems.overheated) {
+          events.push(this.createEvent("overheated", [ship.id], [ship.userId], {
+            value: ship.systems.heat
+          }));
+        }
+        const projectileVelocity = duelVelocityFromInput(
+          aim.x,
+          aim.y,
+          weapon.projectileSpeedUnitsPerSecond
+        );
+        const projectileId = `duel-projectile-${this.state.nextProjectileId}`;
+        this.state.nextProjectileId += 1;
+        this.state.projectiles.push({
+          id: projectileId,
+          ownerUserId: ship.userId,
+          ownerSide: ship.side,
+          weaponId: weapon.id,
+          xMilli: ship.xMilli,
+          yMilli: ship.yMilli,
+          velocityXMilliPerTick: projectileVelocity.x,
+          velocityYMilliPerTick: projectileVelocity.y,
+          damage: weapon.damage,
+          ttlTicks: Math.max(
+            1,
+            ceilPositiveRatio(
+              weapon.rangeUnits * DUEL_TICK_RATE,
+              weapon.projectileSpeedUnitsPerSecond
+            )
           )
-        )
-      });
-      ship.weaponCooldownRemaining = participant.buildStats.weaponCooldownTicks;
-      events.push(this.createEvent("weapon_fired", [ship.id, projectileId], [ship.userId]));
+        });
+        events.push(this.createEvent("weapon_fired", [ship.id, projectileId], [ship.userId], {
+          weaponId: weapon.id
+        }));
+      }
+      if (brownoutBefore !== ship.systems.brownout) {
+        events.push(this.createEvent("power_state_changed", [ship.id], [ship.userId], {
+          value: ship.systems.brownout ? 1 : 0
+        }));
+      }
     }
   }
 
@@ -484,7 +567,7 @@ export class DuelSimulation {
       const hit = target !== undefined
         && targetConfig !== null
         && target.hull > 0
-        && segmentIntersectsDuelCircle(
+        && segmentIntersectsFixedCircle(
           previousX,
           previousY,
           projectile.xMilli,
@@ -494,12 +577,48 @@ export class DuelSimulation {
           targetConfig.buildStats.collisionRadiusUnits * 1_000
         );
       if (hit && target) {
-        target.hull = Math.max(0, target.hull - projectile.damage);
-        events.push(this.createEvent(
-          "entity_damaged",
-          [target.id, projectile.id],
-          [projectile.ownerUserId, target.userId]
-        ));
+        const impactGridX = Math.trunc((projectile.xMilli - target.xMilli) / 1_000);
+        const impactGridY = Math.trunc((projectile.yMilli - target.yMilli) / 1_000);
+        const damage = applyRichShipDamage(
+          targetConfig.buildStats,
+          target.systems,
+          projectile.damage,
+          impactGridX,
+          impactGridY
+        );
+        target.hull = damage.coreDestroyed ? 0 : Math.max(0, target.hull - damage.hullDamage);
+        if (damage.shieldDamage > 0) {
+          events.push(this.createEvent(
+            "shield_hit",
+            [target.id, projectile.id],
+            [projectile.ownerUserId, target.userId],
+            { weaponId: projectile.weaponId, value: damage.shieldDamage }
+          ));
+        }
+        if (damage.moduleId) {
+          events.push(this.createEvent(
+            "part_damaged",
+            [target.id, projectile.id],
+            [projectile.ownerUserId, target.userId],
+            { moduleIds: [damage.moduleId], weaponId: projectile.weaponId, value: damage.moduleDamage }
+          ));
+        }
+        if (damage.detachedModuleIds.length > 0) {
+          events.push(this.createEvent(
+            "module_detached",
+            [target.id],
+            [target.userId],
+            { moduleIds: damage.detachedModuleIds }
+          ));
+        }
+        if (damage.hullDamage > 0) {
+          events.push(this.createEvent(
+            "entity_damaged",
+            [target.id, projectile.id],
+            [projectile.ownerUserId, target.userId],
+            { weaponId: projectile.weaponId, value: damage.hullDamage }
+          ));
+        }
         if (target.hull === 0) {
           target.velocityXMilliPerTick = 0;
           target.velocityYMilliPerTick = 0;
@@ -516,14 +635,24 @@ export class DuelSimulation {
 
   private updateOutcome(events: DuelSimulationEvent[]): void {
     const [alpha, beta] = this.state.ships;
-    if (alpha.hull <= 0 || beta.hull <= 0) {
-      const winner = chooseDuelWinner(alpha, beta, this.config.seed);
+    if (alpha.hull <= 0 && beta.hull <= 0) {
+      this.endDraw("draw");
+    } else if (alpha.hull <= 0 || beta.hull <= 0) {
+      const winner = alpha.hull > 0 ? alpha : beta;
       const loser = winner.userId === alpha.userId ? beta : alpha;
       this.endDuel(winner.userId, loser.userId, "ship_destroyed");
-    } else if (this.state.tick >= this.config.durationSeconds * DUEL_TICK_RATE) {
-      const winner = chooseDuelWinner(alpha, beta, this.config.seed);
-      const loser = winner.userId === alpha.userId ? beta : alpha;
-      this.endDuel(winner.userId, loser.userId, "time_expired");
+    } else {
+      const baseDurationTicks = this.config.durationSeconds * DUEL_TICK_RATE;
+      if (!this.state.suddenDeath && this.state.tick >= baseDurationTicks) {
+        this.state.suddenDeath = true;
+        events.push(this.createEvent(
+          "sudden_death_started",
+          this.state.ships.map((ship) => ship.id),
+          this.state.ships.map((ship) => ship.userId)
+        ));
+      } else if (this.state.suddenDeath && this.state.tick >= baseDurationTicks + DUEL_SUDDEN_DEATH_TICKS) {
+        this.endDraw("draw");
+      }
     }
     if (this.state.status === "ended") {
       events.push(this.createEvent(
@@ -541,12 +670,20 @@ export class DuelSimulation {
     this.state.outcomeReason = reason;
   }
 
+  private endDraw(reason: "draw" | "no_contest"): void {
+    this.state.status = "ended";
+    this.state.winnerUserId = null;
+    this.state.loserUserId = null;
+    this.state.outcomeReason = reason;
+  }
+
   private createEvent(
     type: DuelSimulationEvent["type"],
     entityIds: string[],
-    userIds: string[]
+    userIds: string[],
+    details: Pick<DuelSimulationEvent, "moduleIds" | "weaponId" | "value"> = {}
   ): DuelSimulationEvent {
-    const event = { id: this.state.nextEventId, tick: this.state.tick, type, entityIds, userIds };
+    const event = { id: this.state.nextEventId, tick: this.state.tick, type, entityIds, userIds, ...details };
     this.state.nextEventId += 1;
     return event;
   }
@@ -566,7 +703,7 @@ function createInitialDuelState(config: DuelSimulationConfig): DuelSimulationSta
     velocityYMilliPerTick: 0,
     hull: participant.buildStats.hull,
     hullMax: participant.buildStats.hull,
-    weaponCooldownRemaining: 0
+    systems: createRichShipState(participant.buildStats)
   })) as [DuelShipState, DuelShipState];
   return {
     tick: 0,
@@ -574,6 +711,7 @@ function createInitialDuelState(config: DuelSimulationConfig): DuelSimulationSta
     outcomeReason: null,
     winnerUserId: null,
     loserUserId: null,
+    suddenDeath: false,
     nextProjectileId: 1,
     nextEventId: 1,
     ships,
@@ -627,11 +765,20 @@ function validateDuelIdentifier(value: string, label: string): void {
 }
 
 function validateDuelStats(stats: DuelShipBuildStats, label: string): void {
-  for (const [key, value] of Object.entries(stats)) {
+  for (const [key, value] of Object.entries({
+    hull: stats.hull,
+    speedUnitsPerSecond: stats.speedUnitsPerSecond,
+    weaponDamage: stats.weaponDamage,
+    weaponRangeUnits: stats.weaponRangeUnits,
+    weaponCooldownTicks: stats.weaponCooldownTicks,
+    projectileSpeedUnitsPerSecond: stats.projectileSpeedUnitsPerSecond,
+    collisionRadiusUnits: stats.collisionRadiusUnits
+  })) {
     if (!Number.isSafeInteger(value) || value <= 0 || value > 1_000_000) {
       throw new Error(`${label}.buildStats.${key} must be a bounded positive integer.`);
     }
   }
+  validateRichShipConfig(stats, `${label}.buildStats`);
 }
 
 function validateDuelCheckpointShape(checkpoint: DuelSimulationCheckpoint): void {
@@ -676,7 +823,7 @@ function validateDuelCheckpointShape(checkpoint: DuelSimulationCheckpoint): void
 
 function cloneDuelConfig(config: DuelSimulationConfig): DuelSimulationConfig {
   const participants = config.participants
-    .map((participant) => ({ ...participant, buildStats: { ...participant.buildStats } }))
+    .map((participant) => ({ ...participant, buildStats: cloneRichShipStats(participant.buildStats) }))
     .sort((left, right) => left.side === right.side ? 0 : left.side === "alpha" ? -1 : 1) as [
       DuelParticipantConfig,
       DuelParticipantConfig
@@ -687,7 +834,10 @@ function cloneDuelConfig(config: DuelSimulationConfig): DuelSimulationConfig {
 function cloneDuelState(state: DuelSimulationState): DuelSimulationState {
   return {
     ...state,
-    ships: state.ships.map((ship) => ({ ...ship })) as [DuelShipState, DuelShipState],
+    ships: state.ships.map((ship) => ({
+      ...ship,
+      systems: cloneRichShipState(ship.systems)
+    })) as [DuelShipState, DuelShipState],
     projectiles: state.projectiles.map((projectile) => ({ ...projectile }))
   };
 }
@@ -731,13 +881,7 @@ function normalizedDuelAxis(
   fallbackX: number,
   fallbackY: number
 ): { x: number; y: number } {
-  if (x === 0 && y === 0) return { x: fallbackX, y: fallbackY };
-  const length = Math.hypot(x, y);
-  if (length <= DUEL_INPUT_AXIS_SCALE) return { x, y };
-  return {
-    x: Math.round((x / length) * DUEL_INPUT_AXIS_SCALE),
-    y: Math.round((y / length) * DUEL_INPUT_AXIS_SCALE)
-  };
+  return normalizeFixedAxis(x, y, DUEL_INPUT_AXIS_SCALE, fallbackX, fallbackY);
 }
 
 function moveDuelBodyWithinArena(body: DuelKinematicBody, config: DuelSimulationConfig): void {
@@ -750,42 +894,6 @@ function isDuelBodyInsideArena(body: DuelKinematicBody, config: DuelSimulationCo
     && body.yMilli >= 0
     && body.xMilli <= config.arenaWidthUnits * 1_000
     && body.yMilli <= config.arenaHeightUnits * 1_000;
-}
-
-function segmentIntersectsDuelCircle(
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
-  centerX: number,
-  centerY: number,
-  radius: number
-): boolean {
-  const segmentX = endX - startX;
-  const segmentY = endY - startY;
-  const segmentLengthSquared = segmentX * segmentX + segmentY * segmentY;
-  if (segmentLengthSquared === 0) {
-    const dx = startX - centerX;
-    const dy = startY - centerY;
-    return dx * dx + dy * dy <= radius * radius;
-  }
-  const projection = clampDuelNumber(
-    ((centerX - startX) * segmentX + (centerY - startY) * segmentY) / segmentLengthSquared,
-    0,
-    1
-  );
-  const closestX = startX + projection * segmentX;
-  const closestY = startY + projection * segmentY;
-  const dx = closestX - centerX;
-  const dy = closestY - centerY;
-  return dx * dx + dy * dy <= radius * radius;
-}
-
-function chooseDuelWinner(alpha: DuelShipState, beta: DuelShipState, seed: number): DuelShipState {
-  const alphaScore = alpha.hull * beta.hullMax;
-  const betaScore = beta.hull * alpha.hullMax;
-  if (alphaScore === betaScore) return (seed & 1) === 0 ? alpha : beta;
-  return alphaScore > betaScore ? alpha : beta;
 }
 
 function snapshotDuelShip(ship: DuelShipState): DuelSimulationEntitySnapshot {
@@ -802,7 +910,8 @@ function snapshotDuelShip(ship: DuelShipState): DuelSimulationEntitySnapshot {
     rotationMilliRadians: duelRotationFromVelocity(ship.velocityXMilliPerTick, ship.velocityYMilliPerTick),
     hull: ship.hull,
     hullMax: ship.hullMax,
-    flags: ship.hull <= 0 ? 1 : 0
+    flags: ship.hull <= 0 ? 1 : 0,
+    shipSystems: createShipSystemsSnapshot(ship.systems)
   };
 }
 
@@ -823,12 +932,13 @@ function snapshotDuelProjectile(projectile: DuelProjectileState): DuelSimulation
     ),
     hull: 1,
     hullMax: 1,
-    flags: 0
+    flags: 0,
+    weaponId: projectile.weaponId
   };
 }
 
 function duelRotationFromVelocity(x: number, y: number): number {
-  return x === 0 && y === 0 ? 0 : Math.round(Math.atan2(y, x) * 1_000);
+  return fixedRotationMilliRadians(x, y);
 }
 
 function computeDuelStateHash(
@@ -858,7 +968,8 @@ function computeDuelStateHash(
       participant.buildStats.weaponRangeUnits,
       participant.buildStats.weaponCooldownTicks,
       participant.buildStats.projectileSpeedUnitsPerSecond,
-      participant.buildStats.collisionRadiusUnits
+      participant.buildStats.collisionRadiusUnits,
+      ...richShipConfigTokens(participant.buildStats)
     );
   }
   tokens.push(
@@ -867,6 +978,7 @@ function computeDuelStateHash(
     state.outcomeReason ?? "-",
     state.winnerUserId ?? "-",
     state.loserUserId ?? "-",
+    state.suddenDeath ? 1 : 0,
     state.nextProjectileId,
     state.nextEventId
   );
@@ -879,7 +991,7 @@ function computeDuelStateHash(
       ...duelBodyTokens(ship),
       ship.hull,
       ship.hullMax,
-      ship.weaponCooldownRemaining
+      ...richShipStateTokens(ship.systems)
     );
   }
   for (const projectile of state.projectiles) {
@@ -887,6 +999,7 @@ function computeDuelStateHash(
       projectile.id,
       projectile.ownerUserId,
       projectile.ownerSide,
+      projectile.weaponId,
       ...duelBodyTokens(projectile),
       projectile.damage,
       projectile.ttlTicks
@@ -943,10 +1056,6 @@ function duelFnv1a64(input: string): string {
 
 function clampDuelInteger(value: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, Math.trunc(value)));
-}
-
-function clampDuelNumber(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
 }
 
 function duelFail(message: string): never {

@@ -10,6 +10,8 @@ export type JobsConfig = Readonly<{
   webhookMaxAttempts: number;
   retentionIntervalMs: number;
   retentionBatchSize: number;
+  staleAttemptSweepIntervalMs: number;
+  staleAttemptSweepBatchSize: number;
   privacyExportStorage: null | Readonly<{
     endpoint: string;
     region: string;
@@ -30,12 +32,16 @@ export function loadJobsConfig(env: NodeJS.ProcessEnv = process.env): JobsConfig
   const webhookMaxAttempts = Number(env.WEBHOOK_MAX_ATTEMPTS ?? 8);
   const retentionIntervalMs = Number(env.RETENTION_MAINTENANCE_INTERVAL_MS ?? 300_000);
   const retentionBatchSize = Number(env.RETENTION_MAINTENANCE_BATCH_SIZE ?? 5_000);
+  const staleAttemptSweepIntervalMs = Number(env.STALE_ATTEMPT_SWEEP_INTERVAL_MS ?? 5_000);
+  const staleAttemptSweepBatchSize = Number(env.STALE_ATTEMPT_SWEEP_BATCH_SIZE ?? 100);
   if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 200) throw new Error("JOBS_CONCURRENCY is invalid");
   if (!Number.isInteger(healthPort) || healthPort < 1 || healthPort > 65_535) throw new Error("JOBS_HEALTH_PORT is invalid");
   if (!Number.isInteger(webhookTimeoutMs) || webhookTimeoutMs < 500 || webhookTimeoutMs > 30_000) throw new Error("WEBHOOK_TIMEOUT_MS is invalid");
   if (!Number.isInteger(webhookMaxAttempts) || webhookMaxAttempts < 1 || webhookMaxAttempts > 20) throw new Error("WEBHOOK_MAX_ATTEMPTS is invalid");
   if (!Number.isInteger(retentionIntervalMs) || retentionIntervalMs < 60_000 || retentionIntervalMs > 86_400_000) throw new Error("RETENTION_MAINTENANCE_INTERVAL_MS is invalid");
   if (!Number.isInteger(retentionBatchSize) || retentionBatchSize < 1 || retentionBatchSize > 5_000) throw new Error("RETENTION_MAINTENANCE_BATCH_SIZE is invalid");
+  if (!Number.isInteger(staleAttemptSweepIntervalMs) || staleAttemptSweepIntervalMs < 1_000 || staleAttemptSweepIntervalMs > 60_000) throw new Error("STALE_ATTEMPT_SWEEP_INTERVAL_MS is invalid");
+  if (!Number.isInteger(staleAttemptSweepBatchSize) || staleAttemptSweepBatchSize < 1 || staleAttemptSweepBatchSize > 1_000) throw new Error("STALE_ATTEMPT_SWEEP_BATCH_SIZE is invalid");
   const privacyValues = [
     env.PRIVACY_EXPORT_S3_ENDPOINT,
     env.PRIVACY_EXPORT_S3_BUCKET,
@@ -74,6 +80,8 @@ export function loadJobsConfig(env: NodeJS.ProcessEnv = process.env): JobsConfig
     webhookMaxAttempts,
     retentionIntervalMs,
     retentionBatchSize,
+    staleAttemptSweepIntervalMs,
+    staleAttemptSweepBatchSize,
     privacyExportStorage,
   };
 }

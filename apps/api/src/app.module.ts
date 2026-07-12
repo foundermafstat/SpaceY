@@ -14,6 +14,8 @@ import { MemoryPlatformRepository } from "./platform/memory-platform.repository.
 import { PLATFORM_REPOSITORY } from "./platform/platform.repository.js";
 import { PrismaPlatformRepository } from "./platform/prisma-platform.repository.js";
 import { PublicApiGuard } from "./public/public-api.guard.js";
+import { DeveloperApiController } from "./public/developer-api.controller.js";
+import { DeveloperApiService } from "./public/developer-api.service.js";
 import { PublicAuthController } from "./public/public-auth.controller.js";
 import { PublicQuotaService } from "./public/public-quota.service.js";
 import { PublicTokenService } from "./public/public-token.service.js";
@@ -33,9 +35,11 @@ import {
   UnconfiguredPrivacyExportDownloadSigner,
 } from "./privacy/privacy-export-download.js";
 import { PrivacyService } from "./privacy/privacy.service.js";
+import { ResultsController } from "./results/results.controller.js";
+import { ResultsService } from "./results/results.service.js";
 
 @Module({
-  controllers: [AuthController, GameController, HealthController, MatchmakingController, PrivacyController, PublicAuthController, PublicController],
+  controllers: [AuthController, DeveloperApiController, GameController, HealthController, MatchmakingController, PrivacyController, PublicAuthController, PublicController, ResultsController],
   providers: [
     {
       provide: PLATFORM_REPOSITORY,
@@ -59,6 +63,7 @@ import { PrivacyService } from "./privacy/privacy.service.js";
       } satisfies MatchmakingRuntimeConfig,
     },
     CookieOriginGuard,
+    DeveloperApiService,
     GameService,
     MatchmakingService,
     PlayerAccessGuard,
@@ -81,6 +86,7 @@ import { PrivacyService } from "./privacy/privacy.service.js";
         : new UnconfiguredPrivacyExportDownloadSigner(env.productionLike),
     },
     PrivacyService,
+    ResultsService,
     PublicApiGuard,
     PublicQuotaService,
     PublicTokenService,

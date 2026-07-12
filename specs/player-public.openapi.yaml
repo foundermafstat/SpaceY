@@ -5,7 +5,7 @@ info:
   description: Server-authoritative player API and read-only partner API. Gameplay completion is never accepted from clients.
   license: { name: Proprietary, identifier: LicenseRef-SpaceY-Proprietary }
 servers:
-  - url: https://api.spacey.aima.space
+  - url: https://spacey.aima.space
 tags:
   - name: Auth
     description: Telegram identity and rotating player sessions.
@@ -17,6 +17,8 @@ tags:
     description: Server-authoritative matchmaking, participant tickets, reconnect and realtime duels.
   - name: Privacy
     description: EU privacy preferences and durable export/deletion workflows.
+  - name: Developer
+    description: Owner-scoped Public API credentials and signed webhook onboarding.
   - name: Public
     description: Scoped, quota-controlled partner reads.
 paths:
@@ -139,9 +141,9 @@ paths:
                 idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
       responses:
         "201":
-          description: One-time, 30-second battle connection ticket.
+          description: Server-owned attempt created. A one-time ticket is issued only by the connection endpoint.
           content:
-            application/json: { schema: { $ref: "#/components/schemas/BattleConnection" } }
+            application/json: { schema: { $ref: "#/components/schemas/MissionAttemptStatus" } }
         "422": { $ref: "#/components/responses/Conflict" }
   /api/v1/mission-attempts/{attemptId}:
     get:
@@ -177,6 +179,114 @@ paths:
           content:
             application/json: { schema: { $ref: "#/components/schemas/BattleConnection" } }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/mission-attempts/{attemptId}/connection:
+    post:
+      tags: [Battles]
+      operationId: createMissionAttemptConnection
+      summary: Rotate and issue a one-time PvE connection ticket
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Fresh one-time ticket; any previous ticket is revoked.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/BattleConnection" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/mission-attempts/{attemptId}/abandon:
+    post:
+      tags: [Battles]
+      operationId: abandonMissionAttempt
+      summary: Abandon an owned unfinished PvE attempt
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: attemptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Attempt is terminal and no longer holds the build.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/MissionAttemptStatus" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/battle-results:
+    get:
+      tags: [Battles]
+      operationId: listBattleResults
+      summary: List owned authoritative battle results
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Cursor page ordered by finalization time.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items, nextCursor]
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/BattleResult" } }
+                  nextCursor: { type: [string, "null"], format: uuid }
+  /api/v1/battle-results/{resultId}:
+    get:
+      tags: [Battles]
+      operationId: getBattleResult
+      summary: Read one owned authoritative battle result
+      security: [{ playerAccess: [] }]
+      parameters:
+        - name: resultId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Durable result, rewards, damage, progression and replay status.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/BattleResult" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/repairs/quotes:
+    post:
+      tags: [Player]
+      operationId: createRepairQuote
+      summary: Quote a full repair from immutable module content
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/CreateRepairQuote" } }
+      responses:
+        "201":
+          description: Five-minute quote bound to item durability and request hash.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/RepairQuote" } }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/repairs:
+    post:
+      tags: [Player]
+      operationId: commitRepair
+      summary: Commit a quoted full repair exactly once
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/CommitRepair" } }
+      responses:
+        "201":
+          description: Wallet ledger, item durability and transition committed atomically.
+          content:
+            application/json: { schema: { $ref: "#/components/schemas/RepairResult" } }
+        "409": { $ref: "#/components/responses/Conflict" }
   /api/v1/pvp/matchmaking-tickets:
     post:
       tags: [PvP]
@@ -329,6 +439,155 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/Conflict" }
+  /api/v1/developer/clients:
+    get:
+      tags: [Developer]
+      operationId: listDeveloperApiClients
+      summary: List API clients owned by the authenticated player
+      security: [{ playerAccess: [] }]
+      responses:
+        "200":
+          description: Credential metadata only; secret hashes and raw secrets are never returned.
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/DeveloperApiClient" } }
+    post:
+      tags: [Developer]
+      operationId: createDeveloperApiClient
+      summary: Create an API client and reveal its initial OAuth secret once
+      security: [{ playerAccess: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, scopes]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                scopes: { $ref: "#/components/schemas/PublicApiScopes" }
+      responses:
+        "201": { description: API client and one-time OAuth client secret. }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/v1/developer/clients/{apiClientId}/oauth-secret/rotate:
+    post:
+      tags: [Developer]
+      operationId: rotateDeveloperOAuthSecret
+      summary: Rotate the OAuth secret with a bounded overlap window
+      security: [{ playerAccess: [] }]
+      parameters: [{ $ref: "#/components/parameters/ApiClientId" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SecretOverlap" } } }
+      responses:
+        "200": { description: New secret revealed once; previous secret remains valid only until the returned deadline. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/revoke:
+    post:
+      tags: [Developer]
+      operationId: revokeDeveloperApiClient
+      summary: Revoke a client, all keys, OAuth secrets and webhook subscriptions
+      security: [{ playerAccess: [] }]
+      parameters: [{ $ref: "#/components/parameters/ApiClientId" }]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/keys:
+    post:
+      tags: [Developer]
+      operationId: createDeveloperApiKey
+      summary: Create an API key and reveal it once
+      security: [{ playerAccess: [] }]
+      parameters: [{ $ref: "#/components/parameters/ApiClientId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name, scopes]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                scopes: { $ref: "#/components/schemas/PublicApiScopes" }
+                expiresInDays: { type: [integer, "null"], minimum: 1, maximum: 365, default: 90 }
+      responses:
+        "201": { description: API key revealed once. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/keys/{apiKeyId}/rotate:
+    post:
+      tags: [Developer]
+      operationId: rotateDeveloperApiKey
+      summary: Create a replacement key and expire the previous key after a bounded overlap
+      security: [{ playerAccess: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ApiClientId" }
+        - { $ref: "#/components/parameters/ApiKeyId" }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SecretOverlap" } } }
+      responses:
+        "200": { description: Replacement API key revealed once. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/keys/{apiKeyId}/revoke:
+    post:
+      tags: [Developer]
+      operationId: revokeDeveloperApiKey
+      security: [{ playerAccess: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ApiClientId" }
+        - { $ref: "#/components/parameters/ApiKeyId" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/webhooks:
+    post:
+      tags: [Developer]
+      operationId: createDeveloperWebhook
+      summary: Register a public HTTPS webhook and reveal its signing secret once
+      security: [{ playerAccess: [] }]
+      parameters: [{ $ref: "#/components/parameters/ApiClientId" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [url, eventTypes]
+              properties:
+                url: { type: string, format: uri, maxLength: 2048 }
+                eventTypes: { $ref: "#/components/schemas/PublicWebhookEventTypes" }
+      responses:
+        "201": { description: Webhook and signing secret revealed once. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/webhooks/{webhookId}/rotate:
+    post:
+      tags: [Developer]
+      operationId: rotateDeveloperWebhookSecret
+      summary: Rotate the signing secret and dual-sign during the bounded overlap
+      security: [{ playerAccess: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ApiClientId" }
+        - { $ref: "#/components/parameters/WebhookId" }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SecretOverlap" } } }
+      responses:
+        "200": { description: New webhook secret revealed once. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/v1/developer/clients/{apiClientId}/webhooks/{webhookId}/revoke:
+    post:
+      tags: [Developer]
+      operationId: revokeDeveloperWebhook
+      security: [{ playerAccess: [] }]
+      parameters:
+        - { $ref: "#/components/parameters/ApiClientId" }
+        - { $ref: "#/components/parameters/WebhookId" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /public/v1/oauth/token:
     post:
       tags: [Public]
@@ -428,7 +687,7 @@ webhooks:
       operationId: receiveSpaceyWebhook
       summary: Receive an idempotent signed SpaceY domain event
       security: [{ webhookSignature: [] }]
-      description: Verify HMAC-SHA256 over `<timestamp>.<event-id>.<raw-body>` with `SHA-256(raw webhook secret)` as the key. Reject stale timestamps and deduplicate by event ID.
+      description: Verify every comma-separated `v1=<hex>` signature over `<timestamp>.<event-id>.<raw-body>` with `SHA-256(raw webhook secret)` as the HMAC-SHA256 key. Rotation overlap may include both new and previous signatures. Reject stale timestamps and deduplicate by event ID.
       parameters:
         - name: X-SpaceY-Event-Id
           in: header
@@ -445,7 +704,7 @@ webhooks:
         - name: X-SpaceY-Signature
           in: header
           required: true
-          schema: { type: string, pattern: "^v1=[a-f0-9]{64}$" }
+          schema: { type: string, pattern: "^v1=[a-f0-9]{64}(,v1=[a-f0-9]{64})?$" }
       requestBody:
         required: true
         content:
@@ -489,6 +748,21 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    ApiClientId:
+      name: apiClientId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ApiKeyId:
+      name: apiKeyId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    WebhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
   responses:
     Ok:
       description: Success.
@@ -508,6 +782,39 @@ components:
       description: Resource not found or not owned by the caller.
       content: { application/json: { schema: { $ref: "#/components/schemas/ApiError" } } }
   schemas:
+    PublicApiScopes:
+      type: array
+      minItems: 1
+      maxItems: 4
+      uniqueItems: true
+      items: { enum: ["catalog:read", "leaderboards:read", "profiles:read", "stats:read"] }
+    PublicWebhookEventTypes:
+      type: array
+      minItems: 1
+      maxItems: 5
+      uniqueItems: true
+      items: { enum: [content.release.published, leaderboard.updated, season.started, season.ended, aggregate.stats.updated] }
+    SecretOverlap:
+      type: object
+      additionalProperties: false
+      properties:
+        overlapSeconds: { type: integer, minimum: 60, maximum: 86400, default: 3600 }
+    DeveloperApiClient:
+      type: object
+      additionalProperties: false
+      required: [id, clientId, name, status, scopes, rateLimitPerMinute, previousOAuthSecretValidUntil, createdAt, updatedAt, apiKeys, webhooks]
+      properties:
+        id: { type: string, format: uuid }
+        clientId: { type: string }
+        name: { type: string }
+        status: { enum: [active, suspended, revoked] }
+        scopes: { $ref: "#/components/schemas/PublicApiScopes" }
+        rateLimitPerMinute: { type: integer, minimum: 1 }
+        previousOAuthSecretValidUntil: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        apiKeys: { type: array, items: { type: object, additionalProperties: true } }
+        webhooks: { type: array, items: { type: object, additionalProperties: true } }
     ApiError:
       type: object
       additionalProperties: false
@@ -611,6 +918,54 @@ components:
         scrap: { type: integer, minimum: 0 }
         alloy: { type: integer, minimum: 0 }
         dataShards: { type: integer, minimum: 0 }
+    InventoryItem:
+      type: object
+      additionalProperties: false
+      required: [id, definitionId, contentVersion, rarity, state, durability, category, shape, stats, visualKey, installedBuildRevisionId, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        definitionId: { type: string, minLength: 1 }
+        contentVersion: { type: string, minLength: 1 }
+        rarity: { enum: [common, uncommon, superRare] }
+        state: { enum: [available, installed, damaged, destroyed] }
+        durability: { type: integer, minimum: 0, maximum: 10000 }
+        category: { type: string, minLength: 1 }
+        shape:
+          type: object
+          additionalProperties: false
+          required: [cells]
+          properties:
+            cells:
+              type: array
+              minItems: 1
+              items:
+                type: array
+                minItems: 2
+                maxItems: 2
+                items: { type: integer }
+        stats: { type: object, additionalProperties: true }
+        visualKey: { type: string, minLength: 1 }
+        installedBuildRevisionId:
+          oneOf:
+            - { type: string, format: uuid }
+            - { type: "null" }
+        createdAt: { type: string, format: date-time }
+    Progression:
+      type: object
+      additionalProperties: false
+      required: [level, experience, researchNodeIds, seasonId, seasonRating]
+      properties:
+        level: { type: integer, minimum: 1 }
+        experience: { type: integer, minimum: 0 }
+        researchNodeIds: { type: array, uniqueItems: true, items: { type: string, minLength: 1 } }
+        seasonId:
+          oneOf:
+            - { type: string, format: uuid }
+            - { type: "null" }
+        seasonRating:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: "null" }
     Mission:
       type: object
       required: [id, contentVersion, name, type, risk, durationSeconds, objective, rewardPreview]
@@ -645,7 +1000,8 @@ components:
           items: { type: object, required: [type], properties: { type: { enum: [rename, install, move, remove] } } }
     Bootstrap:
       type: object
-      required: [serverTime, profile, wallet, activeBuild, inventory, contentRelease, missions]
+      additionalProperties: false
+      required: [serverTime, profile, wallet, activeBuild, inventory, contentRelease, missions, activeGameplay, capabilities]
       properties:
         serverTime: { type: string, format: date-time }
         profile: { $ref: "#/components/schemas/PlayerProfile" }
@@ -653,11 +1009,17 @@ components:
         activeBuild: { oneOf: [{ $ref: "#/components/schemas/ShipBuild" }, { type: "null" }] }
         inventory:
           type: array
-          items:
-            type: object
-            additionalProperties: true
+          items: { $ref: "#/components/schemas/InventoryItem" }
         contentRelease: { type: object, additionalProperties: true }
         missions: { type: array, items: { $ref: "#/components/schemas/Mission" } }
+        activeGameplay: { type: array, items: { $ref: "#/components/schemas/ActiveGameplay" } }
+        capabilities:
+          type: object
+          additionalProperties: false
+          required: [pvpMatchmaking, repair]
+          properties:
+            pvpMatchmaking: { type: boolean }
+            repair: { type: boolean }
     BattleConnection:
       type: object
       required: [sessionId, attemptId, mode, websocketUrl, ticket, ticketExpiresAt, protocolVersion]
@@ -725,6 +1087,127 @@ components:
         status: { enum: [queued, active, paused, completed, failed] }
         resultId: { type: [string, "null"], format: uuid }
         reconnect: { type: object, additionalProperties: true }
+    ActiveGameplay:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required: [mode, attempt]
+          properties:
+            mode: { const: pve }
+            attempt: { $ref: "#/components/schemas/MissionAttemptStatus" }
+        - type: object
+          additionalProperties: false
+          required: [mode, matchmakingTicket, attempt]
+          properties:
+            mode: { const: pvp }
+            matchmakingTicket: { $ref: "#/components/schemas/MatchmakingTicket" }
+            attempt:
+              oneOf:
+                - { $ref: "#/components/schemas/MissionAttemptStatus" }
+                - { type: "null" }
+      discriminator:
+        propertyName: mode
+    BattleResult:
+      type: object
+      additionalProperties: false
+      required: [id, attemptId, mode, outcome, reason, mission, durationTicks, finalStateHash, rewards, grantedItems, experience, walletAfter, progressionAfter, moduleDamage, mmr, replayStatus, finalizedAt]
+      properties:
+        id: { type: string, format: uuid }
+        attemptId: { type: string, format: uuid }
+        mode: { enum: [pve, pvp] }
+        outcome: { enum: [victory, defeat, forfeit, draw] }
+        reason: { type: string }
+        mission:
+          type: object
+          additionalProperties: false
+          required: [id, name]
+          properties:
+            id: { type: string }
+            name: { type: string }
+        durationTicks: { type: integer, minimum: 0 }
+        finalStateHash: { type: string, pattern: "^[a-f0-9]{64}$" }
+        rewards:
+          type: object
+          additionalProperties: false
+          properties:
+            credits: { type: integer, minimum: 0 }
+            scrap: { type: integer, minimum: 0 }
+            alloy: { type: integer, minimum: 0 }
+            dataShards: { type: integer, minimum: 0 }
+        grantedItems:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [inventoryItemId, definitionId, rarity]
+            properties:
+              inventoryItemId: { type: string, format: uuid }
+              definitionId: { type: string, minLength: 1 }
+              rarity: { enum: [common, uncommon, superRare] }
+        experience: { type: integer, minimum: 0 }
+        walletAfter: { $ref: "#/components/schemas/Wallet" }
+        progressionAfter: { $ref: "#/components/schemas/Progression" }
+        moduleDamage:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [inventoryItemId, definitionId, durabilityBefore, durabilityAfter, damage, state]
+            properties:
+              inventoryItemId: { type: string, format: uuid }
+              definitionId: { type: string, minLength: 1 }
+              durabilityBefore: { type: integer, minimum: 1, maximum: 10000 }
+              durabilityAfter: { type: integer, minimum: 0, maximum: 9999 }
+              damage: { type: integer, minimum: 1, maximum: 10000 }
+              state: { enum: [available, installed, damaged, destroyed] }
+        mmr:
+          oneOf:
+            - { type: "null" }
+            - type: object
+              additionalProperties: false
+              required: [before, after]
+              properties:
+                before: { type: integer, minimum: 0 }
+                after: { type: integer, minimum: 0 }
+        replayStatus: { enum: [pending, available, failed] }
+        finalizedAt: { type: string, format: date-time }
+    CreateRepairQuote:
+      type: object
+      additionalProperties: false
+      required: [inventoryItemId, idempotencyKey]
+      properties:
+        inventoryItemId: { type: string, format: uuid }
+        idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+    RepairQuote:
+      type: object
+      additionalProperties: false
+      required: [id, inventoryItemId, definitionId, durabilityBefore, durabilityAfter, currency, cost, expiresAt]
+      properties:
+        id: { type: string, format: uuid }
+        inventoryItemId: { type: string, format: uuid }
+        definitionId: { type: string }
+        durabilityBefore: { type: integer, minimum: 1, maximum: 9999 }
+        durabilityAfter: { const: 10000 }
+        currency: { const: credits }
+        cost: { type: integer, minimum: 1 }
+        expiresAt: { type: string, format: date-time }
+    CommitRepair:
+      type: object
+      additionalProperties: false
+      required: [quoteId, idempotencyKey]
+      properties:
+        quoteId: { type: string, format: uuid }
+        idempotencyKey: { type: string, minLength: 16, maxLength: 128 }
+    RepairResult:
+      type: object
+      additionalProperties: false
+      required: [quoteId, inventoryItem, walletAfter, ledgerEntryId, repairedAt]
+      properties:
+        quoteId: { type: string, format: uuid }
+        inventoryItem: { $ref: "#/components/schemas/InventoryItem" }
+        walletAfter: { $ref: "#/components/schemas/Wallet" }
+        ledgerEntryId: { type: string, format: uuid }
+        repairedAt: { type: string, format: date-time }
     PublicCatalog:
       type: object
       required: [contentRelease, missions]

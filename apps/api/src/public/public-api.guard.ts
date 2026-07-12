@@ -26,7 +26,7 @@ export class PublicApiGuard implements CanActivate {
     const authorization = request.headers.authorization;
     const rawKey = request.headers["x-api-key"];
     let principal = authorization?.startsWith("Bearer ")
-      ? await this.tokens.verify(authorization.slice(7))
+      ? await this.verifyLiveBearer(authorization.slice(7))
       : typeof rawKey === "string"
         ? await this.repository.authenticatePublicApiKey(this.tokens.hashCredential(rawKey))
         : null;
@@ -49,5 +49,17 @@ export class PublicApiGuard implements CanActivate {
     await this.quotas.consume(principal.clientId, principal.rateLimitPerMinute);
     request.publicApi = principal;
     return true;
+  }
+
+  private async verifyLiveBearer(token: string): Promise<PublicApiPrincipal | null> {
+    const claims = await this.tokens.verify(token);
+    const current = await this.repository.getActivePublicClient(claims.clientId);
+    if (!current && !env.productionLike && claims.clientId === env.PUBLIC_OAUTH_DEV_CLIENT_ID) return claims;
+    if (!current) return null;
+    return {
+      clientId: current.clientId,
+      scopes: claims.scopes.filter((scope) => current.scopes.includes(scope)),
+      rateLimitPerMinute: Math.min(claims.rateLimitPerMinute, current.rateLimitPerMinute),
+    };
   }
 }

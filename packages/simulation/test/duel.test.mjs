@@ -150,7 +150,17 @@ test("projectiles deterministically damage and destroy the opposing ship", () =>
         userId: betaUserId,
         side: "beta",
         shipBuildRevisionId: "build-beta-1",
-        buildStats: buildStats({ hull: 100 })
+        buildStats: buildStats({
+          hull: 100,
+          modules: [{
+            id: "beta-core",
+            inventoryItemId: "beta-inventory-core",
+            category: "core",
+            hp: 100,
+            gridX: 0,
+            gridY: 0
+          }]
+        })
       }
     ]
   });
@@ -171,6 +181,17 @@ test("projectiles deterministically damage and destroy the opposing ship", () =>
   assert.equal(final.outcome?.winnerUserId, alphaUserId);
   assert.equal(final.outcome?.loserUserId, betaUserId);
   assert.equal(final.outcome?.results.find((result) => result.userId === betaUserId)?.outcome, "defeat");
+  assert.deepEqual(
+    final.outcome?.results.find((result) => result.userId === betaUserId)?.moduleDamage,
+    [{
+      moduleId: "beta-core",
+      inventoryItemId: "beta-inventory-core",
+      hpBefore: 100,
+      hpAfter: 0,
+      hpLoss: 100,
+      detached: false
+    }]
+  );
   assert.ok(results.flatMap((result) => result.events).some((event) => event.type === "entity_damaged"));
 });
 
@@ -201,19 +222,139 @@ test("forceForfeit records per-user victory and forfeit outcomes", () => {
   assert.equal(outcome.loserUserId, betaUserId);
   assert.equal(outcome.reason, "disconnect_forfeit");
   assert.deepEqual(outcome.results, [
-    { userId: alphaUserId, outcome: "victory", reason: "disconnect_forfeit" },
-    { userId: betaUserId, outcome: "forfeit", reason: "disconnect_forfeit" }
+    { userId: alphaUserId, outcome: "victory", reason: "disconnect_forfeit", moduleDamage: [] },
+    { userId: betaUserId, outcome: "forfeit", reason: "disconnect_forfeit", moduleDamage: [] }
   ]);
   assert.equal(simulation.advanceOneTick().tick, 0);
 });
 
-test("time expiry resolves exact ties deterministically from the match seed", () => {
-  const even = new DuelSimulation(duelConfig({ durationSeconds: 1, seed: 2 }));
-  const odd = new DuelSimulation(duelConfig({ durationSeconds: 1, seed: 3 }));
-  const evenFinal = even.advanceTicks(30).at(-1);
-  const oddFinal = odd.advanceTicks(30).at(-1);
-  assert.equal(evenFinal.outcome?.reason, "time_expired");
-  assert.equal(oddFinal.outcome?.reason, "time_expired");
-  assert.equal(evenFinal.outcome?.winnerUserId, alphaUserId);
-  assert.equal(oddFinal.outcome?.winnerUserId, betaUserId);
+test("forceNoContest ends an unstarted duel without winner or loser", () => {
+  const simulation = new DuelSimulation(duelConfig());
+  const outcome = simulation.forceNoContest();
+
+  assert.equal(outcome.finalTick, 0);
+  assert.equal(outcome.reason, "no_contest");
+  assert.equal(outcome.winnerUserId, null);
+  assert.equal(outcome.loserUserId, null);
+  assert.deepEqual(outcome.results.map((result) => result.outcome), ["draw", "draw"]);
+  assert.equal(simulation.createCheckpoint().state.outcomeReason, "no_contest");
+});
+
+test("base timer enters sudden death and resolves as a neutral draw after 30 seconds", () => {
+  const simulation = new DuelSimulation(duelConfig({ durationSeconds: 1 }));
+  const results = simulation.advanceTicks(930);
+  const final = results.at(-1);
+  assert.ok(results.flatMap((result) => result.events).some((event) => event.type === "sudden_death_started"));
+  assert.equal(final.outcome?.reason, "draw");
+  assert.equal(final.outcome?.winnerUserId, null);
+  assert.equal(final.outcome?.loserUserId, null);
+  assert.deepEqual(final.outcome?.results.map((result) => result.outcome), ["draw", "draw"]);
+});
+
+test("simultaneous destruction in one tick is a draw", () => {
+  const lethalStats = buildStats({
+    hull: 100,
+    weaponDamage: 200,
+    projectileSpeedUnitsPerSecond: 1_800
+  });
+  const simulation = new DuelSimulation(duelConfig({
+    arenaWidthUnits: 120,
+    arenaHeightUnits: 100,
+    participants: [
+      {
+        participantId: "participant-alpha",
+        userId: alphaUserId,
+        side: "alpha",
+        shipBuildRevisionId: "build-alpha-1",
+        buildStats: lethalStats
+      },
+      {
+        participantId: "participant-beta",
+        userId: betaUserId,
+        side: "beta",
+        shipBuildRevisionId: "build-beta-1",
+        buildStats: lethalStats
+      }
+    ]
+  }));
+  simulation.enqueueInput(alphaUserId, {
+    seq: 1, targetTick: 1, moveX: 0, moveY: 0, aimX: 1000, aimY: 0, actionFlags: 1
+  });
+  simulation.enqueueInput(betaUserId, {
+    seq: 1, targetTick: 1, moveX: 0, moveY: 0, aimX: -1000, aimY: 0, actionFlags: 1
+  });
+
+  const final = simulation.advanceOneTick();
+  assert.equal(final.outcome?.reason, "draw");
+  assert.equal(final.outcome?.winnerUserId, null);
+  assert.equal(final.events.filter((event) => event.type === "entity_destroyed").length, 2);
+});
+
+test("duel snapshots expose independent weapons and shield absorption", () => {
+  const alphaStats = buildStats({
+    energyCapacity: 100,
+    energyInitial: 100,
+    energyGenerationPerTick: 0,
+    weapons: [
+      {
+        id: "port",
+        damage: 20,
+        rangeUnits: 300,
+        cooldownTicks: 6,
+        projectileSpeedUnitsPerSecond: 1_800,
+        energyCost: 10,
+        heatPerShot: 5,
+        actionFlag: 1
+      },
+      {
+        id: "starboard",
+        damage: 20,
+        rangeUnits: 300,
+        cooldownTicks: 6,
+        projectileSpeedUnitsPerSecond: 1_800,
+        energyCost: 10,
+        heatPerShot: 5,
+        actionFlag: 2
+      }
+    ]
+  });
+  const betaStats = buildStats({ hull: 100, shieldCapacity: 25, shieldInitial: 25 });
+  const simulation = new DuelSimulation(duelConfig({
+    arenaWidthUnits: 120,
+    arenaHeightUnits: 100,
+    participants: [
+      {
+        participantId: "participant-alpha",
+        userId: alphaUserId,
+        side: "alpha",
+        shipBuildRevisionId: "build-alpha-1",
+        buildStats: alphaStats
+      },
+      {
+        participantId: "participant-beta",
+        userId: betaUserId,
+        side: "beta",
+        shipBuildRevisionId: "build-beta-1",
+        buildStats: betaStats
+      }
+    ]
+  }));
+  simulation.enqueueInput(alphaUserId, {
+    seq: 1, targetTick: 1, moveX: 0, moveY: 0, aimX: 1000, aimY: 0, actionFlags: 3
+  });
+
+  const results = simulation.advanceTicks(3);
+  const events = results.flatMap((result) => result.events);
+  assert.deepEqual(
+    events.filter((event) => event.type === "weapon_fired").map((event) => event.weaponId),
+    ["port", "starboard"]
+  );
+  assert.ok(events.some((event) => event.type === "shield_hit"));
+  const ships = simulation.createSnapshot().entities.filter((entity) => entity.kind === "ship");
+  const alpha = ships.find((entity) => entity.ownerUserId === alphaUserId);
+  const beta = ships.find((entity) => entity.ownerUserId === betaUserId);
+  assert.equal(alpha.shipSystems.energy, 80);
+  assert.equal(alpha.shipSystems.weapons.length, 2);
+  assert.equal(beta.shipSystems.shield, 0);
+  assert.equal(beta.hull, 85);
 });

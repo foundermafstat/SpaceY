@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "dashboardVersion": "2026-07-11.2",
+  "title": "SpaceY authoritative runtime",
+  "refreshSeconds": 30,
+  "defaultWindowSeconds": 3600,
+  "resourceFilters": ["deployment.environment.name", "service.version"],
+  "panels": [
+    {
+      "id": "battle_capacity",
+      "title": "Resident battle capacity",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "current_sum", "instruments": ["spacey.battle.ws.connections.active"], "groupBy": [] },
+        { "operation": "current_sum", "instruments": ["spacey.battle.sessions.active"], "groupBy": ["mode"] },
+        { "operation": "current_sum", "instruments": ["spacey.battle.duels.active"], "groupBy": [] }
+      ]
+    },
+    {
+      "id": "tick_and_checkpoint",
+      "title": "Tick lag and checkpoint freshness",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "histogram_quantile", "instruments": ["spacey.battle.tick.lag"], "quantile": 0.95, "windowSeconds": 300, "groupBy": [] },
+        { "operation": "gauge_max", "instruments": ["spacey.battle.checkpoint.age"], "windowSeconds": 300, "groupBy": ["mode"] }
+      ]
+    },
+    {
+      "id": "battle_inputs",
+      "title": "Input traffic and rejects",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "counter_rate", "instruments": ["spacey.battle.input.commands"], "windowSeconds": 300, "groupBy": ["mode"] },
+        { "operation": "counter_rate", "instruments": ["spacey.battle.input.rejected"], "windowSeconds": 300, "groupBy": ["mode", "reason"] },
+        { "operation": "counter_rate", "instruments": ["spacey.battle.ws.snapshots.dropped"], "windowSeconds": 300, "groupBy": ["reason"] },
+        { "operation": "counter_ratio", "instruments": ["spacey.battle.input.rejected", "spacey.battle.input.commands"], "windowSeconds": 300, "minimumDenominatorCount": 100, "groupBy": ["mode"] }
+      ]
+    },
+    {
+      "id": "battle_lifecycle_events",
+      "title": "Reconnects and PvP no-shows",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "counter_rate", "instruments": ["spacey.battle.reconnects"], "windowSeconds": 300, "groupBy": ["mode"] },
+        { "operation": "counter_rate", "instruments": ["spacey.battle.no_show"], "windowSeconds": 300, "groupBy": ["outcome"] }
+      ]
+    },
+    {
+      "id": "battle_finalization",
+      "title": "Durable finalization",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "histogram_quantile", "instruments": ["spacey.battle.finalization.duration"], "quantile": 0.95, "windowSeconds": 300, "groupBy": ["mode"] },
+        { "operation": "counter_rate", "instruments": ["spacey.battle.finalization.retries"], "windowSeconds": 300, "groupBy": ["mode", "stage"] }
+      ]
+    },
+    {
+      "id": "replay_and_economy",
+      "title": "Replay backlog and ledger conflicts",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "current_sum", "instruments": ["spacey.battle.replay.pending"], "groupBy": ["mode"] },
+        { "operation": "counter_rate", "instruments": ["spacey.economy.ledger.conflicts"], "windowSeconds": 300, "groupBy": ["operation", "code"] }
+      ]
+    },
+    {
+      "id": "jobs_outbox_claim_age",
+      "title": "Age of outbox events when claimed",
+      "visualization": "timeseries",
+      "queries": [
+        { "operation": "histogram_quantile", "instruments": ["spacey.jobs.outbox.event.age"], "quantile": 0.95, "windowSeconds": 900, "groupBy": [] }
+      ]
+    }
+  ]
+}

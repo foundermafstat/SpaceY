@@ -1,4 +1,5 @@
 import { SIMULATION_TICK_RATE } from "@spacey/simulation";
+import { battleWorkerMetrics } from "@spacey/observability";
 
 import type { BattleSessionRuntime, BattleWorkerClock, BattleWorkerLogger } from "./ports.js";
 
@@ -44,6 +45,7 @@ export class FixedTickLoop {
         await this.sessions.advanceOneTick(nowMs);
         this.accumulatorMs -= fixedStepMs;
       }
+      battleWorkerMetrics.recordTickLag(this.accumulatorMs);
       if (ticks === MAX_CATCH_UP_TICKS && this.accumulatorMs >= fixedStepMs) {
         this.logger.warn("Battle worker tick loop is behind", {
           backlogMs: Math.round(this.accumulatorMs)

@@ -8,6 +8,7 @@ const booleanFromString = z.preprocess(
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "staging", "production"]).default("development"),
+  SPACEY_ENVIRONMENT: z.enum(["development", "test", "loadtest", "preprod", "staging", "production"]).optional(),
   API_PORT: z.coerce.number().int().positive().default(7800),
   API_HOST: z.string().default("127.0.0.1"),
   CORS_ORIGINS: z.string().default("http://localhost:3000"),
@@ -23,7 +24,7 @@ const schema = z.object({
   PLAYER_ACCESS_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(600),
   PLAYER_REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   PLAYER_MAX_ACTIVE_SESSIONS: z.coerce.number().int().positive().default(5),
-  BATTLE_WS_PUBLIC_URL: z.string().url().default("ws://localhost:7801/battle"),
+  BATTLE_WS_PUBLIC_URL: z.string().url().optional(),
   ALLOW_BROWSER_AUTH: booleanFromString.default(false),
   USE_IN_MEMORY_REPOSITORY: booleanFromString.default(false),
   PUBLIC_API_DEV_KEY: z.string().min(16).optional(),
@@ -41,7 +42,14 @@ const schema = z.object({
 });
 
 const parsed = schema.parse(process.env);
-const productionLike = parsed.NODE_ENV === "production" || parsed.NODE_ENV === "staging";
+const deploymentEnvironment = parsed.SPACEY_ENVIRONMENT ?? parsed.NODE_ENV;
+const productionLike = parsed.NODE_ENV === "production"
+  || parsed.NODE_ENV === "staging"
+  || deploymentEnvironment === "production"
+  || deploymentEnvironment === "staging"
+  || deploymentEnvironment === "preprod";
+const battleWsPublicUrl = parsed.BATTLE_WS_PUBLIC_URL
+  ?? (productionLike ? undefined : "ws://localhost:7801/battle");
 const privacyDownloadValues = [
   parsed.PRIVACY_EXPORT_S3_ENDPOINT,
   parsed.PRIVACY_EXPORT_S3_BUCKET,
@@ -61,16 +69,31 @@ if (productionLike) {
     ["REFRESH_TOKEN_PEPPER", parsed.REFRESH_TOKEN_PEPPER],
     ["PUBLIC_API_KEY_PEPPER", parsed.PUBLIC_API_KEY_PEPPER],
     ["PUBLIC_OAUTH_TOKEN_SECRET", parsed.PUBLIC_OAUTH_TOKEN_SECRET],
+    ["BATTLE_WS_PUBLIC_URL", battleWsPublicUrl],
     ["PRIVACY_EXPORT_S3_ENDPOINT", parsed.PRIVACY_EXPORT_S3_ENDPOINT],
     ["PRIVACY_EXPORT_S3_BUCKET", parsed.PRIVACY_EXPORT_S3_BUCKET],
     ["PRIVACY_EXPORT_S3_ACCESS_KEY_ID", parsed.PRIVACY_EXPORT_S3_ACCESS_KEY_ID],
     ["PRIVACY_EXPORT_S3_SECRET_ACCESS_KEY", parsed.PRIVACY_EXPORT_S3_SECRET_ACCESS_KEY]
   ].filter(([, value]) => !value).map(([name]) => name);
-  if (missing.length) throw new Error(`Missing production secrets: ${missing.join(", ")}`);
+  if (missing.length) throw new Error(`Missing production configuration: ${missing.join(", ")}`);
   if (parsed.USE_IN_MEMORY_REPOSITORY) throw new Error("In-memory repository is forbidden outside development/test.");
   if (parsed.ALLOW_BROWSER_AUTH) throw new Error("Browser auth bypass is forbidden outside development/test.");
   if (parsed.PVP_MATCHMAKING_ENABLED && !PVP_DUEL_PROTOCOL_READY) {
     throw new Error("PvP matchmaking cannot be enabled until the multi-connection duel protocol is implemented.");
+  }
+  const battleWsUrl = new URL(battleWsPublicUrl!);
+  if (battleWsUrl.protocol !== "wss:") {
+    throw new Error("BATTLE_WS_PUBLIC_URL must use WSS outside development/test.");
+  }
+  if (battleWsUrl.pathname !== "/realtime/v1/battle" || battleWsUrl.search || battleWsUrl.hash
+    || battleWsUrl.username || battleWsUrl.password) {
+    throw new Error("BATTLE_WS_PUBLIC_URL must use the canonical credential-free /realtime/v1/battle endpoint.");
+  }
+  const expectedBattleHost = deploymentEnvironment === "production"
+    ? "spacey.aima.space"
+    : "staging.spacey.aima.space";
+  if (battleWsUrl.hostname !== expectedBattleHost) {
+    throw new Error(`BATTLE_WS_PUBLIC_URL must use ${expectedBattleHost} for ${deploymentEnvironment}.`);
   }
   if (new URL(parsed.PRIVACY_EXPORT_S3_ENDPOINT!).protocol !== "https:") {
     throw new Error("Privacy export S3 endpoint must use HTTPS outside development/test.");
@@ -79,6 +102,8 @@ if (productionLike) {
 
 export const env = {
   ...parsed,
+  BATTLE_WS_PUBLIC_URL: battleWsPublicUrl!,
+  deploymentEnvironment,
   productionLike,
   corsOrigins: parsed.CORS_ORIGINS.split(",").map((value) => value.trim()).filter(Boolean)
 };

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "2026-07-11.2",
+  "source": "packages/observability/src/metrics.ts",
+  "instruments": [
+    {
+      "name": "spacey.battle.ws.connections.active",
+      "type": "up_down_counter",
+      "unit": "{connection}",
+      "service": "battle-worker",
+      "attributes": []
+    },
+    {
+      "name": "spacey.battle.sessions.active",
+      "type": "up_down_counter",
+      "unit": "{session}",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.battle.duels.active",
+      "type": "up_down_counter",
+      "unit": "{duel}",
+      "service": "battle-worker",
+      "attributes": []
+    },
+    {
+      "name": "spacey.battle.tick.lag",
+      "type": "histogram",
+      "unit": "ms",
+      "service": "battle-worker",
+      "attributes": []
+    },
+    {
+      "name": "spacey.battle.input.commands",
+      "type": "counter",
+      "unit": "{command}",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.battle.input.rejected",
+      "type": "counter",
+      "unit": "{command}",
+      "service": "battle-worker",
+      "attributes": ["mode", "reason"]
+    },
+    {
+      "name": "spacey.battle.ws.snapshots.dropped",
+      "type": "counter",
+      "unit": "{snapshot}",
+      "service": "battle-worker",
+      "attributes": ["reason"]
+    },
+    {
+      "name": "spacey.battle.reconnects",
+      "type": "counter",
+      "unit": "{reconnect}",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.battle.no_show",
+      "type": "counter",
+      "unit": "{match}",
+      "service": "battle-worker",
+      "attributes": ["outcome"]
+    },
+    {
+      "name": "spacey.battle.finalization.duration",
+      "type": "histogram",
+      "unit": "ms",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.battle.finalization.retries",
+      "type": "counter",
+      "unit": "{retry}",
+      "service": "battle-worker",
+      "attributes": ["mode", "stage"]
+    },
+    {
+      "name": "spacey.battle.replay.pending",
+      "type": "up_down_counter",
+      "unit": "{replay}",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.economy.ledger.conflicts",
+      "type": "counter",
+      "unit": "{conflict}",
+      "service": "battle-worker",
+      "attributes": ["operation", "code"]
+    },
+    {
+      "name": "spacey.battle.checkpoint.age",
+      "type": "observable_gauge",
+      "unit": "s",
+      "service": "battle-worker",
+      "attributes": ["mode"]
+    },
+    {
+      "name": "spacey.jobs.outbox.event.age",
+      "type": "histogram",
+      "unit": "s",
+      "service": "jobs",
+      "attributes": []
+    }
+  ]
+}

@@ -5,19 +5,23 @@
 
 ## 1. Предусловия
 
-- Опубликованный ранее Neon credential ротирован; старое значение отозвано.
-- Созданы отдельные migrator, runtime, battle-worker, telegram-bot, admin, jobs и readonly DB roles через `packages/db/sql/roles.bootstrap.template.sql`; каждой credential-bearing login role выдана только одна group role.
-- Для каждой credential-bearing Neon login role явно заданы и проверены соответствующие `statement_timeout`, `idle_in_transaction_session_timeout`, а для readonly также `default_transaction_read_only=on`: настройки NOLOGIN group role сами по себе не применяются при login.
-- Production использует внешний Neon: pooled URL в runtime env, direct URL только в migrator env.
+- Все ранее опубликованные DB credentials отозваны и не переиспользуются.
+- Один environment-specific Docker PostgreSQL контейнер запущен без host port; production и staging используют разные projects/networks/volumes.
+- `access-bootstrap` создал отдельные migrator, runtime, battle-worker, telegram-bot, admin, jobs и readonly logins; каждой credential-bearing login role выдана только одна NOLOGIN group role.
+- Для каждого PostgreSQL login явно проверены `statement_timeout`, `idle_in_transaction_session_timeout`, а для readonly также `default_transaction_read_only=on`.
+- Runtime подключается только к внутреннему `postgres:5432`; direct URL существует только в migrator/backup env.
 - `/etc/spacey/*.env` принадлежат root и имеют mode `0600`.
 - App images собраны одним CI run, прошли gates и опубликованы с tag, равным полному 40-символьному Git SHA.
 - OCI label `org.opencontainers.image.revision` каждого app image равен тому же SHA.
-- В GitHub repository variables заданы `NEXT_PUBLIC_API_URL=https://...` и `NEXT_PUBLIC_BATTLE_WS_URL=wss://...`; без них release workflow завершается ошибкой до сборки.
-- В env каждого backend-процесса заданы `OTEL_EXPORTER_OTLP_ENDPOINT`, `SENTRY_DSN`, `OTEL_SERVICE_NAME`, `SPACEY_RELEASE_SHA` и `OBSERVABILITY_REQUIRED=true`.
-- `spacey-data` network и общий Valkey запущены отдельно от blue/green slots.
+- Game-web image не содержит environment-specific API/WS URL: production и staging используют same-origin `/api/*`, а API выдаёт battle WS URL из runtime-only `BATTLE_WS_PUBLIC_URL`.
+- Для production `BATTLE_WS_PUBLIC_URL=wss://spacey.aima.space/realtime/v1/battle`; для staging — `wss://staging.spacey.aima.space/realtime/v1/battle`. API fail-closed при отсутствии значения или неканоническом/non-WSS URL.
+- В env каждого backend-процесса заданы `OTEL_EXPORTER_OTLP_ENDPOINT`, `SENTRY_DSN`, `OTEL_SERVICE_NAME`, `SPACEY_RELEASE_SHA` и `OBSERVABILITY_REQUIRED=true`; `OTEL_RESOURCE_ATTRIBUTES` содержит совпадающие `deployment.environment.name` и `service.version`.
+- `spacey-data` network, PostgreSQL и общий Valkey запущены отдельно от blue/green slots.
+- Encrypted off-host PostgreSQL backup успешно создан и восстановлен в изолированный rehearsal database.
 - Nginx `active` — атомарно заменяемая symlink на один из каталогов `slots/blue` или `slots/green`.
 
-Production PostgreSQL намеренно не запускается в Compose: source of truth — отдельный Neon production project. `infra/compose.local.yml` поднимает локальный PostgreSQL только для development/CI.
+Production PostgreSQL является частью `infra/compose.production-data.yml`, но не app slots: blue/green
+контейнеры меняются независимо от единственного data volume. База и Valkey никогда не публикуют host ports.
 
 `.github/workflows/release-images.yml` запускается только после успешного `platform-ci` для push в `main`. Он публикует семь service images в `ghcr.io/<owner>/<repo>/<service>:<full-sha>`, добавляет registry SBOM/provenance attestations и сохраняет `spacey-release-manifest-<sha>` с digest каждого image. Workflow отказывается перезаписывать уже существующий full-SHA tag. После частично неуспешной публикации recovery выполняется новым commit/SHA, а не перемещением старого tag.
 
@@ -26,14 +30,20 @@ Production PostgreSQL намеренно не запускается в Compose:
 ## 2. Первичная подготовка host
 
 ```bash
-install -d -m 0700 /etc/spacey /etc/spacey/valkey
+install -d -m 0700 /etc/spacey /etc/spacey/valkey /etc/spacey/postgres
 install -d -m 0755 /etc/spacey/nginx/slots/blue /etc/spacey/nginx/slots/green
 install -d -m 0755 /opt/spacey
 
-docker network create spacey-data
+cp infra/env/data.env.example /etc/spacey/data.env
+# Заполнить verified PostgreSQL/Valkey digests и resource ceilings, затем:
+node infra/validate-deployment-env.mjs production-data /etc/spacey/data.env
 docker compose --env-file /etc/spacey/data.env \
-  -f infra/compose.production-data.yml up -d
+  -f infra/compose.production-data.yml up -d --wait
 ```
+
+Data Compose сам создаёт и владеет external-for-slots network `spacey-data`; предварительный
+`docker network create spacey-data` запрещён, потому что создаёт network без Compose ownership
+labels. В slot env используется `SPACEY_SLOT_PROJECT`, а не `COMPOSE_PROJECT_NAME`.
 
 Создать по одному upstream-файлу (`game-web.conf`, `api.conf`, `battle-worker.conf`, `admin-web.conf`, `admin-api.conf`, `telegram-bot.conf`) в каждом slot-каталоге. Порты берутся из `infra/env/blue.env.example` и `infra/env/green.env.example`.
 
@@ -59,6 +69,15 @@ git merge-base --is-ancestor "$RELEASE_SHA" origin/main
 
 Записать SHA и семь digest из release manifest в env неактивного slot (`GAME_WEB_IMAGE_DIGEST`, `API_IMAGE_DIGEST`, `BATTLE_WORKER_IMAGE_DIGEST`, `ADMIN_WEB_IMAGE_DIGEST`, `ADMIN_API_IMAGE_DIGEST`, `TELEGRAM_BOT_IMAGE_DIGEST`, `JOBS_IMAGE_DIGEST`). Каждый digest обязан иметь формат `sha256:` и 64 hex-символа. Нельзя использовать `latest`, short SHA, digest вне manifest или разные SHA для сервисов одного release.
 
+До pull проверить non-secret slot env:
+
+```bash
+node infra/validate-deployment-env.mjs production-green /etc/spacey/green.env
+```
+
+Для blue используется mode `production-blue`. Проверка не читает service secret env и не заменяет
+проверку их owner/mode `0600`.
+
 ## 4. Pull и supply-chain проверка
 
 Пример для green slot:
@@ -71,23 +90,31 @@ docker compose --env-file /etc/spacey/green.env \
   -f infra/compose.production.yml images --format json
 ```
 
-Скачать CI artifact `spacey-release-manifest-${RELEASE_SHA}`. Для каждого app image перенести `digest` в соответствующую переменную slot env, затем использовать поле `reference` (`name@sha256:...`) для проверки GitHub attestation, registry SBOM/provenance и label:
+Скачать CI artifact `spacey-release-manifest-${RELEASE_SHA}`. Для каждого app image перенести `digest` в соответствующую переменную slot env. После `compose pull` выполнить единый fail-closed verifier: он проверяет attestation самого manifest, точный набор семи images, repository/SHA/digest bindings, provenance, SPDX и OCI revision label каждого уже загруженного digest:
 
 ```bash
-gh attestation verify "oci://<image>@<digest>" --repo "<owner>/<repo>"
-gh attestation verify "oci://<image>@<digest>" --repo "<owner>/<repo>" \
-  --predicate-type https://spdx.dev/Document/v2.3
-
-docker image inspect \
-  --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' \
-  "<image>@<digest>"
+infra/verify-release-manifest.sh \
+  /path/to/spacey-release-manifest.json \
+  "$RELEASE_SHA" \
+  "<owner>/<repo>"
 ```
 
 Несовпадение хотя бы одного digest, attestation или label блокирует rollout. Floating tag и digest, отсутствующий в manifest, запрещены.
 
-## 5. Expand migration
+## 5. DB access bootstrap и expand migration
 
-Migration запускается один раз из exact-SHA API image, отдельной migrator role и direct Neon endpoint.
+Для единственного Docker PostgreSQL контейнера сначала идемпотентно создаются/ротируются
+credential logins и назначается ровно одна NOLOGIN group role на сервис. Пароли читаются только
+из root-owned файлов `${SPACEY_CONFIG_DIR}/postgres/*-password`; база не публикует host port.
+
+```bash
+docker compose --env-file /etc/spacey/data.env \
+  -f infra/compose.production-data.yml \
+  --profile bootstrap run --rm access-bootstrap
+```
+
+После bootstrap migration запускается один раз из exact-SHA API image, отдельной migrator role
+и внутреннего адреса `postgres:5432` изолированного data-plane.
 
 ```bash
 docker compose --env-file /etc/spacey/green.env \
@@ -99,11 +126,36 @@ docker compose --env-file /etc/spacey/green.env \
   --profile migration run --rm grants
 ```
 
-`grants` обязателен после каждой migration: он синхронизирует least-privilege grants и `EXECUTE` для consent-filtered SECURITY DEFINER функций. При создании нового Neon project сначала один раз применить `roles.bootstrap.template.sql` от имени project owner; его нельзя запускать runtime credential.
+`grants` обязателен после каждой migration: он синхронизирует least-privilege grants и `EXECUTE`
+для consent-filtered SECURITY DEFINER функций. `access-bootstrap` заменяет ручное создание ролей,
+но его можно запускать только через bootstrap profile с PostgreSQL superuser secret; runtime
+credential к этому профилю доступа не имеет.
 
 В этом deploy разрешены только backward-compatible expand changes: новые таблицы/колонки/indexes и dual-read/write preparation. Drop/rename/not-null without backfill выполняются отдельным contract release после полного перехода.
 
 Migration failure останавливает rollout. Автоматический destructive rollback схемы запрещён.
+
+### 5.1. Backup/restore gate
+
+Перед первым production slot необходимо инициализировать отдельный off-host Restic repository,
+создать backup, пройти round-trip SHA-256 verification и восстановить полный snapshot в пустой
+staging/rehearsal database:
+
+```bash
+infra/postgres/backup-restore.sh validate-example infra/env/postgres-backup.env.example
+infra/postgres/backup-restore.sh init /etc/spacey/backup/postgres.env INIT-production-spacey
+infra/postgres/backup-restore.sh backup /etc/spacey/backup/postgres.env
+infra/postgres/backup-restore.sh health /etc/spacey/backup/postgres.env
+
+# Выполняется только с config/data env отдельного пустого rehearsal data-plane.
+infra/postgres/backup-restore.sh restore \
+  /etc/spacey-rehearsal/backup/postgres.env \
+  <full-64-char-snapshot-id> \
+  RESTORE-staging-spacey_rehearsal
+```
+
+После restore обязательны migrations/grants, RLS/ledger checks и browser smoke. Отсутствие свежего
+`latest-success.json` или непроверенный restore блокируют rollout.
 
 ## 6. Старт неактивного slot
 

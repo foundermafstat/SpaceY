@@ -22,6 +22,11 @@ test("retention cadence and batch are bounded while policy cutoffs stay fixed", 
     deadWebhookDays: 90,
     publishedOutboxDays: 30,
     adminAuditYears: 1,
+    credentialOverlapExpiresAt: true,
+    retiredApiKeyDays: 30,
+    terminalInputJournalDays: 30,
+    replayMetadataUsesExpiresAt: true,
+    battleCheckpointsUseExpiresAt: true,
   });
 
   assert.throws(
