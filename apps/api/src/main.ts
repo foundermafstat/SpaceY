@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import cookie from "@fastify/cookie";
-import formbody from "@fastify/formbody";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { NestFactory } from "@nestjs/core";
@@ -26,12 +25,12 @@ async function bootstrap() {
     bufferLogs: true
   });
   await app.register(cookie);
-  await app.register(formbody);
   await app.register(helmet, { contentSecurityPolicy: false });
   const rateLimitRedis = env.USE_IN_MEMORY_REPOSITORY
     ? undefined
-    : new Redis(env.VALKEY_URL, { maxRetriesPerRequest: 1, enableOfflineQueue: false });
+    : new Redis(env.VALKEY_URL, { lazyConnect: true, maxRetriesPerRequest: 1, enableOfflineQueue: false });
   if (rateLimitRedis) {
+    await rateLimitRedis.connect();
     const pong = await rateLimitRedis.ping();
     if (pong !== "PONG") throw new Error("Distributed rate-limit Valkey is unavailable.");
     adapter.getInstance().addHook("onClose", async () => {

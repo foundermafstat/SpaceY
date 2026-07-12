@@ -1,0 +1,57 @@
+name: spacey-dev
+
+services:
+  postgres:
+    ports: !override ["127.0.0.1:45432:5432"]
+    mem_limit: 768m
+  valkey:
+    ports: !override ["127.0.0.1:46379:6379"]
+    mem_limit: 384m
+  minio:
+    ports: !override ["127.0.0.1:49000:9000", "127.0.0.1:49001:9001"]
+    mem_limit: 512m
+  game-web:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/game-web:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    ports: !override ["127.0.0.1:47790:3000"]
+  api:
+    build: !reset null
+    image: "${SPACEY_DEV_API_IMAGE:-ghcr.io/foundermafstat/spacey/api:ba874cd965758f03676941be7a552321ff0c04f8}"
+    environment:
+      CORS_ORIGINS: https://dev.spacey.aima.space
+      BATTLE_WS_PUBLIC_URL: wss://dev.spacey.aima.space/realtime/v1/battle
+      USE_IN_MEMORY_REPOSITORY: "false"
+    ports: !override ["127.0.0.1:47800:7800"]
+  battle-worker:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/battle-worker:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    environment:
+      BATTLE_WORKER_PUBLIC_URL: wss://dev.spacey.aima.space/realtime/v1/battle
+      BATTLE_ALLOWED_ORIGINS: https://dev.spacey.aima.space
+    ports: !override ["127.0.0.1:47801:7801"]
+  admin-web:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/admin-web:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    environment:
+      ADMIN_API_BASE_URL: https://admin-dev.spacey.aima.space
+      ADMIN_WEB_ORIGIN: https://admin-dev.spacey.aima.space
+    ports: !override ["127.0.0.1:47803:3102"]
+  admin-api:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/admin-api:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    environment:
+      ADMIN_ALLOWED_ORIGINS: https://admin-dev.spacey.aima.space
+    ports: !override ["127.0.0.1:47802:7802"]
+  telegram-bot:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/telegram-bot:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    environment:
+      SPACEY_MINI_APP_URL: https://dev.spacey.aima.space
+    ports: !override ["127.0.0.1:47804:7804"]
+  jobs:
+    build: !reset null
+    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/jobs:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    ports: !override ["127.0.0.1:47805:7805"]
+  migrator:
+    build: !reset null
+    image: "${SPACEY_DEV_API_IMAGE:-ghcr.io/foundermafstat/spacey/api:ba874cd965758f03676941be7a552321ff0c04f8}"
