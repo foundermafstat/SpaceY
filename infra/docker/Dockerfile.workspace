@@ -17,7 +17,14 @@ ARG NEXT_PUBLIC_API_URL=""
 ARG NEXT_PUBLIC_ALLOW_BROWSER_AUTH="false"
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_ALLOW_BROWSER_AUTH=$NEXT_PUBLIC_ALLOW_BROWSER_AUTH
-RUN test -n "$APP_FILTER" && pnpm exec turbo run build --filter="$APP_FILTER"
+RUN test -n "$APP_FILTER" && \
+    if [ "$APP_FILTER" = "@spacey/game-web" ]; then \
+      pnpm --filter @spacey/contracts build && \
+      pnpm --filter @spacey/protocol build && \
+      pnpm run build; \
+    else \
+      pnpm exec turbo run build --filter="$APP_FILTER"; \
+    fi
 
 FROM node:22.17.0-bookworm-slim AS runtime
 
@@ -38,4 +45,4 @@ LABEL org.opencontainers.image.revision=$VCS_REF
 USER node
 ENV SERVICE_FILTER=$APP_FILTER
 STOPSIGNAL SIGTERM
-CMD ["sh", "-c", "test -n \"$SERVICE_FILTER\" && exec pnpm --filter \"$SERVICE_FILTER\" start"]
+CMD ["sh", "-c", "test -n \"$SERVICE_FILTER\" && if [ \"$SERVICE_FILTER\" = \"@spacey/game-web\" ]; then exec pnpm start; else exec pnpm --filter \"$SERVICE_FILTER\" start; fi"]
