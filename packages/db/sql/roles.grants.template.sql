@@ -97,7 +97,7 @@ GRANT SELECT, INSERT ON
     input_journal
 TO spacey_battle_worker;
 GRANT SELECT, INSERT, DELETE ON battle_checkpoints TO spacey_battle_worker;
-GRANT INSERT ON outbox_events TO spacey_battle_worker;
+GRANT SELECT, INSERT ON outbox_events TO spacey_battle_worker;
 
 GRANT SELECT, INSERT, UPDATE ON
     telegram_bot_updates,
