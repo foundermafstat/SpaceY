@@ -10,7 +10,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "typecheck:all": "pnpm run typecheck && turbo run typecheck",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test": "pnpm --filter @spacey/protocol build && node --experimental-strip-types --test tests/*.test.mjs",
     "test:all": "pnpm run test && turbo run test",
     "validate:load-harness": "node --check load/k6/spacey-pvp-acceptance.mjs && node --check load/k6/battle-protobuf.mjs && node scripts/validate-load-harness.mjs && node scripts/verify-load-headroom.mjs --self-test",
     "validate:assets": "node scripts/validate-asset-pipeline.mjs",
