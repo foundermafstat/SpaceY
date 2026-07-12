@@ -27,9 +27,9 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
     );
     await client.query(
       `INSERT INTO content_releases
-        (id, version, status, config_hash, schema_version, published_at, updated_at)
-       VALUES ($1, $2, 'PUBLISHED', $3, 1, NOW(), NOW())`,
-      [ids.release, `pve-damage-${ids.release}`, ids.release.replaceAll("-", "")],
+        (id, version, status, config_hash, schema_version, updated_at)
+       VALUES ($1, $2, 'DRAFT', $3, 1, NOW())`,
+      [ids.release, `pve-damage-${ids.release}`, ids.release.replaceAll("-", "").repeat(2)],
     );
     await client.query(
       `INSERT INTO mission_definitions
@@ -46,6 +46,11 @@ test("PostgreSQL finalizes PvE module damage and transition exactly once", { ski
        VALUES ($1, $2, 'pve-damage-core', 'structure', 'core', 'common', '{}'::jsonb,
                '{"hp":300}'::jsonb, '[]'::jsonb, NOW())`,
       [ids.module, ids.release],
+    );
+    await client.query(
+      `UPDATE content_releases SET status = 'PUBLISHED', published_at = NOW(), updated_at = NOW()
+       WHERE id = $1`,
+      [ids.release],
     );
     await client.query(
       `INSERT INTO ship_builds (id, user_id, name, updated_at)

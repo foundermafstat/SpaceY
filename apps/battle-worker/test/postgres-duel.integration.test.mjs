@@ -30,9 +30,9 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
     );
     await client.query(
       `INSERT INTO content_releases
-        (id, version, status, config_hash, schema_version, published_at, updated_at)
-       VALUES ($1, $2, 'PUBLISHED', $3, 1, NOW(), NOW())`,
-      [ids.release, `pvp-integration-${ids.release}`, ids.release.replaceAll("-", "")],
+        (id, version, status, config_hash, schema_version, updated_at)
+       VALUES ($1, $2, 'DRAFT', $3, 1, NOW())`,
+      [ids.release, `pvp-integration-${ids.release}`, ids.release.replaceAll("-", "").repeat(2)],
     );
     await client.query(
       `INSERT INTO mission_definitions
@@ -50,6 +50,11 @@ test("PostgreSQL materializes, prepares and finalizes one PvP duel exactly once"
                '{"hp":300,"thrust":120,"damage":40,"range":600,"cooldownMs":200,"projectileSpeed":900,"collisionRadius":30}'::jsonb,
                '[]'::jsonb, NOW())`,
       [ids.module, ids.release],
+    );
+    await client.query(
+      `UPDATE content_releases SET status = 'PUBLISHED', published_at = NOW(), updated_at = NOW()
+       WHERE id = $1`,
+      [ids.release],
     );
     await client.query(
       `INSERT INTO ship_builds (id, user_id, name, updated_at)
