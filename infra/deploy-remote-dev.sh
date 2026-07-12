@@ -50,6 +50,7 @@ compose=(docker compose --env-file "$secret" -f infra/compose.local.yml -f infra
 # and optimized images are available.
 "${compose[@]}" pull game-web api battle-worker
 "${compose[@]}" up -d --wait game-web api battle-worker
+"${compose[@]}" exec -T -e SPACEY_SEED_ENV=local api pnpm --filter @spacey/db db:seed
 REMOTE_SCRIPT
 
 printf 'REMOTE_DEV_READY https://dev.spacey.aima.space\n'
