@@ -38,6 +38,17 @@ async function initializeTelegramMiniApp(): Promise<TelegramLaunchContext> {
   miniApp.ready.ifAvailable();
   publishState("tmaState", "ready");
 
+  // Authentication must not wait for optional presentation APIs. Some mobile
+  // Telegram clients leave viewport/fullscreen promises pending indefinitely.
+  void configureTelegramPresentation(swipeBehavior, viewport);
+
+  return { isTelegram: true, initData: rawInitData };
+}
+
+async function configureTelegramPresentation(
+  swipeBehavior: typeof import("@tma.js/sdk-react").swipeBehavior,
+  viewport: typeof import("@tma.js/sdk-react").viewport
+) {
   const swipeMount = swipeBehavior.mount.ifAvailable();
   if (swipeMount.ok) {
     const disabled = swipeBehavior.disableVertical.ifAvailable();
@@ -76,7 +87,6 @@ async function initializeTelegramMiniApp(): Promise<TelegramLaunchContext> {
     }
   }
 
-  return { isTelegram: true, initData: rawInitData };
 }
 
 export function TelegramMiniAppRuntime({ children }: { children: React.ReactNode }) {

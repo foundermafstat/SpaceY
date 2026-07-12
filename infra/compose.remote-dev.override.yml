@@ -12,7 +12,7 @@ services:
     mem_limit: 512m
   game-web:
     build: !reset null
-    image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/game-web:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
+    image: "${SPACEY_DEV_GAME_WEB_IMAGE:-ghcr.io/foundermafstat/spacey/game-web:ba874cd965758f03676941be7a552321ff0c04f8}"
     ports: !override ["127.0.0.1:47790:3000"]
   api:
     build: !reset null
@@ -20,6 +20,7 @@ services:
     environment:
       CORS_ORIGINS: https://dev.spacey.aima.space
       BATTLE_WS_PUBLIC_URL: wss://dev.spacey.aima.space/realtime/v1/battle
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
       USE_IN_MEMORY_REPOSITORY: "false"
     ports: !override ["127.0.0.1:47800:7800"]
   battle-worker:
