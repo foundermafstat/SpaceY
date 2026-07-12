@@ -520,6 +520,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Revoke an API key immediately */
         post: operations["revokeDeveloperApiKey"];
         delete?: never;
         options?: never;
@@ -570,6 +571,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Revoke a webhook subscription immediately */
         post: operations["revokeDeveloperWebhook"];
         delete?: never;
         options?: never;
