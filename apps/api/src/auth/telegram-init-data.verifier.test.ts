@@ -33,6 +33,16 @@ test("accepts a correctly signed, fresh Telegram payload", () => {
   assert.match(result.initDataHash, /^[a-f0-9]{64}$/);
 });
 
+test("includes Telegram's signature field in bot-token HMAC validation", () => {
+  const now = new Date("2026-07-11T10:00:00.000Z");
+  const verifier = new TelegramInitDataVerifier();
+  const result = verifier.verify(signedInitData(
+    Math.floor(now.getTime() / 1000),
+    { signature: "telegram-ed25519-signature" }
+  ), now);
+  assert.equal(result.identity.telegramUserId, "123456789");
+});
+
 test("rejects tampered Telegram user data", () => {
   const now = new Date("2026-07-11T10:00:00.000Z");
   const raw = signedInitData(Math.floor(now.getTime() / 1000)).replace("Ada", "Mallory");

@@ -38,7 +38,10 @@ export class TelegramInitDataVerifier {
     }
 
     const dataCheckString = [...params.entries()]
-      .filter(([key]) => key !== "hash" && key !== "signature")
+      // Telegram's bot-token HMAC covers every received field except `hash`.
+      // The newer `signature` field is excluded only from third-party Ed25519
+      // validation, not from this first-party HMAC data-check-string.
+      .filter(([key]) => key !== "hash")
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([key, value]) => `${key}=${value}`)
       .join("\n");
