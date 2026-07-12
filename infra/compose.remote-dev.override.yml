@@ -46,6 +46,9 @@ services:
     build: !reset null
     image: "${SPACEY_DEV_IMAGE_PREFIX:-ghcr.io/foundermafstat/spacey}/telegram-bot:${SPACEY_DEV_IMAGE_TAG:-ba874cd965758f03676941be7a552321ff0c04f8}"
     environment:
+      TELEGRAM_BOT_TOKEN: "${TELEGRAM_BOT_TOKEN:-}"
+      TELEGRAM_WEBHOOK_SECRET: "${TELEGRAM_WEBHOOK_SECRET:-}"
+      TELEGRAM_API_BASE_URL: https://api.telegram.org
       SPACEY_MINI_APP_URL: https://dev.spacey.aima.space
     ports: !override ["127.0.0.1:47804:7804"]
   jobs:

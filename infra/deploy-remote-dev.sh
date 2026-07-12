@@ -26,6 +26,14 @@ if [[ ! -f $secret ]]; then
 fi
 chown root:root "$secret"; chmod 0600 "$secret"
 
+token_file=/etc/spacey-dev/secrets/telegram-bot-token
+if [[ -s $token_file ]] && ! grep -q '^TELEGRAM_BOT_TOKEN=' "$secret"; then
+  token=$(tr -d '\r\n' <"$token_file")
+  webhook_secret=$(openssl rand -hex 32)
+  printf 'TELEGRAM_BOT_TOKEN=%s\nTELEGRAM_WEBHOOK_SECRET=%s\n' "$token" "$webhook_secret" >>"$secret"
+  unset token webhook_secret
+fi
+
 if ! swapon --show --noheadings | grep -q .; then
   fallocate -l 4G /swapfile
   chmod 0600 /swapfile
